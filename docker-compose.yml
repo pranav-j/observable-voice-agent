@@ -1,0 +1,60 @@
+name: voice-order-agent
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      # postgres 18+ keeps versioned data dirs under this path
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  livekit:
+    image: livekit/livekit-server:v1.13.9
+    command: ["--config", "/etc/livekit.yaml", "--dev"]
+    environment:
+      LIVEKIT_KEYS: "${LIVEKIT_API_KEY}: ${LIVEKIT_API_SECRET}"
+    ports:
+      - "7880:7880"     # HTTP + websocket signaling
+      - "7881:7881"     # WebRTC over TCP (fallback)
+      - "7882:7882/udp" # WebRTC media, single muxed UDP port
+    volumes:
+      - ./infra/livekit.yaml:/etc/livekit.yaml:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:7880"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  phoenix:
+    image: arizephoenix/phoenix:version-20.19.0
+    environment:
+      PHOENIX_WORKING_DIR: /data
+    ports:
+      - "6006:6006" # UI + OTLP over HTTP (/v1/traces)
+      - "4317:4317" # OTLP over gRPC
+    volumes:
+      - phoenix-data:/data
+    healthcheck:
+      # distroless image: no shell or curl, so probe with python
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:6006/healthz', timeout=3)"
+      interval: 5s
+      timeout: 5s
+      retries: 24
+
+volumes:
+  postgres-data:
+  phoenix-data:

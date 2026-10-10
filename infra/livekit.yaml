@@ -1,0 +1,16 @@
+# LiveKit server for local development under Docker.
+# API keys are not set here; docker-compose passes them in via LIVEKIT_KEYS from .env.
+port: 7880
+
+rtc:
+  tcp_port: 7881
+  # One muxed UDP port instead of a large range, which Docker maps slowly.
+  udp_port: 7882
+  # On Docker Desktop the container lives in a VM, so its own IP is unreachable
+  # from the host. Advertise loopback so the browser and local workers can
+  # reach the published ports.
+  use_external_ip: false
+  node_ip: 127.0.0.1
+
+logging:
+  level: info
