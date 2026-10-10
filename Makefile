@@ -7,8 +7,16 @@ PYTHON ?= python
 VENV   := .venv
 UV     := uv
 
+# npm writes this after every install, so it tells us whether node_modules matches the lockfile.
+WEB_DEPS := web/node_modules/.package-lock.json
+
 # uv should always target the project .venv, never a VIRTUAL_ENV leaking in from the shell.
 unexport VIRTUAL_ENV
+
+# Prefix for web recipes: switch to the Node version in .nvmrc. Make's shell doesn't load
+# nvm from your shell rc, so source it here. Without nvm (e.g. CI) use the node on PATH.
+NVM_USE := export NVM_DIR="$${NVM_DIR:-$$HOME/.nvm}"; \
+	if [ -s "$$NVM_DIR/nvm.sh" ]; then . "$$NVM_DIR/nvm.sh" && nvm use >/dev/null || exit 1; fi;
 
 .PHONY: help setup up down dev test test-integration lint fmt eval
 
@@ -26,7 +34,11 @@ $(VENV)/bin/python:
 	fi
 	$(PYTHON) -m venv $(VENV)
 
-setup: $(VENV)/bin/python ## Create .venv and install locked Python deps
+# Reinstall web deps only when they're missing or the lockfile changed.
+$(WEB_DEPS): web/package-lock.json
+	@$(NVM_USE) echo "web: npm ci (node $$(node --version))" && cd web && npm ci --no-fund
+
+setup: $(VENV)/bin/python $(WEB_DEPS) ## Create .venv, install locked Python and web deps
 	$(UV) sync --locked
 	@test -f .env || { cp .env.example .env; echo "created .env from .env.example"; }
 
@@ -47,10 +59,11 @@ test-integration: $(VENV)/bin/python ## Integration tests (skip when API keys ar
 	@$(UV) run --locked pytest -m integration; status=$$?; \
 	if [ $$status -eq 5 ]; then echo "no integration tests collected"; else exit $$status; fi
 
-lint: $(VENV)/bin/python ## ruff + mypy
+lint: $(VENV)/bin/python $(WEB_DEPS) ## ruff + mypy + web typecheck + oxlint
 	$(UV) run --locked ruff check .
 	$(UV) run --locked ruff format --check .
 	$(UV) run --locked mypy
+	@$(NVM_USE) echo "web: tsc -b && oxlint (node $$(node --version))" && cd web && npm run -s typecheck && npm run -s lint
 
 fmt: $(VENV)/bin/python ## Auto-format and apply safe lint fixes
 	$(UV) run --locked ruff format .
