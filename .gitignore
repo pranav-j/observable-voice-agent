@@ -1,0 +1,33 @@
+# python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# env / secrets
+.env
+.env.*
+!.env.example
+
+# web
+node_modules/
+web/dist/
+*.tsbuildinfo
+
+# runtime output
+recordings/
+reports/**/raw/
+*.wav
+
+# editors / os
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
