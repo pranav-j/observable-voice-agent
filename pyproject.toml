@@ -1,0 +1,54 @@
+[project]
+name = "voice-order-agent"
+version = "0.1.0"
+description = "Real-time voice agent for pickup food orders, with an audio eval harness."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.10",
+]
+
+[dependency-groups]
+dev = [
+    "mypy>=2.4.0",
+    "pre-commit>=4.6.2",
+    "pytest>=9.1.1",
+    "ruff>=0.17.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.11,<0.12"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "voice_order"
+
+[tool.uv]
+# The interpreter comes from pyenv (.python-version) via the project .venv.
+# Never let uv download its own Python or pick up another one on PATH.
+python-downloads = "never"
+python-preference = "only-system"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests", "evals"]
+extend-exclude = ["web"]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "UP", "SIM", "RUF", "ASYNC", "PT"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+files = ["src", "tests", "evals"]
+mypy_path = ["src"]
+plugins = ["pydantic.mypy"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = ["-ra", "--strict-markers"]
+markers = [
+    "integration: needs API keys or network; skipped when keys are missing",
+]
