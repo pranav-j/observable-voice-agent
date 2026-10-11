@@ -143,6 +143,22 @@ The six failures left are mostly about my test setup, not the agent:
 
 Before the next agent fix I want the harness to be fair. The caller's last words should always reach the agent, and an early hang-up by the caller should get its own label. Otherwise I'd be measuring the agent against my own bugs.
 
+## Fixing the harness, and a new reference run
+
+Before fixing anything else in the agent, I fixed the two measurement problems from the last run. The caller's last words now always reach the agent while the order is still open, so "yes, that's correct, goodbye" can still confirm it. A caller who leaves mid-order now gets its own end reason, `caller_hung_up_early`, so the report shows it instead of quietly counting it as the agent's failure. I also changed the drop-the-brownie scenario so the caller orders everything in the first sentence, which means the scripted interruption can't fire before the brownie exists.
+
+Then I re-ran everything as the new reference point. Report: [reports/20261011-083619-text/summary.md](../reports/20261011-083619-text/summary.md). Task success was 94.6% (88 of 93), against 93.5% (87 of 93) after fix 1, and 27 of 31 scenarios passed all three runs, the same as before.
+
+I don't read anything into that one extra run. With 93 runs, a single run is within the normal variation from one suite run to the next. What did change is which runs failed. The harness failure and the fragile scenario are gone, and a few different scenarios failed this time. The new label also showed up: 2 of the 5 failures were the simulated caller hanging up mid-order.
+
+The other three are real agent problems, and all of them point at code rather than the prompt:
+
+- **Filler words in search** again. A run lost the veg samosa.
+- **It couldn't swap an item.** To turn a latte into a cappuccino, it called `update_item`, which can only change quantity, size and modifiers, not the item itself. The call failed, and the agent told the caller it couldn't replace it, instead of removing the latte and adding a cappuccino. The error message should tell the model to do exactly that.
+- **It dropped a zero.** The caller said "nine zero zero zero zero, zero zero zero two three", and the model turned it into a nine-digit number. That failed validation twice and ended in a transfer. Counting repeated words is something language models are bad at, and it's easy to do in code. So the phone parser should understand spoken digits, and the model can pass the caller's words through as they are.
+
+So the list of agent fixes is now: filler words in search, spoken digits in phone numbers, rejecting a leading zero, a clearer error for swapping items, pack sizes in the read-back, and the code guard on confirming. Each one gets its own run against this reference.
+
 ## The simulated caller can be the thing that fails
 
 Two failures in one batch came from my side of the test, not the agent. In one, I'd told the caller to say "two plates of veg samosas" exactly like that. It took that so literally that it refused a correct read-back three times and gave up. I reworded the goal so it uses the phrase when ordering without being rigid about it.
