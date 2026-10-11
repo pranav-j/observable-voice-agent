@@ -219,3 +219,10 @@ def test_old_results_without_the_field_still_load() -> None:
     row = json.loads(result("a", 1).model_dump_json(exclude={"transcript"}))
     del row["confirmed_before_reply"]
     assert RunResult.model_validate(row).confirmed_before_reply == 0
+
+
+def test_early_hang_ups_are_counted() -> None:
+    results = [result("a", 1, success=False, end_reason="caller_hung_up_early"), result("a", 2)]
+    summary = summarize(results, mode="text", started_at=STARTED)
+    assert summary["overall"]["caller_hung_up_early"] == 1
+    assert "| Caller hung up mid-order | 1 runs |" in render_markdown(summary)

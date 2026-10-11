@@ -13,12 +13,18 @@ from evals.scoring.order import OrderScore, score_order
 from voice_order.menu.models import Menu
 from voice_order.prompts.loader import AGENT_SYSTEM_VERSION, agent_system_prompt, greeting_prompt
 from voice_order.store.base import OrderStore
-from voice_order.textmode.agent import TextAgent, ToolEvent
+from voice_order.textmode.agent import TextAgent, ToolEvent, Turn
 from voice_order.textmode.llm import LLMClient, Usage
 from voice_order.tools.base import Session
 
 EndReason = Literal[
-    "caller_ended", "agent_ended", "transferred", "caller_gave_up", "max_turns", "error"
+    "caller_ended",
+    "caller_hung_up_early",
+    "agent_ended",
+    "transferred",
+    "caller_gave_up",
+    "max_turns",
+    "error",
 ]
 
 
@@ -105,6 +111,24 @@ async def run_text_scenario(
     error: str | None = None
     started = time.perf_counter()
 
+    async def agent_reply(text: str) -> Turn:
+        nonlocal turns, tool_limit_hits, confirmed_before_reply
+        turn = await agent.respond(text)
+        turns += 1
+        tool_limit_hits += turn.hit_tool_limit
+        confirmed_before_reply += _confirmed_before_reply(turn.tool_events)
+        transcript.append(
+            TranscriptEntry(
+                speaker="agent",
+                text=turn.text,
+                tool_calls=[_tool_record(e) for e in turn.tool_events],
+            )
+        )
+        return turn
+
+    def order_is_open() -> bool:
+        return agent.session.order.status == "draft" and agent.session.ending is None
+
     try:
         agent_text = await agent.start(greeting_prompt(menu.restaurant).text)
         transcript.append(TranscriptEntry(speaker="agent", text=agent_text))
@@ -119,20 +143,26 @@ async def run_text_scenario(
                 end_reason = "caller_gave_up"
                 break
             if said.ended or not said.text:
-                end_reason = "caller_ended"
+                last_turn = None
+                if said.text and order_is_open():
+                    # "Yes, that's right. Goodbye." can still confirm the order, so the
+                    # caller's last words reach the agent before the call ends.
+                    last_turn = await agent_reply(said.text)
+                if (
+                    last_turn is not None
+                    and last_turn.ending is not None
+                    and last_turn.ending.kind == "transfer"
+                ):
+                    end_reason = "transferred"
+                elif order_is_open():
+                    # The caller left mid-order and the agent never ended the call. Labelled
+                    # on its own so the report doesn't quietly blame the agent for it.
+                    end_reason = "caller_hung_up_early"
+                else:
+                    end_reason = "caller_ended"
                 break
 
-            turn = await agent.respond(said.text)
-            turns += 1
-            tool_limit_hits += turn.hit_tool_limit
-            confirmed_before_reply += _confirmed_before_reply(turn.tool_events)
-            transcript.append(
-                TranscriptEntry(
-                    speaker="agent",
-                    text=turn.text,
-                    tool_calls=[_tool_record(e) for e in turn.tool_events],
-                )
-            )
+            turn = await agent_reply(said.text)
             agent_text = turn.text
             phase = "readback" if _readback_given(turn.tool_events) else None
             if turn.ending is not None:

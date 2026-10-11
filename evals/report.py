@@ -80,6 +80,7 @@ def summarize(results: list[RunResult], *, mode: str, started_at: datetime) -> d
             sum(r.score.escalated == r.score.expected_escalation for r in results), len(results)
         ),
         "errors": sum(r.end_reason == "error" for r in results),
+        "caller_hung_up_early": sum(r.end_reason == "caller_hung_up_early" for r in results),
         "tool_limit_hits": sum(r.tool_limit_hits for r in results),
         "confirmed_before_reply_runs": sum(r.confirmed_before_reply > 0 for r in results),
         "skipped_audio_behaviors": sum(len(r.skipped_behaviors) for r in results),
@@ -177,6 +178,7 @@ def render_markdown(summary: dict[str, Any]) -> str:
         f"| Escalation agreement | {_pct(o['escalation_agreement_rate'])} "
         f"({o['escalations']} escalated, {o['expected_escalations']} expected) |",
         f"| Errors | {o['errors']} |",
+        f"| Caller hung up mid-order | {o['caller_hung_up_early']} runs |",
         f"| Tool-round limit hits | {o['tool_limit_hits']} |",
         f"| Confirmed before the caller replied | {o['confirmed_before_reply_runs']} runs |",
         f"| Turns p50 / p95 | {_num(o['turns_p50'], 0)} / {_num(o['turns_p95'], 0)} |",

@@ -175,3 +175,42 @@ async def test_confirming_in_the_readback_turn_is_counted(menu: Menu) -> None:
     assert result.confirmed_before_reply == 1
     # The order itself is right, which is exactly why scoring alone missed this.
     assert result.score.task_success
+
+
+# --- the caller's last words, and hanging up early --------------------------------------------
+
+
+async def test_a_final_yes_with_goodbye_still_confirms(menu: Menu) -> None:
+    agent = [
+        *HAPPY_AGENT[:4],  # add the coffee, ask details, set customer + read back
+        reply("", call("confirm_order")),
+        reply("It'll be ready for pickup. Goodbye!"),
+    ]
+    caller = [
+        reply("One large cold coffee with oat milk, please."),
+        reply("Priya, 9000000002."),
+        reply("Yes, that's correct. Goodbye. [END]"),  # yes and hang up in one breath
+    ]
+    result, _ = await play(menu, HAPPY, agent, caller)
+    assert result.end_reason == "caller_ended"
+    assert result.score.task_success
+    assert result.transcript[-1].tool_calls[0]["name"] == "confirm_order"
+
+
+async def test_silent_early_hang_up_gets_its_own_label(menu: Menu) -> None:
+    result, _ = await play(menu, HAPPY, agent=[], caller=[reply("[END]")])
+    assert result.end_reason == "caller_hung_up_early"
+    assert result.score.status == "abandoned"
+    assert not result.score.task_success  # still a failure; the label says whose
+
+
+async def test_parting_words_reach_the_agent_before_an_early_hang_up(menu: Menu) -> None:
+    result, _ = await play(
+        menu,
+        HAPPY,
+        agent=[reply("Sure, what size?"), reply("No problem. Goodbye.")],
+        caller=[reply("A cold coffee, please."), reply("Actually, never mind. [END]")],
+    )
+    assert result.end_reason == "caller_hung_up_early"
+    assert result.transcript[-1].text == "No problem. Goodbye."
+    assert result.turns == 2
