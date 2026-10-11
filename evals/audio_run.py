@@ -147,7 +147,7 @@ async def run_audio_scenario(
         if behavior is None or behavior.say is None:
             return await caller.agent_reply(since, REPLY_WAIT_S)
         await asyncio.sleep((behavior.after_ms or 0) / 1000)
-        partial = " ".join(text for t, text in caller.agent.transcripts if t > since)
+        partial = caller.agent.heard_since(since)
         phase: Phase = "readback" if behavior.trigger.phase == "readback" else None
         scripted = await brain.respond(partial or "(the agent is speaking)", phase)
         transcript.append(TranscriptEntry(speaker="agent", text=partial))

@@ -116,3 +116,23 @@ async def test_speech_that_stays_clipped_is_a_harness_error() -> None:
     fake = _FakeSpeech(0.1, 0.1, 0.1)
     with pytest.raises(RuntimeError, match="clipped"):
         await _caller(fake).synthesize("Yes. Goodbye.")
+
+
+async def test_a_one_word_line_still_has_a_floor() -> None:
+    fake = _FakeSpeech(0.3, 1.0)  # "Pooja." once came back as 0.3 s and was never heard
+    await _caller(fake).synthesize("Pooja.")
+    assert fake.calls == 2
+
+
+def test_heard_since_includes_lines_still_being_written() -> None:
+    agent = AgentState(transcripts=[(1.0, "Old line."), (5.0, "Sure.")])
+    agent.live[1] = (6.0, "Let me read that back. One dosa.")
+    agent.live[2] = (7.0, "")  # opened, nothing written yet
+    assert agent.heard_since(4.0) == "Sure. Let me read that back. One dosa."
+
+
+def test_a_late_closing_line_belongs_to_when_it_started() -> None:
+    # The read-back's stream closed only after the caller's next words (at 20.0), but it
+    # started at 10.0, so the next reply (since 20.0) doesn't repeat it.
+    agent = AgentState(transcripts=[(10.0, "Let me read that back."), (22.0, "Done.")])
+    assert agent.heard_since(20.0) == "Done."

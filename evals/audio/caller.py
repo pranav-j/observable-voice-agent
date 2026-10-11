@@ -33,6 +33,8 @@ Hearing = Literal["transcript", "stt"]
 STUCK_QUIET_S = 5.0
 # Speech shorter than this per word was cut off by text-to-speech; fast talkers stay above.
 MIN_SECONDS_PER_WORD = 0.2
+# Even "Yes." comes back at over a second with its leading and trailing silence.
+MIN_LINE_SECONDS = 0.6
 TTS_ATTEMPTS = 3
 
 # Scenario voices -> OpenAI TTS voices. Changing this changes what callers sound like,
@@ -109,6 +111,17 @@ class AgentState:
     order_status: str = "draft"
     left: bool = False
     open_streams: int = 0  # agent transcript streams still being written
+    live: dict[int, tuple[float, str]] = field(default_factory=dict)  # open streams' text so far
+
+    def heard_since(self, since: float) -> str:
+        """What the agent has said since `since`: finished lines, plus any still open.
+
+        A stream can stay open long after its audio has played (LiveKit holds the speech
+        open while a held-back tool call is pending), so its text so far counts too.
+        """
+        lines = [(t, text) for t, text in self.transcripts if t > since]
+        lines += [(t, text) for t, text in self.live.values() if t > since and text]
+        return " ".join(text for _, text in sorted(lines))
 
     def done_speaking(self, since: float, now: float, quiet: float) -> bool:
         """Has the agent spoken since `since` and finished?
@@ -202,23 +215,33 @@ class AudioCaller:
 
     def _on_transcript(self, reader: rtc.TextStreamReader, participant_identity: str) -> None:
         agent = participant_identity != self.identity
+        started, key = self.now(), id(reader)
         if agent:
             self.agent.open_streams += 1
+            self.agent.live[key] = (started, "")
 
         async def read() -> None:
+            parts: list[str] = []
             try:
-                text = (await reader.read_all()).strip()
+                async for chunk in reader:
+                    parts.append(chunk)
+                    if agent:
+                        self.agent.live[key] = (started, "".join(parts).strip())
             finally:
                 if agent:
                     self.agent.open_streams -= 1
+                    self.agent.live.pop(key, None)
                     self._changed.set()
+            text = "".join(parts).strip()
             final = (reader.info.attributes or {}).get("lk.transcription_final") == "true"
             if not (final and text):
                 return
-            if participant_identity == self.identity:
+            if not agent:
                 self.heard_caller.append((self.now(), text))  # the agent's STT of us, for WER
             else:
-                self.agent.transcripts.append((self.now(), text))
+                # Timed from when the agent started saying it, so a stream held open past
+                # the caller's next words isn't counted as part of the next reply.
+                self.agent.transcripts.append((started, text))
                 self._changed.set()
 
         self._spawn(read())
@@ -294,7 +317,7 @@ class AudioCaller:
         words. The agent never heard the line, and the run counted as the agent's failure.
         """
         spoken = speakable(text)
-        shortest = MIN_SECONDS_PER_WORD * len(spoken.split())
+        shortest = max(MIN_LINE_SECONDS, MIN_SECONDS_PER_WORD * len(spoken.split()))
         for _ in range(TTS_ATTEMPTS):
             response = await self.client.audio.speech.create(
                 model="gpt-4o-mini-tts",
@@ -342,7 +365,7 @@ class AudioCaller:
         if self.hearing == "stt":
             return await self._transcribe_agent(since)
         await asyncio.sleep(0.3)  # the final transcript can land just after the audio ends
-        return " ".join(text for t, text in self.agent.transcripts if t > since)
+        return self.agent.heard_since(since)
 
     async def agent_speaking_after(self, since: float, max_wait: float = 30.0) -> float | None:
         """Wait for agent speech to start after `since`; return when it did."""
