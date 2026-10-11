@@ -12,12 +12,13 @@ def agent(text: str, *calls: dict[str, Any]) -> TranscriptEntry:
     return TranscriptEntry(speaker="agent", text=text, tool_calls=list(calls))
 
 
-def failed(name: str, error: str, **arguments: Any) -> dict[str, Any]:
-    return {"name": name, "arguments": arguments, "ok": False, "error": error}
+def failed(tool: str, error: str, /, **arguments: Any) -> dict[str, Any]:
+    # Positional-only, so a tool argument called "name" goes into **arguments.
+    return {"name": tool, "arguments": arguments, "ok": False, "error": error}
 
 
-def worked(name: str, **arguments: Any) -> dict[str, Any]:
-    return {"name": name, "arguments": arguments, "ok": True}
+def worked(tool: str, /, **arguments: Any) -> dict[str, Any]:
+    return {"name": tool, "arguments": arguments, "ok": True}
 
 
 def test_text_cases_pair_an_error_with_the_turn_text() -> None:
@@ -99,3 +100,18 @@ def test_voice_retry_before_the_next_caller_turn_is_not_a_case(tmp_path: Path) -
 
 def test_missing_recording_has_no_cases(tmp_path: Path) -> None:
     assert cases_from_recording(tmp_path) == []
+
+
+def test_saving_a_name_before_asking_for_the_number_is_not_a_case() -> None:
+    transcript = [
+        agent(
+            "Thanks, Pooja. What's your number?",
+            failed("set_customer", "INVALID_PHONE", name="Pooja", phone=""),
+        ),
+        agent(
+            "That number has nine digits. Could you say it again?",
+            failed("set_customer", "INVALID_PHONE", name="Pooja", phone="900002645"),
+        ),
+    ]
+    (case,) = cases_from_transcript("s1", transcript)
+    assert case.arguments["phone"] == "900002645"

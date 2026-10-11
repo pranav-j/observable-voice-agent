@@ -42,8 +42,13 @@ class ErrorCase(BaseModel):
         return f"{self.session_id}#{self.index}"
 
 
-def _caller_facing(error: str | None) -> bool:
-    return bool(error) and error not in INTERNAL_ERRORS
+def _caller_facing(error: str | None, tool: str, arguments: dict[str, Any]) -> bool:
+    if not error or error in INTERNAL_ERRORS:
+        return False
+    # set_customer with a blank phone or name is the agent saving what it has so far,
+    # before asking. The caller didn't say anything wrong, so there's nothing to tell them.
+    blank = {"INVALID_PHONE": "phone", "INVALID_NAME": "name"}.get(error)
+    return not (tool == "set_customer" and blank and not str(arguments.get(blank, "")).strip())
 
 
 def _retried_ok(calls: list[dict[str, Any]], i: int, ok: Any) -> bool:
@@ -59,7 +64,8 @@ def cases_from_transcript(session_id: str, transcript: list[TranscriptEntry]) ->
             continue
         calls = entry.tool_calls
         for i, call in enumerate(calls):
-            if call.get("ok") or not _caller_facing(call.get("error")):
+            arguments = call.get("arguments") or {}
+            if call.get("ok") or not _caller_facing(call.get("error"), call["name"], arguments):
                 continue
             if _retried_ok(calls, i, lambda c: bool(c.get("ok"))):
                 continue
@@ -68,7 +74,7 @@ def cases_from_transcript(session_id: str, transcript: list[TranscriptEntry]) ->
                     session_id=session_id,
                     index=len(cases),
                     tool=call["name"],
-                    arguments=call.get("arguments") or {},
+                    arguments=arguments,
                     error=str(call["error"]),
                     message="",
                     reply=entry.text,
@@ -91,7 +97,8 @@ def cases_from_recording(folder: Path) -> list[ErrorCase]:
     cases: list[ErrorCase] = []
     for i, call in enumerate(calls):
         result = call.get("result") or {}
-        if ok(call) or not _caller_facing(result.get("error")):
+        arguments = call.get("arguments") or {}
+        if ok(call) or not _caller_facing(result.get("error"), call["name"], arguments):
             continue
         t = call.get("created_at", 0.0)
         next_caller = min(
@@ -111,7 +118,7 @@ def cases_from_recording(folder: Path) -> list[ErrorCase]:
                 session_id=folder.name,
                 index=len(cases),
                 tool=call["name"],
-                arguments=call.get("arguments") or {},
+                arguments=arguments,
                 error=str(result["error"]),
                 message=str(result.get("message", "")),
                 reply=reply,
