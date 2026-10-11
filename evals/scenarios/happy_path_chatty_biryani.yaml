@@ -1,0 +1,19 @@
+id: happy_path_chatty_biryani
+description: A talkative caller orders a sized biryani with a modifier and a dessert.
+tags: [happy_path]
+runs: 3
+persona:
+  name: Meera
+  style: chatty
+  voice: voice_pool.female_2
+goal: >
+  Order one full chicken biryani with extra raita and two plates of gulab jamun
+  for pickup.
+customer: {name: Meera, phone: "9000000004"}
+expect:
+  status: confirmed
+  order:
+    items:
+      - {item: chicken_biryani, size: full, quantity: 1, modifiers: [extra_raita]}
+      - {item: gulab_jamun, quantity: 2, modifiers: []}
+    customer: {name: Meera, phone: "9000000004"}

@@ -41,9 +41,40 @@ def test_scenario_file_is_valid_and_matches_the_menu(path: Path, menu: Menu) -> 
     assert menu_problems(scenario, menu) == []
 
 
+CATEGORIES = {
+    "happy_path",
+    "correction",
+    "barge_in",
+    "hesitation",
+    "ambiguity",
+    "out_of_stock",
+    "phone_name",
+    "noise_accent",
+    "injection",
+    "human",
+}
+
+
+@pytest.mark.parametrize("path", SCENARIO_FILES, ids=lambda p: p.stem)
+def test_first_tag_is_a_known_category(path: Path) -> None:
+    tags = load_scenario(path).tags
+    assert tags, "every scenario needs a category tag"
+    assert tags[0] in CATEGORIES, f"first tag {tags[0]!r} is not one of {sorted(CATEGORIES)}"
+
+
+def test_customer_phones_are_unique() -> None:
+    phones = [load_scenario(p).customer.phone for p in SCENARIO_FILES]
+    assert len(phones) == len(set(phones))
+
+
 def test_load_scenarios_filters_by_glob() -> None:
-    assert [s.id for s in load_scenarios("happy_path_*")] == ["happy_path_single_coffee"]
-    assert len(load_scenarios()) == len(SCENARIO_FILES)
+    happy = load_scenarios("happy_path_*")
+    assert happy
+    assert all(s.id.startswith("happy_path_") for s in happy)
+    assert [s.id for s in load_scenarios("happy_path_single_coffee")] == [
+        "happy_path_single_coffee"
+    ]
+    assert len(load_scenarios()) == len(SCENARIO_FILES) > len(happy)
 
 
 # --- schema rules -------------------------------------------------------------------------

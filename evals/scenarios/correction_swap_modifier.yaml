@@ -1,0 +1,18 @@
+id: correction_swap_modifier
+description: Caller replaces one modifier with another on an item already added.
+tags: [correction, modifier]
+runs: 3
+persona:
+  name: Kavya
+  style: hesitant
+  voice: voice_pool.female_1
+goal: >
+  Order one small cafe latte with oat milk. Right after it is added, change
+  your mind: you want hazelnut syrup instead of oat milk.
+customer: {name: Kavya, phone: "9000000008"}
+expect:
+  status: confirmed
+  order:
+    items:
+      - {item: cafe_latte, size: small, quantity: 1, modifiers: [hazelnut_syrup]}
+    customer: {name: Kavya, phone: "9000000008"}

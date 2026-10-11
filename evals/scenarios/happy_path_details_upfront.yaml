@@ -1,0 +1,20 @@
+id: happy_path_details_upfront
+description: A caller in a hurry gives name and phone with the order, before being asked.
+tags: [happy_path]
+runs: 3
+persona:
+  name: Vikram
+  style: brisk
+  voice: voice_pool.male_3
+goal: >
+  Order one large masala chai and one plate of veg samosas. You are in a hurry,
+  so in your very first sentence you also give your name and phone number,
+  before anyone asks.
+customer: {name: Vikram, phone: "9000000005"}
+expect:
+  status: confirmed
+  order:
+    items:
+      - {item: masala_chai, size: large, quantity: 1, modifiers: []}
+      - {item: veg_samosa, quantity: 1, modifiers: []}
+    customer: {name: Vikram, phone: "9000000005"}

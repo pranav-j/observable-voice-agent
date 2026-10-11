@@ -1,0 +1,20 @@
+id: happy_path_multi_item_modifiers
+description: A cooperative caller orders three items, two of them with modifiers.
+tags: [happy_path]
+runs: 3
+persona:
+  name: Rohan
+  style: brisk
+  voice: voice_pool.male_2
+goal: >
+  Order one medium cappuccino with oat milk, one masala dosa with cheese,
+  and one butter naan for pickup.
+customer: {name: Rohan, phone: "9000000003"}
+expect:
+  status: confirmed
+  order:
+    items:
+      - {item: cappuccino, size: medium, quantity: 1, modifiers: [oat_milk]}
+      - {item: masala_dosa, quantity: 1, modifiers: [cheese]}
+      - {item: butter_naan, quantity: 1, modifiers: []}
+    customer: {name: Rohan, phone: "9000000003"}

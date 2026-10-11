@@ -17,7 +17,7 @@ from voice_order.menu.models import Menu
 from voice_order.store.base import InMemoryOrderStore
 from voice_order.textmode.llm import LLMReply, Message, ToolSpec
 
-HAPPY_ARGS = ["--scenarios", "happy_path_*", "--memory"]
+HAPPY_ARGS = ["--scenarios", "happy_path_single_coffee", "--memory"]
 
 
 def happy_agent() -> ScriptedLLM:
@@ -58,7 +58,7 @@ async def test_cli_runs_scenarios_and_writes_a_report(
 
 
 async def test_each_scenario_uses_its_own_runs_by_default(menu: Menu) -> None:
-    scenarios = load_scenarios("happy_path_*")
+    scenarios = load_scenarios("happy_path_single_coffee")
     assert scenarios[0].runs == 3
     results = await run_suite(
         scenarios,
@@ -92,7 +92,7 @@ class ProbeLLM:
 async def test_concurrency_is_capped(menu: Menu) -> None:
     ProbeLLM.active = ProbeLLM.peak = 0
     results = await run_suite(
-        load_scenarios("happy_path_*"),
+        load_scenarios("happy_path_single_coffee"),
         runs=6,
         concurrency=2,
         menu=menu,
@@ -137,7 +137,7 @@ async def test_missing_api_key(capsys: pytest.CaptureFixture[str]) -> None:
 async def test_unreachable_postgres(capsys: pytest.CaptureFixture[str]) -> None:
     settings = Settings(_env_file=None, database_url="postgresql://x:y@127.0.0.1:1/none")
     code = await main(
-        ["--scenarios", "happy_path_*"],
+        ["--scenarios", "happy_path_single_coffee"],
         settings=settings,
         agent_llm=happy_agent,
         caller_llm=happy_caller,

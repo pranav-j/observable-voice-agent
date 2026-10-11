@@ -1,0 +1,18 @@
+id: correction_quantity_change
+description: Caller raises a quantity after the item was added.
+tags: [correction, quantity]
+runs: 3
+persona:
+  name: Sana
+  style: brisk
+  voice: voice_pool.female_3
+goal: >
+  Order two half veg biryanis. After the order-taker says they were added,
+  change your mind and make it three.
+customer: {name: Sana, phone: "9000000006"}
+expect:
+  status: confirmed
+  order:
+    items:
+      - {item: veg_biryani, size: half, quantity: 3, modifiers: []}
+    customer: {name: Sana, phone: "9000000006"}
