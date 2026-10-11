@@ -1,0 +1,17 @@
+id: happy_path_single_coffee
+description: A cooperative caller orders one drink and confirms.
+tags: [happy_path]
+runs: 3
+persona:
+  name: Priya
+  style: brisk
+  voice: voice_pool.female_1
+goal: >
+  Order one large cold coffee with oat milk for pickup.
+customer: {name: Priya, phone: "9000000002"}
+expect:
+  status: confirmed
+  order:
+    items:
+      - {item: cold_coffee, size: large, quantity: 1, modifiers: [oat_milk]}
+    customer: {name: Priya, phone: "9000000002"}

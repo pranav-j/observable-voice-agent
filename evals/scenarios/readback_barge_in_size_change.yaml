@@ -1,0 +1,27 @@
+id: readback_barge_in_size_change
+description: Caller interrupts the read-back to change a drink size.
+tags: [barge_in, correction]
+runs: 3
+persona:
+  name: Anil
+  style: brisk
+  voice: voice_pool.male_1
+  noise: {clip: cafe_01, snr_db: 15}
+goal: >
+  Order one large cold coffee and two masala dosas for pickup.
+customer: {name: Anil, phone: "9000000001"}
+behaviors:
+  - trigger: {phase: readback}
+    action: interrupt
+    after_ms: 1200
+    say: "Sorry, make the coffee medium."
+  - trigger: {turn: 2}
+    action: pause_mid_utterance
+    pause_ms: 1200
+expect:
+  status: confirmed
+  order:
+    items:
+      - {item: cold_coffee, size: medium, quantity: 1, modifiers: []}
+      - {item: masala_dosa, quantity: 2, modifiers: []}
+    customer: {name: Anil, phone: "9000000001"}
