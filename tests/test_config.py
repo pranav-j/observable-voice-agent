@@ -6,7 +6,16 @@ import pytest
 
 from voice_order.config import Settings, get_settings
 
-ENV_VARS = ["DATABASE_URL", "OPENAI_API_KEY", "LLM_MODEL", "CALLER_LLM_MODEL"]
+ENV_VARS = [
+    "DATABASE_URL",
+    "OPENAI_API_KEY",
+    "LLM_MODEL",
+    "CALLER_LLM_MODEL",
+    "EOU_SILENCE_MS",
+    "ENABLE_PREEMPTIVE_GENERATION",
+    "MAX_CALL_SECONDS",
+    "LIVEKIT_API_SECRET",
+]
 
 
 @pytest.fixture(autouse=True)
@@ -54,3 +63,36 @@ def test_blank_key_counts_as_missing(monkeypatch: pytest.MonkeyPatch, value: str
 
 def test_get_settings_is_cached() -> None:
     assert get_settings() is get_settings()
+
+
+def test_voice_defaults() -> None:
+    s = Settings(_env_file=None)
+    assert (s.eou_silence_ms, s.max_call_seconds) == (500, 300)
+    assert s.enable_preemptive_generation is True
+    assert s.livekit_url.startswith("ws://")
+
+
+def test_livekit_secret_is_masked(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("LIVEKIT_API_SECRET", "lk-test-secret-value")
+    s = Settings(_env_file=None)
+    assert "lk-test-secret-value" not in repr(s)
+    assert s.livekit_api_secret.get_secret_value() == "lk-test-secret-value"
+
+
+def test_voice_knobs_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("EOU_SILENCE_MS", "150")
+    monkeypatch.setenv("ENABLE_PREEMPTIVE_GENERATION", "false")
+    s = Settings(_env_file=None)
+    assert (s.eou_silence_ms, s.enable_preemptive_generation) == (150, False)
+
+
+def test_every_setting_is_documented_in_env_example() -> None:
+    documented = {
+        line.split("=", 1)[0]
+        for line in (Path(__file__).parents[1] / ".env.example").read_text().splitlines()
+        if "=" in line and not line.lstrip().startswith("#")
+    }
+    missing = sorted(
+        name.upper() for name in Settings.model_fields if name.upper() not in documented
+    )
+    assert not missing, f"add these to .env.example: {missing}"

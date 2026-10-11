@@ -203,6 +203,16 @@ The six failures left are a different kind of problem. In five of them, the agen
 
 So two things are true. The agent's main weakness now is keeping track of edits across turns, especially after an interruption or a correction. And the read-back only works as a safety net if the person listening actually listens. My simulated caller, on the cheap model, isn't careful enough to play that part well. Scoring still counts these runs as failures, which is right, since the order is wrong. But a real person would probably have caught most of them. A stronger model for the caller would make the harness more realistic, at a higher cost per run. I noted that trade-off when I picked the models, and now there's evidence for it.
 
+## Starting voice: the SDK version conflict
+
+The first thing that broke when I added LiveKit Agents wasn't code. It was dependency resolution. LiveKit Agents 1.8.6 requires the OpenAI SDK below version 3, and my text-mode client was pinned to a 3.x release. Both runtimes have to live in one environment and should really use the same SDK, so text mode moved back to the newest 2.x release. I checked that 2.x had everything the client uses (the "none" reasoning level and the Responses API types), then re-ran everything, including the live test against the real model. Everything passed unchanged. uv also pointed out that my project claimed to support any future Python while LiveKit supports nothing past 3.14, so I capped the range to match.
+
+Before writing the worker I read LiveKit's source for the exact version I'm pinning, not docs or memory, since this library moves fast. That turned up things that would have hurt:
+
+- In dev mode, it quietly defaults to a cloud turn detector and a cloud interruption model. With a self-hosted server, I have to pick the local ones explicitly.
+- Tool results go through `str()`, so returning a dict would show the model a Python repr instead of JSON.
+- The built-in recorder writes to a temporary folder that's deleted when the session ends, so the recording has to be copied out in the session-end hook.
+
 ## The simulated caller can be the thing that fails
 
 Two failures in one batch came from my side of the test, not the agent. In one, I'd told the caller to say "two plates of veg samosas" exactly like that. It took that so literally that it refused a correct read-back three times and gave up. I reworded the goal so it uses the phrase when ordering without being rigid about it.
