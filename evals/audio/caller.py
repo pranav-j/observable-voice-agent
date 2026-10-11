@@ -29,6 +29,8 @@ from evals.audio.noise import noise_bed, speech_at_level, to_pcm16
 
 FRAME = SPEAK_RATE // 100  # 10 ms
 Hearing = Literal["transcript", "stt"]
+# If the agent's transcript stream never closes, this much silence still ends its turn.
+STUCK_QUIET_S = 5.0
 
 # Scenario voices -> OpenAI TTS voices. Changing this changes what callers sound like,
 # so reports record the pool.
@@ -90,6 +92,21 @@ class AgentState:
     readback_started: float | None = None
     order_status: str = "draft"
     left: bool = False
+    open_streams: int = 0  # agent transcript streams still being written
+
+    def done_speaking(self, since: float, now: float, quiet: float) -> bool:
+        """Has the agent spoken since `since` and finished?
+
+        Silence alone isn't enough: in a long reply the gap between two sentences, while
+        the next one is synthesized, can outlast `quiet`. LiveKit keeps the transcript
+        stream for an utterance open until it has been spoken, so wait for that too.
+        """
+        if self.left:
+            return True
+        if self.last_loud <= since:
+            return False
+        silent = now - self.last_loud
+        return (silent >= quiet and self.open_streams == 0) or silent >= STUCK_QUIET_S
 
 
 class AudioCaller:
@@ -167,8 +184,17 @@ class AudioCaller:
                 self._changed.set()
 
     def _on_transcript(self, reader: rtc.TextStreamReader, participant_identity: str) -> None:
+        agent = participant_identity != self.identity
+        if agent:
+            self.agent.open_streams += 1
+
         async def read() -> None:
-            text = (await reader.read_all()).strip()
+            try:
+                text = (await reader.read_all()).strip()
+            finally:
+                if agent:
+                    self.agent.open_streams -= 1
+                    self._changed.set()
             final = (reader.info.attributes or {}).get("lk.transcription_final") == "true"
             if not (final and text):
                 return
@@ -281,13 +307,8 @@ class AudioCaller:
         return True
 
     async def agent_reply(self, since: float, max_wait: float = 30.0, quiet: float = 1.2) -> str:
-        """Wait for the agent to speak after `since` and then go quiet; return what it said."""
-
-        def finished() -> bool:
-            spoke = self.agent.last_loud > since
-            return self.agent.left or (spoke and self.now() - self.agent.last_loud >= quiet)
-
-        await self.wait_until(finished, max_wait)
+        """Wait for the agent to speak after `since` and finish; return what it said."""
+        await self.wait_until(lambda: self.agent.done_speaking(since, self.now(), quiet), max_wait)
         if self.hearing == "stt":
             return await self._transcribe_agent(since)
         await asyncio.sleep(0.3)  # the final transcript can land just after the audio ends
