@@ -156,3 +156,15 @@ def test_no_warning_when_nothing_changed(with_coffee: Session) -> None:
     result = call(with_coffee, "update_item", line_id=1, quantity=1)
     assert "note" not in result
     assert result["order"]["readback_current"] is True
+
+
+def test_swapping_the_item_via_update_explains_how(with_coffee: Session) -> None:
+    before = with_coffee.order
+    result = call(with_coffee, "update_item", line_id=1, item_id="cold_brew")
+    assert result["error"] == "INVALID_ARGUMENTS"
+    assert "call remove_item for this line, then add_item" in result["message"]
+    assert with_coffee.order is before
+
+
+def test_update_item_schema_does_not_offer_item_id() -> None:
+    assert "item_id" not in TOOLS["update_item"].parameters_schema()["properties"]

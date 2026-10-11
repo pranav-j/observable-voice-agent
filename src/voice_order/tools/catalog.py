@@ -2,7 +2,7 @@
 
 from typing import Annotated, Any
 
-from pydantic import Field, StringConstraints, field_validator
+from pydantic import Field, StringConstraints, field_validator, model_validator
 
 from voice_order.menu.models import MenuItem
 from voice_order.menu.search import search
@@ -166,6 +166,18 @@ class UpdateItemArgs(ToolArgs):
         default=None,
         description="Replaces all modifiers on the line. [] removes them. Omit to keep.",
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _cannot_change_the_item(cls, data: Any) -> Any:
+        # Models try update_item(item_id=...) to swap a latte for a cappuccino. A generic
+        # "extra input" error left one telling the caller it couldn't be done.
+        if isinstance(data, dict) and "item_id" in data:
+            raise ValueError(
+                "update_item can't change the item itself. To swap it, call remove_item "
+                "for this line, then add_item for the new item."
+            )
+        return data
 
 
 def update_item(session: Session, args: UpdateItemArgs) -> Result:

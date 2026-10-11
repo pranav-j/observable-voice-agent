@@ -185,6 +185,12 @@ This is the first fix the eval couldn't show. The before run passed 20 of 20 ([r
 
 The after run was a regression check ([report](../reports/20261011-093800-text/summary.md)). It passed 18 of 20, and the model now passes spoken words straight through in about half its `set_customer` calls, so the parser is doing real work. Both failures were the simulated caller. The agent read back "90000 00025", which was correct, and the caller kept saying "no, it should be 9000000025", which is the same number without the space, until it gave up. That has now happened more than once, so the caller prompt needs to say that numbers are read back in groups. I'll treat that as a measurement fix, with its own run, not mix it into this one.
 
+## Fix 5: an error message that says what to do instead
+
+When a caller asked to swap a latte for a cappuccino, the model tried `update_item` with a new `item_id`. That tool only changes quantity, size and modifiers, so the call failed with a generic "extra inputs are not permitted". The agent then told the caller the swap couldn't be done. The fix isn't to accept `item_id`, because any field in the schema is a field the model will reach for. The fix is the error: it now says "update_item can't change the item itself; call remove_item for this line, then add_item for the new item". The schema the model sees stays the same.
+
+I didn't run an eval for this one. It came up once in 93 runs, so a targeted run would mostly measure luck. What the unit tests check is the part that matters: the message names the recovery, and the order is left alone. It's a small thing, but it changed how I think about tool errors. They're the agent's only instructions at the moment it's stuck, so they should say what to do next, not just what went wrong.
+
 ## The simulated caller can be the thing that fails
 
 Two failures in one batch came from my side of the test, not the agent. In one, I'd told the caller to say "two plates of veg samosas" exactly like that. It took that so literally that it refused a correct read-back three times and gave up. I reworded the goal so it uses the phrase when ordering without being rigid about it.
