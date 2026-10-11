@@ -21,7 +21,7 @@ NVM_USE := if [ "$$(node --version 2>/dev/null)" != "v$$(cat .nvmrc)" ]; then \
 	if [ -s "$$NVM_DIR/nvm.sh" ]; then . "$$NVM_DIR/nvm.sh" && nvm use >/dev/null || exit 1; fi; \
 	fi;
 
-.PHONY: help setup up down dev worker voice-smoke chat test test-integration lint fmt eval annotate
+.PHONY: help setup up down dev worker voice-smoke chat test test-integration lint fmt eval annotate judge judge-sample judge-calibrate
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*## "} /^[a-zA-Z_-]+:.*## / {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -91,6 +91,17 @@ SCENARIOS ?= *
 
 eval: $(VENV)/bin/python ## make eval MODE=text|audio|recorded SCENARIOS=<glob> RUNS=<n> (ARGS=--memory, --yes ...)
 	$(UV) run --locked python -m evals.runner --mode $(MODE) --scenarios '$(SCENARIOS)' $(if $(RUNS),--runs $(RUNS)) $(ARGS)
+
+judge: $(VENV)/bin/python ## make judge REPORT=<dir>: run the LLM judges over a finished report
+	@test -n "$(REPORT)" || { echo "Usage: make judge REPORT=reports/<run>"; exit 2; }
+	$(UV) run --locked python -m evals.judge apply '$(REPORT)'
+
+judge-sample: $(VENV)/bin/python ## make judge-sample REPORT=<dir>: 20 error cases to label by hand
+	@test -n "$(REPORT)" || { echo "Usage: make judge-sample REPORT=reports/<run>"; exit 2; }
+	$(UV) run --locked python -m evals.judge sample '$(REPORT)' $(ARGS)
+
+judge-calibrate: $(VENV)/bin/python ## Compare the judge with the hand labels
+	$(UV) run --locked python -m evals.judge calibrate
 
 annotate: $(VENV)/bin/python ## make annotate SESSION=<id>: start the expected order for a real call
 	@test -n "$(SESSION)" || { echo "Usage: make annotate SESSION=<session id from recordings/>"; exit 2; }
