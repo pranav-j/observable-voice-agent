@@ -1,0 +1,303 @@
+{
+  "restaurant": "Juniper Street Kitchen",
+  "currency": "INR",
+  "items": [
+    {
+      "id": "cappuccino",
+      "name": "Cappuccino",
+      "category": "Coffee",
+      "base_price_paise": null,
+      "sizes": [
+        {"id": "small", "name": "Small", "price_paise": 16000},
+        {"id": "medium", "name": "Medium", "price_paise": 19000},
+        {"id": "large", "name": "Large", "price_paise": 22000}
+      ],
+      "modifiers": [
+        {"id": "oat_milk", "name": "Oat milk", "price_paise": 4000},
+        {"id": "extra_shot", "name": "Extra shot", "price_paise": 5000},
+        {"id": "hazelnut_syrup", "name": "Hazelnut syrup", "price_paise": 3000}
+      ]
+    },
+    {
+      "id": "cafe_latte",
+      "name": "Cafe Latte",
+      "aliases": ["Latte"],
+      "category": "Coffee",
+      "base_price_paise": null,
+      "sizes": [
+        {"id": "small", "name": "Small", "price_paise": 17000},
+        {"id": "medium", "name": "Medium", "price_paise": 20000},
+        {"id": "large", "name": "Large", "price_paise": 23000}
+      ],
+      "modifiers": [
+        {"id": "oat_milk", "name": "Oat milk", "price_paise": 4000},
+        {"id": "extra_shot", "name": "Extra shot", "price_paise": 5000},
+        {"id": "hazelnut_syrup", "name": "Hazelnut syrup", "price_paise": 3000}
+      ]
+    },
+    {
+      "id": "americano",
+      "name": "Americano",
+      "aliases": ["Black Coffee"],
+      "category": "Coffee",
+      "base_price_paise": 15000,
+      "modifiers": [
+        {"id": "extra_shot", "name": "Extra shot", "price_paise": 5000}
+      ]
+    },
+    {
+      "id": "cold_coffee",
+      "name": "Cold Coffee",
+      "aliases": ["Iced Coffee"],
+      "category": "Coffee",
+      "base_price_paise": null,
+      "sizes": [
+        {"id": "small", "name": "Small", "price_paise": 18000},
+        {"id": "medium", "name": "Medium", "price_paise": 21000},
+        {"id": "large", "name": "Large", "price_paise": 24000}
+      ],
+      "modifiers": [
+        {"id": "oat_milk", "name": "Oat milk", "price_paise": 4000},
+        {"id": "extra_shot", "name": "Extra shot", "price_paise": 5000},
+        {"id": "ice_cream_scoop", "name": "Scoop of ice cream", "price_paise": 6000}
+      ]
+    },
+    {
+      "id": "cold_brew",
+      "name": "Cold Brew",
+      "category": "Coffee",
+      "base_price_paise": 22000
+    },
+    {
+      "id": "affogato",
+      "name": "Affogato",
+      "aliases": ["Coffee with Ice Cream"],
+      "category": "Coffee",
+      "base_price_paise": 21000
+    },
+    {
+      "id": "masala_chai",
+      "name": "Masala Chai",
+      "aliases": ["Chai", "Masala Tea"],
+      "category": "Tea",
+      "base_price_paise": null,
+      "sizes": [
+        {"id": "regular", "name": "Regular", "price_paise": 6000},
+        {"id": "large", "name": "Large", "price_paise": 9000}
+      ],
+      "modifiers": [
+        {"id": "less_sugar", "name": "Less sugar", "price_paise": 0}
+      ]
+    },
+    {
+      "id": "chai_latte",
+      "name": "Chai Latte",
+      "category": "Tea",
+      "base_price_paise": 18000,
+      "modifiers": [
+        {"id": "oat_milk", "name": "Oat milk", "price_paise": 4000}
+      ]
+    },
+    {
+      "id": "sweet_lassi",
+      "name": "Sweet Lassi",
+      "aliases": ["Lassi"],
+      "category": "Cold Drinks",
+      "base_price_paise": null,
+      "sizes": [
+        {"id": "regular", "name": "Regular", "price_paise": 10000},
+        {"id": "large", "name": "Large", "price_paise": 14000}
+      ]
+    },
+    {
+      "id": "mango_lassi",
+      "name": "Mango Lassi",
+      "category": "Cold Drinks",
+      "base_price_paise": null,
+      "sizes": [
+        {"id": "regular", "name": "Regular", "price_paise": 12000},
+        {"id": "large", "name": "Large", "price_paise": 16000}
+      ],
+      "in_stock": false
+    },
+    {
+      "id": "fresh_lime_soda",
+      "name": "Fresh Lime Soda",
+      "aliases": ["Lime Soda", "Nimbu Soda"],
+      "category": "Cold Drinks",
+      "base_price_paise": null,
+      "sizes": [
+        {"id": "regular", "name": "Regular", "price_paise": 8000},
+        {"id": "large", "name": "Large", "price_paise": 11000}
+      ]
+    },
+    {
+      "id": "masala_dosa",
+      "name": "Masala Dosa",
+      "category": "South Indian",
+      "base_price_paise": 14000,
+      "modifiers": [
+        {"id": "extra_butter", "name": "Extra butter", "price_paise": 2000},
+        {"id": "cheese", "name": "Cheese", "price_paise": 3000}
+      ]
+    },
+    {
+      "id": "mysore_masala_dosa",
+      "name": "Mysore Masala Dosa",
+      "category": "South Indian",
+      "base_price_paise": 16000,
+      "modifiers": [
+        {"id": "extra_butter", "name": "Extra butter", "price_paise": 2000},
+        {"id": "cheese", "name": "Cheese", "price_paise": 3000}
+      ]
+    },
+    {
+      "id": "pesarattu",
+      "name": "Pesarattu",
+      "aliases": ["Moong Dal Dosa", "Green Gram Dosa"],
+      "category": "South Indian",
+      "base_price_paise": 15000
+    },
+    {
+      "id": "bisi_bele_bath",
+      "name": "Bisi Bele Bath",
+      "aliases": ["Bisibelebath"],
+      "category": "South Indian",
+      "base_price_paise": 16000
+    },
+    {
+      "id": "veg_samosa",
+      "name": "Veg Samosa (2 pcs)",
+      "aliases": ["Samosa", "Veg Samosa"],
+      "category": "Starters",
+      "base_price_paise": 6000
+    },
+    {
+      "id": "paneer_tikka",
+      "name": "Paneer Tikka",
+      "category": "Starters",
+      "base_price_paise": 28000,
+      "modifiers": [
+        {"id": "less_spicy", "name": "Less spicy", "price_paise": 0}
+      ]
+    },
+    {
+      "id": "paneer_tikka_roll",
+      "name": "Paneer Tikka Roll",
+      "category": "Rolls & Sandwiches",
+      "base_price_paise": 22000,
+      "modifiers": [
+        {"id": "less_spicy", "name": "Less spicy", "price_paise": 0},
+        {"id": "extra_cheese", "name": "Extra cheese", "price_paise": 3000}
+      ]
+    },
+    {
+      "id": "chicken_tikka_roll",
+      "name": "Chicken Tikka Roll",
+      "category": "Rolls & Sandwiches",
+      "base_price_paise": 24000,
+      "modifiers": [
+        {"id": "less_spicy", "name": "Less spicy", "price_paise": 0},
+        {"id": "add_egg", "name": "Add egg", "price_paise": 2000}
+      ]
+    },
+    {
+      "id": "veg_club_sandwich",
+      "name": "Veg Club Sandwich",
+      "aliases": ["Club Sandwich"],
+      "category": "Rolls & Sandwiches",
+      "base_price_paise": 19000,
+      "modifiers": [
+        {"id": "extra_cheese", "name": "Extra cheese", "price_paise": 3000},
+        {"id": "no_onion", "name": "No onion", "price_paise": 0}
+      ]
+    },
+    {
+      "id": "butter_chicken",
+      "name": "Butter Chicken",
+      "aliases": ["Murgh Makhani"],
+      "category": "Mains",
+      "base_price_paise": 34000,
+      "modifiers": [
+        {"id": "less_spicy", "name": "Less spicy", "price_paise": 0}
+      ]
+    },
+    {
+      "id": "dal_makhani",
+      "name": "Dal Makhani",
+      "category": "Mains",
+      "base_price_paise": 26000
+    },
+    {
+      "id": "mutton_rogan_josh",
+      "name": "Mutton Rogan Josh",
+      "category": "Mains",
+      "base_price_paise": 38000,
+      "in_stock": false
+    },
+    {
+      "id": "chicken_biryani",
+      "name": "Chicken Biryani",
+      "category": "Mains",
+      "base_price_paise": null,
+      "sizes": [
+        {"id": "half", "name": "Half", "price_paise": 22000},
+        {"id": "full", "name": "Full", "price_paise": 34000}
+      ],
+      "modifiers": [
+        {"id": "extra_raita", "name": "Extra raita", "price_paise": 3000},
+        {"id": "less_spicy", "name": "Less spicy", "price_paise": 0}
+      ]
+    },
+    {
+      "id": "veg_biryani",
+      "name": "Veg Biryani",
+      "aliases": ["Vegetable Biryani"],
+      "category": "Mains",
+      "base_price_paise": null,
+      "sizes": [
+        {"id": "half", "name": "Half", "price_paise": 18000},
+        {"id": "full", "name": "Full", "price_paise": 28000}
+      ],
+      "modifiers": [
+        {"id": "extra_raita", "name": "Extra raita", "price_paise": 3000},
+        {"id": "less_spicy", "name": "Less spicy", "price_paise": 0}
+      ]
+    },
+    {
+      "id": "butter_naan",
+      "name": "Butter Naan",
+      "aliases": ["Naan"],
+      "category": "Breads",
+      "base_price_paise": 6000,
+      "modifiers": [
+        {"id": "garlic", "name": "Garlic", "price_paise": 1000}
+      ]
+    },
+    {
+      "id": "gulab_jamun",
+      "name": "Gulab Jamun (2 pcs)",
+      "aliases": ["Gulab Jamun"],
+      "category": "Desserts",
+      "base_price_paise": 9000
+    },
+    {
+      "id": "chocolate_brownie",
+      "name": "Chocolate Brownie",
+      "aliases": ["Brownie"],
+      "category": "Desserts",
+      "base_price_paise": 15000,
+      "modifiers": [
+        {"id": "ice_cream_scoop", "name": "Scoop of ice cream", "price_paise": 6000}
+      ]
+    },
+    {
+      "id": "blueberry_cheesecake",
+      "name": "Blueberry Cheesecake",
+      "aliases": ["Cheesecake"],
+      "category": "Desserts",
+      "base_price_paise": 22000,
+      "in_stock": false
+    }
+  ]
+}
