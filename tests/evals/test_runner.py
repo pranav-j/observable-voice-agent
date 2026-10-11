@@ -55,6 +55,20 @@ async def test_cli_runs_scenarios_and_writes_a_report(
     summary, has_markdown = read_report(tmp_path)
     assert summary["overall"]["task_successes"] == 2
     assert has_markdown
+    assert summary["judged"] is None  # no API key and no judge given: judging is skipped
+
+
+async def test_judges_run_after_the_suite(tmp_path: Path) -> None:
+    code = await main(
+        [*HAPPY_ARGS, "--runs", "1", "--reports-dir", str(tmp_path)],
+        settings=no_key(),
+        agent_llm=happy_agent,
+        caller_llm=happy_caller,
+        judge_llm=ScriptedLLM(),  # the happy path has no tool errors to judge
+    )
+    assert code == 0
+    summary, _ = read_report(tmp_path)
+    assert summary["judged"]["error_ack_cases"] == 0
 
 
 async def test_each_scenario_uses_its_own_runs_by_default(menu: Menu) -> None:

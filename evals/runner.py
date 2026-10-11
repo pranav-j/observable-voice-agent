@@ -14,6 +14,7 @@ from psycopg_pool import PoolTimeout
 from evals.audio.caller import Hearing
 from evals.audio.cost import estimate, past_call_costs
 from evals.audio_run import run_audio_scenario
+from evals.judge.apply import apply_judges, attach_calibration
 from evals.recorded import RECORDED_DIR, load_annotations, score_recorded
 from evals.report import report_dir, write_report
 from evals.scenario import (
@@ -123,6 +124,7 @@ def _parser() -> argparse.ArgumentParser:
         help="audio: how the caller understands the agent (timing always comes from audio)",
     )
     p.add_argument("--yes", action="store_true", help="audio: run even if the estimate is high")
+    p.add_argument("--no-judge", action="store_true", help="skip the LLM judges afterwards")
     p.add_argument("--reports-dir", type=Path, default=Path("reports"))
     p.add_argument("--scenario-dir", type=Path, default=SCENARIO_DIR)
     p.add_argument("--recorded-dir", type=Path, default=RECORDED_DIR, help="recorded: annotations")
@@ -135,6 +137,7 @@ async def main(
     settings: Settings | None = None,
     agent_llm: LLMFactory | None = None,
     caller_llm: LLMFactory | None = None,
+    judge_llm: LLMClient | None = None,
 ) -> int:
     args = _parser().parse_args(argv)
     if args.mode != "text" and args.memory:
@@ -208,18 +211,32 @@ async def main(
             play=play,
             on_result=lambda r: print(progress_line(r), flush=True),
         )
+        out = write_report(
+            results,
+            mode=args.mode,
+            started_at=started_at,
+            reports_dir=args.reports_dir,
+            out=out,
+            concurrency=concurrency,
+        )
+        judge = judge_llm
+        if judge is None and settings.has_openai_key:
+            judge = OpenAIClient.from_settings(settings, model=settings.caller_llm_model)
+        if judge is not None and not args.no_judge:
+            # Before the store closes: the injection check reads the final orders.
+            await apply_judges(
+                out,
+                llm=judge,
+                menu=menu,
+                store=store,
+                recordings_dir=Path(settings.recordings_dir),
+                scenario_dir=args.scenario_dir,
+            )
+            attach_calibration(out)
     finally:
         if pg is not None:
             await pg.close()
 
-    out = write_report(
-        results,
-        mode=args.mode,
-        started_at=started_at,
-        reports_dir=args.reports_dir,
-        out=out,
-        concurrency=concurrency,
-    )
     passed = sum(r.score.task_success for r in results)
     print(f"task success {passed}/{len(results)}. Report: {out / 'summary.md'}")
     return 0
