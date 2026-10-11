@@ -334,3 +334,11 @@ def test_audio_report_dir_can_be_created_first(tmp_path: Path) -> None:
     assert written == out
     assert (out / "summary.md").exists()
     assert (out / "raw" / "audio").is_dir()
+
+
+def test_doubled_replies_are_unknown_until_measured() -> None:
+    old = audio_result(1, noise=None)
+    md = render_markdown(summarize([old], mode="audio", started_at=STARTED))
+    assert "| Replies with a sentence said twice | n/a |" in md
+    new = audio_result(2, noise=None, doubled_replies=1)
+    assert summarize([old, new], mode="audio", started_at=STARTED)["audio"]["doubled_replies"] == 1
