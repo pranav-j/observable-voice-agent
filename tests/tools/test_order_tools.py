@@ -71,6 +71,25 @@ def test_set_customer_normalizes_and_groups_the_phone(session: Session) -> None:
     assert result["read_phone_back_as"] == "90000 00001"
 
 
+def test_a_name_fix_doesnt_ask_for_the_number_again(session: Session) -> None:
+    call(session, "set_customer", name="Garev", phone="98765 30102")
+    fixed = call(session, "set_customer", name="Gaurav", phone="98765 30102")
+    assert "read_phone_back_as" not in fixed
+    assert "spell it letter by letter" in fixed["note"]
+    new_number = call(session, "set_customer", name="Gaurav", phone="98765 30103")
+    assert new_number["read_phone_back_as"] == "98765 30103"
+    assert "note" not in new_number
+
+
+def test_a_name_fix_after_the_readback_keeps_both_notes(session: Session) -> None:
+    call(session, "add_item", item_id="masala_dosa", quantity=1)
+    call(session, "set_customer", name="Garev", phone="98765 30102")
+    call(session, "get_readback")
+    fixed = call(session, "set_customer", name="Gaurav", phone="98765 30102")
+    assert "spell it" in fixed["note"]
+    assert "get_readback again" in fixed["note"]
+
+
 def test_setting_the_same_customer_again_suggests_spelling(session: Session) -> None:
     first = call(session, "set_customer", name="Nick Hill", phone="98765 69314")
     assert "note" not in first

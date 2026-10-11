@@ -143,9 +143,8 @@ def _changed(session: Session, new: Order, **extra: Any) -> Result:
     session.order = new
     payload: dict[str, Any] = {"order": order_view(session), **extra}
     if old.readback_seq is not None and old.readback_is_current and not new.readback_is_current:
-        payload["note"] = (
-            "The order changed after the read-back. Call get_readback again before confirming."
-        )
+        stale = "The order changed after the read-back. Call get_readback again before confirming."
+        payload["note"] = f"{payload['note']} {stale}" if "note" in payload else stale
     return ok(**payload)
 
 
@@ -229,6 +228,12 @@ UNCHANGED_CUSTOMER = (
 )
 
 
+NAME_CORRECTED = (
+    "Name updated. Speech recognition often mishears names: if the caller says it's still "
+    "wrong, ask them to spell it letter by letter, and pass the letters."
+)
+
+
 def _whole_phone(session: Session, said: str) -> str | None:
     """The number to use, or None while the caller is still saying it in parts.
 
@@ -262,14 +267,20 @@ def set_customer(session: Session, args: SetCustomerArgs) -> Result:
             "the new digits; the parts are joined.",
             digits_so_far=len(held),
         )
+    before = session.order.customer
     new = state.set_customer(session.order, args.name, phone)
     session.phone_digits = ""
-    phone_text = group_phone(new.customer.phone) if new.customer else None
+    extra: dict[str, Any] = {}
+    if new.customer and (before is None or before.phone != new.customer.phone):
+        # Only a new number needs reading back; a name fix shouldn't cost a turn.
+        extra["read_phone_back_as"] = group_phone(new.customer.phone)
     if new is session.order:
         # A correction that sets the same name again: speech recognition heard it the
         # same wrong way twice, so asking again won't help, but a spelling will.
-        return _changed(session, new, read_phone_back_as=phone_text, note=UNCHANGED_CUSTOMER)
-    return _changed(session, new, read_phone_back_as=phone_text)
+        extra["note"] = UNCHANGED_CUSTOMER
+    elif before is not None and new.customer and before.name != new.customer.name:
+        extra["note"] = NAME_CORRECTED
+    return _changed(session, new, **extra)
 
 
 # --- read-back, confirmation and ending the call ---------------------------------------------
