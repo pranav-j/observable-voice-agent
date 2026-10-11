@@ -389,3 +389,15 @@ In another call, the agent asked "Anything else?", the caller said "No, that's a
 The caller bug was the simulated caller disowning its own scripted lines: "add a gulab jamun too", then later "I didn't ask for gulab jamun". I'd held this fix until after the fault runs, so they'd compare against the same caller. But it was hurting the baseline itself, and fixing it before the baseline keeps that comparison fair anyway. Caller prompt v4 lists the scripted lines it has already said and tells it they're part of what it wants now.
 
 After the fixes, the four scenarios that had failed each passed a check run, and the full suite is running again. The text suite is running alongside it with the new caller, so both reports use the same one.
+
+## The first full audio baseline
+
+The suite finally ran to the end: 85 of 93 runs passed (`reports/20261011-163931-audio`), and that report is now the audio baseline for the gate. The latest text report is the text baseline. The numbers that matter most for what comes next are timing. Caller-side response latency is 6756 ms at p50 and 10284 ms at p95, so every measured turn counts as dead air. Barge-in stops at 917 ms at p50. Cost works out to $0.024 per minute on the agent's side. Nothing in the agent has been tuned for speed yet, and that's the next piece of work.
+
+Two things in the report changed what I thought I knew.
+
+**Doubled sentences aren't caused by preemptive generation.** The report counted seven replies with the same question said twice, with preemptive generation off. I'd turned it off because of exactly this, and written that I hadn't seen it with it off. That was wrong, and I've corrected the ADR. Every one of the seven came right after the caller's turn arrived in two pieces, like "No." then "That's all.". The calls where the agent never heard the caller's next short line also came after a split turn. LiveKit warns that the transcript arrived after the turn was already committed, and suggests waiting longer. So the end-of-turn wait looks like a correctness setting as well as a latency one, and I'll test it in both directions.
+
+**The judge was grading silence.** Error acknowledgement first came out at 13 of 21. All eight misses had no reply at all. That was mostly the agent correctly saying nothing while the caller finished reading out a number. The judge marked those as failures to communicate, but there was nothing to grade. Silence after an error is now counted on its own and kept out of the rate.
+
+The calibration file for the judge is ready: twenty real cases from the reports, plus five I constructed where the reply claims success. Nearly every real reply handled its error well, so without the constructed ones a judge that always said yes would look perfect. The labels have to come from a person.
