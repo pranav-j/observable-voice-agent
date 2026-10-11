@@ -33,7 +33,7 @@ from voice_order.agent.tools import StepText, livekit_tools
 from voice_order.config import Settings, get_settings
 from voice_order.menu.loader import load_menu
 from voice_order.order.state import abandon
-from voice_order.prompts.loader import agent_system_prompt, greeting_prompt
+from voice_order.prompts.loader import AGENT_SYSTEM_VERSION, agent_system_prompt, greeting_prompt
 from voice_order.recording.session import save_session
 from voice_order.store.postgres import PostgresOrderStore
 from voice_order.telemetry.tracing import setup_tracing
@@ -118,11 +118,11 @@ async def on_session_end(ctx: JobContext) -> None:
     # Runs after the session closes and before LiveKit deletes the job's temp directory,
     # which is where the audio recording lives.
     try:
-        out = save_session(
-            ctx.make_session_report(),
-            Path(settings.recordings_dir) / ctx.job.room.name,
-            load_rates(),
-        )
+        folder = Path(settings.recordings_dir) / ctx.job.room.name
+        folder.mkdir(parents=True, exist_ok=True)
+        config = settings.voice_config() | {"agent_prompt_version": AGENT_SYSTEM_VERSION}
+        (folder / "config.json").write_text(json.dumps(config, indent=2))
+        out = save_session(ctx.make_session_report(), folder, load_rates())
         log.info("saved recording to %s", out)
     except Exception:
         log.exception("could not save the session recording")

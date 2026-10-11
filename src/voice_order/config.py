@@ -1,6 +1,7 @@
 """Settings from environment variables, falling back to .env. Defaults suit local development."""
 
 from functools import lru_cache
+from typing import Any
 
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -41,6 +42,18 @@ class Settings(BaseSettings):
     @property
     def has_openai_key(self) -> bool:
         return bool(self.openai_api_key.get_secret_value().strip())
+
+    def voice_config(self) -> dict[str, Any]:
+        """The settings that shape a voice call, saved with each one so runs can be compared."""
+        return {
+            "llm_model": self.llm_model,
+            "stt_model": self.stt_model,
+            "tts_model": self.tts_model,
+            "tts_voice": self.tts_voice,
+            "eou_silence_ms": self.eou_silence_ms,
+            "preemptive_generation": self.enable_preemptive_generation,
+            "filler_phrases": self.enable_filler_phrases,
+        }
 
 
 @lru_cache

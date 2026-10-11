@@ -96,3 +96,10 @@ def test_every_setting_is_documented_in_env_example() -> None:
         name.upper() for name in Settings.model_fields if name.upper() not in documented
     )
     assert not missing, f"add these to .env.example: {missing}"
+
+
+def test_voice_config_names_what_shapes_a_call() -> None:
+    config = Settings(_env_file=None, eou_silence_ms=300).voice_config()
+    assert config["eou_silence_ms"] == 300
+    assert config["preemptive_generation"] is False
+    assert {"llm_model", "stt_model", "tts_model", "tts_voice"} <= set(config)
