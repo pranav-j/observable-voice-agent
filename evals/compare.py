@@ -7,10 +7,14 @@ comes straight from report files. Also notes when the two runs differ in what th
 import argparse
 import json
 import sys
+from datetime import datetime
+from fnmatch import fnmatch
 from pathlib import Path
 from typing import Any
 
 from evals.gate import metrics_of
+from evals.judge.apply import load_results
+from evals.report import summarize
 
 EXTRA: dict[str, tuple[str, str]] = {
     "runs": ("overall", "runs"),
@@ -55,10 +59,26 @@ def compare(before: dict[str, Any], after: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def load_summary(report: Path, scenarios: str | None) -> dict[str, Any]:
+    """The report's summary, or one rebuilt from only the runs matching `scenarios`."""
+    summary: dict[str, Any] = json.loads((report / "summary.json").read_text())
+    if scenarios is None:
+        return summary
+    globs = [g.strip() for g in scenarios.split(",")]
+    runs = [r for r in load_results(report) if any(fnmatch(r.scenario_id, g) for g in globs)]
+    return summarize(
+        runs,
+        mode=summary["mode"],
+        started_at=datetime.fromisoformat(summary["started_at"]),
+        concurrency=summary.get("concurrency"),
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="python -m evals.compare")
     p.add_argument("before", type=Path)
     p.add_argument("after", type=Path)
+    p.add_argument("--scenarios", help="compare only these scenarios (comma-separated globs)")
     args = p.parse_args(argv)
     before, after = (
         json.loads((r / "summary.json").read_text()) for r in (args.before, args.after)

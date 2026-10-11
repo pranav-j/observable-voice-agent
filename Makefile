@@ -111,9 +111,9 @@ baseline: $(VENV)/bin/python ## make baseline REPORT=<dir>: record a reviewed re
 	@test -n "$(REPORT)" || { echo "Usage: make baseline REPORT=reports/<run>"; exit 2; }
 	$(UV) run --locked python -m evals.gate '$(REPORT)' --update-baseline
 
-compare: $(VENV)/bin/python ## make compare BEFORE=<dir> AFTER=<dir>: two reports side by side
+compare: $(VENV)/bin/python ## make compare BEFORE=<dir> AFTER=<dir> [ONLY=<glob>]: two reports side by side
 	@test -n "$(BEFORE)" -a -n "$(AFTER)" || { echo "Usage: make compare BEFORE=reports/<a> AFTER=reports/<b>"; exit 2; }
-	$(UV) run --locked python -m evals.compare '$(BEFORE)' '$(AFTER)'
+	$(UV) run --locked python -m evals.compare '$(BEFORE)' '$(AFTER)' $(if $(ONLY),--scenarios '$(ONLY)')
 
 annotate: $(VENV)/bin/python ## make annotate SESSION=<id>: start the expected order for a real call
 	@test -n "$(SESSION)" || { echo "Usage: make annotate SESSION=<session id from recordings/>"; exit 2; }

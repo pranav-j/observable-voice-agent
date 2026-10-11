@@ -1,11 +1,15 @@
 """Before/after tables for experiment and validation write-ups."""
 
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 import pytest
-from evals.compare import compare, main
+from evals.compare import compare, load_summary, main
+from evals.report import write_report
+
+from tests.evals.test_report import result
 
 
 def summary(latency: float, config: dict[str, Any], mode: str = "audio") -> dict[str, Any]:
@@ -30,3 +34,13 @@ def test_cli_refuses_mixed_modes(tmp_path: Path, capsys: pytest.CaptureFixture[s
         (tmp_path / name / "summary.json").write_text(json.dumps(summary(1, {}, mode)))
     assert main([str(tmp_path / "a"), str(tmp_path / "b")]) == 2
     assert "Different modes" in capsys.readouterr().err
+
+
+def test_scenario_filter_rebuilds_both_summaries(tmp_path: Path) -> None:
+    started = datetime(2026, 10, 11, tzinfo=UTC)
+    runs = [result("barge_in_x", 1), result("happy_y", 1, success=False)]
+    a = write_report(runs, mode="text", started_at=started, reports_dir=tmp_path / "a")
+    b = write_report(runs, mode="text", started_at=started, reports_dir=tmp_path / "b")
+    assert main([str(a), str(b), "--scenarios", "barge_in_*"]) == 0
+    assert load_summary(a, "barge_in_*")["overall"]["runs"] == 1
+    assert load_summary(a, None)["overall"]["runs"] == 2
