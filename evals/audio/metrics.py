@@ -1,0 +1,142 @@
+"""Caller-side audio metrics, as pure functions over a call's timeline.
+
+All times are seconds on the caller's monotonic clock. Caller speech boundaries are
+known (the caller generated them). Agent speech comes from the fixed onset detector run
+over the audio the caller received. See docs/adr/0005-audio-eval-measurement.md.
+"""
+
+import re
+from dataclasses import dataclass, field
+from typing import Any
+
+import numpy as np
+
+from evals.audio.detector import SAMPLE_RATE, Segment, speech_segments
+
+DEAD_AIR_SECONDS = 2.0
+TRANSCRIPT_GRACE_SECONDS = 4.0  # the agent's transcript of a caller line can arrive after it ends
+
+
+@dataclass(frozen=True)
+class CallerUtterance:
+    text: str
+    start: float
+    end: float
+    pauses: tuple[tuple[float, float], ...] = ()  # scripted silences inside the utterance
+    interrupt: bool = False  # spoken over the agent on purpose
+
+
+@dataclass
+class Timeline:
+    caller: list[CallerUtterance] = field(default_factory=list)
+    agent_audio: np.ndarray[Any, Any] = field(default_factory=lambda: np.zeros(0, dtype=np.int16))
+    agent_audio_start: float = 0.0  # clock time of the first received agent sample
+    heard_caller: list[tuple[float, str]] = field(default_factory=list)  # agent's STT of the caller
+
+    def agent_speech(self) -> list[Segment]:
+        offset = self.agent_audio_start
+        return [
+            Segment(s.start + offset, s.end + offset)
+            for s in speech_segments(self.agent_audio, SAMPLE_RATE)
+        ]
+
+
+def response_latencies(timeline: Timeline) -> list[float]:
+    """Seconds from the end of each regular caller utterance to the agent's next speech onset.
+
+    Utterances the agent answered only after the caller spoke again get no value.
+    """
+    speech = timeline.agent_speech()
+    starts = [u.start for u in timeline.caller]
+    latencies = []
+    for i, u in enumerate(timeline.caller):
+        if u.interrupt:
+            continue
+        next_start = starts[i + 1] if i + 1 < len(starts) else float("inf")
+        onset = next((s.start for s in speech if u.end <= s.start < next_start), None)
+        if onset is not None:
+            latencies.append(onset - u.end)
+    return latencies
+
+
+def barge_in_stop_times(timeline: Timeline) -> list[float]:
+    """For interruptions made while the agent was speaking: caller onset to agent silence."""
+    speech = timeline.agent_speech()
+    stops = []
+    for u in timeline.caller:
+        if not u.interrupt:
+            continue
+        talking = next((s for s in speech if s.start <= u.start < s.end), None)
+        if talking is not None:
+            stops.append(talking.end - u.start)
+    return stops
+
+
+def false_cutoffs(timeline: Timeline) -> tuple[int, int]:
+    """(pauses where the agent started talking before the caller finished, total pauses).
+
+    A reply to a premature end of turn usually arrives after a short pause has ended, while
+    the caller is finishing the sentence, so the window runs from the pause to the
+    utterance's end, not just the pause itself.
+    """
+    speech = timeline.agent_speech()
+    cut, total = 0, 0
+    for u in timeline.caller:
+        for pause_start, _ in u.pauses:
+            total += 1
+            if any(pause_start <= s.start < u.end for s in speech):
+                cut += 1
+    return cut, total
+
+
+_DIGITS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"]
+
+
+def normalize_words(text: str) -> list[str]:
+    """Lowercase words without punctuation, with digits spelled out one by one."""
+    text = re.sub(r"\d", lambda m: f" {_DIGITS[int(m.group())]} ", text.lower())
+    return re.findall(r"[a-z']+", text)
+
+
+def word_errors(reference: list[str], hypothesis: list[str]) -> int:
+    """Levenshtein distance over words: substitutions + insertions + deletions."""
+    previous = list(range(len(hypothesis) + 1))
+    for i, ref in enumerate(reference, 1):
+        current = [i]
+        for j, hyp in enumerate(hypothesis, 1):
+            current.append(min(previous[j] + 1, current[j - 1] + 1, previous[j - 1] + (ref != hyp)))
+        previous = current
+    return previous[-1]
+
+
+def utterance_wer(timeline: Timeline) -> list[tuple[int, int]]:
+    """(word errors, reference words) per caller utterance, against what the agent heard."""
+    results = []
+    for u in timeline.caller:
+        reference = normalize_words(u.text)
+        if not reference:
+            continue
+        heard = " ".join(
+            text
+            for t, text in timeline.heard_caller
+            if u.start <= t <= u.end + TRANSCRIPT_GRACE_SECONDS
+        )
+        results.append((word_errors(reference, normalize_words(heard)), len(reference)))
+    return results
+
+
+def audio_metrics(timeline: Timeline) -> dict[str, Any]:
+    latencies = response_latencies(timeline)
+    stops = barge_in_stop_times(timeline)
+    cut, pauses = false_cutoffs(timeline)
+    wer = utterance_wer(timeline)
+    errors, words = sum(e for e, _ in wer), sum(n for _, n in wer)
+    return {
+        "response_latencies_ms": [round(x * 1000) for x in latencies],
+        "dead_air_turns": sum(x > DEAD_AIR_SECONDS for x in latencies),
+        "barge_in_stop_ms": [round(x * 1000) for x in stops],
+        "false_cutoffs": cut,
+        "scripted_pauses": pauses,
+        "wer_errors": errors,
+        "wer_words": words,
+    }
