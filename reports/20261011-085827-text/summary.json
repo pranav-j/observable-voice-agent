@@ -1,0 +1,190 @@
+{
+  "mode": "text",
+  "started_at": "2026-10-11T08:58:27+00:00",
+  "agent_models": [
+    "gpt-6-luna"
+  ],
+  "caller_models": [
+    "gpt-6-luna"
+  ],
+  "agent_prompt_versions": [
+    "v1"
+  ],
+  "caller_prompt_versions": [
+    "v1"
+  ],
+  "overall": {
+    "runs": 20,
+    "scenarios": 2,
+    "task_successes": 15,
+    "task_success_rate": 0.75,
+    "scenarios_passing_all_runs": 0,
+    "scenarios_passing_all_runs_rate": 0.0,
+    "order_exact_match_runs": 20,
+    "order_exact_match_rate": 0.85,
+    "mean_field_accuracy": 0.9666666666666666,
+    "escalations": 0,
+    "expected_escalations": 0,
+    "escalation_agreement_rate": 1.0,
+    "errors": 0,
+    "caller_hung_up_early": 3,
+    "tool_limit_hits": 0,
+    "confirmed_before_reply_runs": 6,
+    "skipped_audio_behaviors": 0,
+    "turns_p50": 5.0,
+    "turns_p95": 6.0,
+    "duration_s_p50": 31.72,
+    "duration_s_p95": 43.085,
+    "agent_tokens": {
+      "input": 619756,
+      "output": 6352
+    },
+    "caller_tokens": {
+      "input": 53138,
+      "output": 1343
+    }
+  },
+  "by_tag": {
+    "happy_path": {
+      "runs": 10,
+      "successes": 8,
+      "pass_rate": 0.8
+    },
+    "out_of_stock": {
+      "runs": 10,
+      "successes": 7,
+      "pass_rate": 0.7
+    },
+    "plural_search": {
+      "runs": 10,
+      "successes": 7,
+      "pass_rate": 0.7
+    }
+  },
+  "scenarios": {
+    "happy_path_details_upfront": {
+      "tags": [
+        "happy_path"
+      ],
+      "runs": 10,
+      "successes": 8,
+      "pass_rate": 0.8,
+      "passed_all": false,
+      "errors": 0,
+      "mean_field_accuracy": 0.95,
+      "end_reasons": {
+        "agent_ended": 6,
+        "caller_ended": 3,
+        "caller_hung_up_early": 1
+      }
+    },
+    "unknown_item_plural_samosas": {
+      "tags": [
+        "out_of_stock",
+        "plural_search"
+      ],
+      "runs": 10,
+      "successes": 7,
+      "pass_rate": 0.7,
+      "passed_all": false,
+      "errors": 0,
+      "mean_field_accuracy": 0.9833333333333334,
+      "end_reasons": {
+        "agent_ended": 1,
+        "caller_ended": 7,
+        "caller_hung_up_early": 2
+      }
+    }
+  },
+  "failures": [
+    {
+      "scenario_id": "happy_path_details_upfront",
+      "run": 4,
+      "session_id": "eval-happy_path_details_upfront-r4-ce0ce5",
+      "end_reason": "agent_ended",
+      "error": null,
+      "mismatches": [
+        "1x veg_samosa: got quantity 2"
+      ]
+    },
+    {
+      "scenario_id": "happy_path_details_upfront",
+      "run": 9,
+      "session_id": "eval-happy_path_details_upfront-r9-26960f",
+      "end_reason": "caller_hung_up_early",
+      "error": null,
+      "mismatches": [
+        "status: expected confirmed, got abandoned",
+        "missing: 1x veg_samosa"
+      ]
+    },
+    {
+      "scenario_id": "unknown_item_plural_samosas",
+      "run": 3,
+      "session_id": "eval-unknown_item_plural_samosas-r3-9c6759",
+      "end_reason": "caller_hung_up_early",
+      "error": null,
+      "mismatches": [
+        "status: expected confirmed, got abandoned"
+      ]
+    },
+    {
+      "scenario_id": "unknown_item_plural_samosas",
+      "run": 5,
+      "session_id": "eval-unknown_item_plural_samosas-r5-127b30",
+      "end_reason": "caller_ended",
+      "error": null,
+      "mismatches": [
+        "2x veg_samosa: got quantity 4"
+      ]
+    },
+    {
+      "scenario_id": "unknown_item_plural_samosas",
+      "run": 8,
+      "session_id": "eval-unknown_item_plural_samosas-r8-37e923",
+      "end_reason": "caller_hung_up_early",
+      "error": null,
+      "mismatches": [
+        "status: expected confirmed, got abandoned"
+      ]
+    }
+  ],
+  "rule_violations": [
+    {
+      "scenario_id": "happy_path_details_upfront",
+      "run": 2,
+      "session_id": "eval-happy_path_details_upfront-r2-89d66e",
+      "confirmed_before_reply": 1
+    },
+    {
+      "scenario_id": "happy_path_details_upfront",
+      "run": 4,
+      "session_id": "eval-happy_path_details_upfront-r4-ce0ce5",
+      "confirmed_before_reply": 2
+    },
+    {
+      "scenario_id": "happy_path_details_upfront",
+      "run": 7,
+      "session_id": "eval-happy_path_details_upfront-r7-749d03",
+      "confirmed_before_reply": 1
+    },
+    {
+      "scenario_id": "happy_path_details_upfront",
+      "run": 9,
+      "session_id": "eval-happy_path_details_upfront-r9-26960f",
+      "confirmed_before_reply": 1
+    },
+    {
+      "scenario_id": "happy_path_details_upfront",
+      "run": 10,
+      "session_id": "eval-happy_path_details_upfront-r10-570201",
+      "confirmed_before_reply": 1
+    },
+    {
+      "scenario_id": "unknown_item_plural_samosas",
+      "run": 10,
+      "session_id": "eval-unknown_item_plural_samosas-r10-75a0ca",
+      "confirmed_before_reply": 1
+    }
+  ]
+}

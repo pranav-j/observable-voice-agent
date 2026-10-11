@@ -3,7 +3,7 @@
 import pytest
 
 from voice_order.menu.models import Menu
-from voice_order.menu.search import search
+from voice_order.menu.search import clean_query, search
 
 
 @pytest.mark.parametrize(
@@ -113,3 +113,36 @@ def test_blank_query_rejected(menu: Menu, query: str) -> None:
 def test_limit_must_be_positive(menu: Menu) -> None:
     with pytest.raises(ValueError, match="limit"):
         search(menu, "dosa", limit=0)
+
+
+# --- quantities, filler and plurals ---------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("query", "expected"),
+    [
+        ("two plates of veg samosas", "veg_samosa"),
+        ("one plate of veg samosas", "veg_samosa"),
+        ("some masala dosas please", "masala_dosa"),  # used to pick the Mysore one
+        ("three butter naans", "butter_naan"),
+        ("2 cold coffees", "cold_coffee"),
+        ("an order of gulab jamun", "gulab_jamun"),
+    ],
+)
+def test_quantities_and_filler_are_ignored(menu: Menu, query: str, expected: str) -> None:
+    hit = search(menu, query)[0]
+    assert hit.item.id == expected
+    assert hit.score >= 90
+
+
+@pytest.mark.parametrize("query", ["two pizzas", "sushi platter", "three sushi rolls please"])
+def test_cleaning_does_not_invent_matches(menu: Menu, query: str) -> None:
+    assert search(menu, query)[0].score < 80
+
+
+def test_clean_query() -> None:
+    vocabulary = {"veg", "samosa", "masala", "dosa", "platter"}
+    assert clean_query("Two plates of Veg Samosas, please!", vocabulary) == "veg samosa"
+    assert clean_query("sushi platter", vocabulary) == "sushi platter"  # whole words only
+    assert clean_query("two pizzas", vocabulary) == "pizzas"  # no menu word to singularize to
+    assert clean_query("two", vocabulary) == ""

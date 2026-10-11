@@ -159,6 +159,16 @@ The other three are real agent problems, and all of them point at code rather th
 
 So the list of agent fixes is now: filler words in search, spoken digits in phone numbers, rejecting a leading zero, a clearer error for swapping items, pack sizes in the read-back, and the code guard on confirming. Each one gets its own run against this reference.
 
+## Fix 2: search ignores quantities and filler words
+
+By now only about five runs in 93 were failing, and a full suite run varies by a few runs from one go to the next. A small fix would disappear into that noise. So for this one I changed how I measure. Unit tests prove the deterministic part. Then I run only the affected scenarios, ten times each, once before the change and once after.
+
+The change: before scoring, search also builds a cleaned copy of the query. It drops quantities ("two", "a", "2") and filler ("plate of", "some", "please"), and turns a plural into its singular when the singular is a menu word ("samosas" becomes "samosa"). It scores both the original and the cleaned query and keeps the better result, so the cleaning can only help. Only whole words are dropped, so "sushi platter" stays a weak match. While probing, I found a case I hadn't known about: "some masala dosas please" used to pick the Mysore Masala Dosa. Now it finds the right one.
+
+On the two samosa scenarios, ten runs each: before was 10 of 20 ([report](../reports/20261011-085500-text/summary.md)), after was 15 of 20 ([report](../reports/20261011-085827-text/summary.md)). The details-up-front scenario went from 4 to 8 of 10, and the plural one from 6 to 7.
+
+I wouldn't lean too hard on those numbers. Twenty runs a side is small, and part of that jump could be chance. The better evidence is what's left. None of the remaining failures is a search miss anymore: queries like "plate of veg samosas" now find the item every time. Most of the leftover failures come from plates versus pieces. The agent recorded 2 and 4 where 1 and 2 plates were meant, and the simulated caller hung up three times after hearing "Two Veg Samosa" read back. So fixing the pack size in the read-back moves up the list.
+
 ## The simulated caller can be the thing that fails
 
 Two failures in one batch came from my side of the test, not the agent. In one, I'd told the caller to say "two plates of veg samosas" exactly like that. It took that so literally that it refused a correct read-back three times and gave up. I reworded the goal so it uses the phrase when ordering without being rigid about it.

@@ -1,0 +1,247 @@
+{
+  "mode": "text",
+  "started_at": "2026-10-11T08:55:00+00:00",
+  "agent_models": [
+    "gpt-6-luna"
+  ],
+  "caller_models": [
+    "gpt-6-luna"
+  ],
+  "agent_prompt_versions": [
+    "v1"
+  ],
+  "caller_prompt_versions": [
+    "v1"
+  ],
+  "overall": {
+    "runs": 20,
+    "scenarios": 2,
+    "task_successes": 10,
+    "task_success_rate": 0.5,
+    "scenarios_passing_all_runs": 0,
+    "scenarios_passing_all_runs_rate": 0.0,
+    "order_exact_match_runs": 20,
+    "order_exact_match_rate": 0.8,
+    "mean_field_accuracy": 0.9349999999999999,
+    "escalations": 1,
+    "expected_escalations": 0,
+    "escalation_agreement_rate": 0.95,
+    "errors": 0,
+    "caller_hung_up_early": 4,
+    "tool_limit_hits": 0,
+    "confirmed_before_reply_runs": 7,
+    "skipped_audio_behaviors": 0,
+    "turns_p50": 5.0,
+    "turns_p95": 7.0,
+    "duration_s_p50": 30.371,
+    "duration_s_p95": 47.941,
+    "agent_tokens": {
+      "input": 712395,
+      "output": 7239
+    },
+    "caller_tokens": {
+      "input": 58879,
+      "output": 1518
+    }
+  },
+  "by_tag": {
+    "happy_path": {
+      "runs": 10,
+      "successes": 4,
+      "pass_rate": 0.4
+    },
+    "out_of_stock": {
+      "runs": 10,
+      "successes": 6,
+      "pass_rate": 0.6
+    },
+    "plural_search": {
+      "runs": 10,
+      "successes": 6,
+      "pass_rate": 0.6
+    }
+  },
+  "scenarios": {
+    "happy_path_details_upfront": {
+      "tags": [
+        "happy_path"
+      ],
+      "runs": 10,
+      "successes": 4,
+      "pass_rate": 0.4,
+      "passed_all": false,
+      "errors": 0,
+      "mean_field_accuracy": 0.8699999999999999,
+      "end_reasons": {
+        "agent_ended": 7,
+        "caller_ended": 1,
+        "caller_gave_up": 1,
+        "caller_hung_up_early": 1
+      }
+    },
+    "unknown_item_plural_samosas": {
+      "tags": [
+        "out_of_stock",
+        "plural_search"
+      ],
+      "runs": 10,
+      "successes": 6,
+      "pass_rate": 0.6,
+      "passed_all": false,
+      "errors": 0,
+      "mean_field_accuracy": 1.0,
+      "end_reasons": {
+        "agent_ended": 3,
+        "caller_ended": 3,
+        "caller_hung_up_early": 3,
+        "transferred": 1
+      }
+    }
+  },
+  "failures": [
+    {
+      "scenario_id": "happy_path_details_upfront",
+      "run": 1,
+      "session_id": "eval-happy_path_details_upfront-r1-d46a36",
+      "end_reason": "caller_ended",
+      "error": null,
+      "mismatches": [
+        "missing: 1x veg_samosa"
+      ]
+    },
+    {
+      "scenario_id": "happy_path_details_upfront",
+      "run": 4,
+      "session_id": "eval-happy_path_details_upfront-r4-2e85ba",
+      "end_reason": "caller_hung_up_early",
+      "error": null,
+      "mismatches": [
+        "status: expected confirmed, got abandoned"
+      ]
+    },
+    {
+      "scenario_id": "happy_path_details_upfront",
+      "run": 6,
+      "session_id": "eval-happy_path_details_upfront-r6-94d0f6",
+      "end_reason": "agent_ended",
+      "error": null,
+      "mismatches": [
+        "missing: 1x veg_samosa"
+      ]
+    },
+    {
+      "scenario_id": "happy_path_details_upfront",
+      "run": 7,
+      "session_id": "eval-happy_path_details_upfront-r7-3fa1ea",
+      "end_reason": "agent_ended",
+      "error": null,
+      "mismatches": [
+        "missing: 1x veg_samosa"
+      ]
+    },
+    {
+      "scenario_id": "happy_path_details_upfront",
+      "run": 8,
+      "session_id": "eval-happy_path_details_upfront-r8-267941",
+      "end_reason": "caller_gave_up",
+      "error": null,
+      "mismatches": [
+        "status: expected confirmed, got abandoned"
+      ]
+    },
+    {
+      "scenario_id": "happy_path_details_upfront",
+      "run": 10,
+      "session_id": "eval-happy_path_details_upfront-r10-aa45a8",
+      "end_reason": "agent_ended",
+      "error": null,
+      "mismatches": [
+        "1x veg_samosa: got quantity 2"
+      ]
+    },
+    {
+      "scenario_id": "unknown_item_plural_samosas",
+      "run": 2,
+      "session_id": "eval-unknown_item_plural_samosas-r2-c65005",
+      "end_reason": "caller_hung_up_early",
+      "error": null,
+      "mismatches": [
+        "status: expected confirmed, got abandoned"
+      ]
+    },
+    {
+      "scenario_id": "unknown_item_plural_samosas",
+      "run": 3,
+      "session_id": "eval-unknown_item_plural_samosas-r3-70f8d6",
+      "end_reason": "caller_hung_up_early",
+      "error": null,
+      "mismatches": [
+        "status: expected confirmed, got abandoned"
+      ]
+    },
+    {
+      "scenario_id": "unknown_item_plural_samosas",
+      "run": 7,
+      "session_id": "eval-unknown_item_plural_samosas-r7-da2fae",
+      "end_reason": "transferred",
+      "error": null,
+      "mismatches": [
+        "status: expected confirmed, got escalated"
+      ]
+    },
+    {
+      "scenario_id": "unknown_item_plural_samosas",
+      "run": 8,
+      "session_id": "eval-unknown_item_plural_samosas-r8-8f9a8e",
+      "end_reason": "caller_hung_up_early",
+      "error": null,
+      "mismatches": [
+        "status: expected confirmed, got abandoned"
+      ]
+    }
+  ],
+  "rule_violations": [
+    {
+      "scenario_id": "happy_path_details_upfront",
+      "run": 2,
+      "session_id": "eval-happy_path_details_upfront-r2-0dcfa5",
+      "confirmed_before_reply": 1
+    },
+    {
+      "scenario_id": "happy_path_details_upfront",
+      "run": 3,
+      "session_id": "eval-happy_path_details_upfront-r3-f1cca0",
+      "confirmed_before_reply": 1
+    },
+    {
+      "scenario_id": "happy_path_details_upfront",
+      "run": 5,
+      "session_id": "eval-happy_path_details_upfront-r5-89bf03",
+      "confirmed_before_reply": 2
+    },
+    {
+      "scenario_id": "happy_path_details_upfront",
+      "run": 7,
+      "session_id": "eval-happy_path_details_upfront-r7-3fa1ea",
+      "confirmed_before_reply": 1
+    },
+    {
+      "scenario_id": "happy_path_details_upfront",
+      "run": 8,
+      "session_id": "eval-happy_path_details_upfront-r8-267941",
+      "confirmed_before_reply": 2
+    },
+    {
+      "scenario_id": "happy_path_details_upfront",
+      "run": 9,
+      "session_id": "eval-happy_path_details_upfront-r9-256884",
+      "confirmed_before_reply": 1
+    },
+    {
+      "scenario_id": "happy_path_details_upfront",
+      "run": 10,
+      "session_id": "eval-happy_path_details_upfront-r10-aa45a8",
+      "confirmed_before_reply": 2
+    }
+  ]
+}
