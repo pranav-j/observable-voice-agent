@@ -118,6 +118,31 @@ The order I want to fix things in, re-running after each so every change gets it
 
 One caveat on the numbers: a couple of the failures were the simulated caller hanging up at the read-back, not the agent. More on that below.
 
+## Fix 1: a question to the caller ends the turn
+
+The main failure in the baseline was the agent asking something and then carrying on as if it had heard an answer. Looking at the failing turns, the model was returning words and tool calls in the same reply, like "What's your phone number?" plus a `set_customer` with a blank phone. My loop then called the model again to finish its tool work, and from there it spiralled: retries, invented silence, transfers.
+
+The fix is a rule in the loop. If the model's words in a round contain a question, the turn ends after that round, and the caller gets to answer. Order changes in that same reply still run, because "I've added the dosa. Anything else?" is a normal thing to say. But the read-back, confirming, ending the call and transferring are held back and get a "waiting for the caller" result instead. The API needs a result for every tool call, so the model also learns why they didn't run. I didn't touch the prompt, so the before and after differ by this one change.
+
+Same 31 scenarios, three runs each. Report: [reports/20261011-080849-text/summary.md](../reports/20261011-080849-text/summary.md), compared with the baseline:
+
+- Task success went from 67.7% to 93.5% (87 of 93 runs).
+- 27 of 31 scenarios now pass all three runs, up from 11.
+- Transfers went from 12 to 4, with 3 expected.
+- Failed runs where the customer's details were never set went from 15 to 0.
+- The invented phone number didn't appear at all.
+
+One number went the "wrong" way. Premature confirm attempts went from 4 to 10. The metric counts attempts on purpose, so I checked the transcripts. Every one of them was held back by the new rule, and none went through. My guess is that more runs now reach the read-back at all, since fewer derail early, which gives the model more chances to try. Either way, the rule held every time.
+
+The six failures left are mostly about my test setup, not the agent:
+
+- **A fragile scenario.** In the drop-the-brownie scenario, the agent read the order back before the caller had ordered the brownie, so the scripted "drop the brownie" fired too early. The agent handled it fine ("there isn't a brownie on your order"), then the caller added the brownie afterwards. The scenario assumed the item would be there. The agent also read back before the caller said they were done, which is its own small problem.
+- **The caller said yes to wrong read-backs twice.** The agent had lost a quantity change in one run and a drink in another, so the agent is to blame for those orders. But a real person would have caught them at the read-back.
+- **The caller misread its own number.** The agent read back "90000 00013" correctly, and the caller insisted the right number was 9000000013, which is the same thing. The agent transferred after that one mismatch, which is too quick.
+- **A harness bug.** The caller's last message was "Yes, that's correct. Goodbye." together with its end-of-call marker. My runner stopped at the marker and never passed the "yes" to the agent, so the order stayed unconfirmed. I'd suspected this earlier and found no case of it then. This time it happened.
+
+Before the next agent fix I want the harness to be fair. The caller's last words should always reach the agent, and an early hang-up by the caller should get its own label. Otherwise I'd be measuring the agent against my own bugs.
+
 ## The simulated caller can be the thing that fails
 
 Two failures in one batch came from my side of the test, not the agent. In one, I'd told the caller to say "two plates of veg samosas" exactly like that. It took that so literally that it refused a correct read-back three times and gave up. I reworded the goal so it uses the phrase when ordering without being rigid about it.

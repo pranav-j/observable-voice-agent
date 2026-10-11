@@ -186,3 +186,74 @@ async def test_hang_up_abandons_and_saves(menu: Menu, store: CountingStore) -> N
     assert saved is not None
     assert saved.status == "abandoned"
     assert store.saves == 2
+
+
+# --- a question to the caller ends the turn --------------------------------------------------
+
+
+async def test_question_ends_the_turn_after_running_order_changes(
+    menu: Menu, store: CountingStore
+) -> None:
+    llm = ScriptedLLM(
+        reply(
+            "I've added the dosa. Anything else?",
+            call("add_item", item_id="masala_dosa", quantity=1),
+        ),
+        reply("This reply must never be requested."),
+    )
+    agent = await make_agent(menu, store, llm)
+    turn = await agent.respond("A masala dosa")
+    assert len(llm.requests) == 1  # the model was not asked to carry on
+    assert turn.text == "I've added the dosa. Anything else?"
+    assert agent.session.order.lines[0].item_id == "masala_dosa"
+
+
+@pytest.mark.parametrize("tool", ["end_call", "transfer_to_human", "confirm_order", "get_readback"])
+async def test_final_actions_wait_for_the_callers_answer(
+    menu: Menu, store: CountingStore, tool: str
+) -> None:
+    arguments = (
+        {"reason": "caller stopped responding"} if tool in ("end_call", "transfer_to_human") else {}
+    )
+    llm = ScriptedLLM(reply("What's your phone number?", call(tool, **arguments)))
+    agent = await make_agent(menu, store, llm)
+    before = agent.session.order
+    turn = await agent.respond("I'm Anil")
+    (event,) = turn.tool_events
+    assert event.result["error"] == "WAITING_FOR_CALLER"
+    assert agent.session.order is before
+    assert agent.session.ending is None
+    assert outputs(agent.history)[-1]["error"] == "WAITING_FOR_CALLER"
+
+
+async def test_readback_question_holds_back_a_premature_confirm(
+    menu: Menu, store: CountingStore
+) -> None:
+    llm = ScriptedLLM(
+        reply(
+            "",
+            call("add_item", item_id="affogato", quantity=1),
+            call("set_customer", name="Anil", phone="9000000001"),
+            call("get_readback"),
+        ),
+        reply("Let me read that back. One Affogato. Is that correct?", call("confirm_order")),
+    )
+    agent = await make_agent(menu, store, llm)
+    turn = await agent.respond("One affogato, Anil, 9000000001")
+    assert [e.name for e in turn.tool_events][-1] == "confirm_order"
+    assert turn.tool_events[-1].result["error"] == "WAITING_FOR_CALLER"
+    assert agent.session.order.status == "draft"
+    assert agent.session.order.readback_is_current  # the caller's "yes" can still confirm it
+
+
+async def test_text_without_a_question_lets_the_loop_continue(
+    menu: Menu, store: CountingStore
+) -> None:
+    llm = ScriptedLLM(
+        reply("Let me check that.", call("search_menu", query="dosa")),
+        reply("We have masala dosa and mysore masala dosa."),
+    )
+    agent = await make_agent(menu, store, llm)
+    turn = await agent.respond("Dosa?")
+    assert len(llm.requests) == 2
+    assert turn.text == "Let me check that. We have masala dosa and mysore masala dosa."

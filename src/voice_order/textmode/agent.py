@@ -22,6 +22,23 @@ from voice_order.tools.catalog import TOOLS
 MAX_TOOL_ROUNDS = 8
 FALLBACK = "Sorry, I didn't catch that. Could you say it again?"
 
+# When the agent asks the caller something, these must wait for the answer. Order changes in
+# the same reply still run ("I've added it. Anything else?"), but these never should.
+WAIT_FOR_ANSWER = frozenset({"get_readback", "confirm_order", "end_call", "transfer_to_human"})
+WAITING_FOR_CALLER: Result = {
+    "ok": False,
+    "error": "WAITING_FOR_CALLER",
+    "message": (
+        "Not run: you asked the caller a question in this reply. "
+        "Wait for their answer, then call it again if it's still needed."
+    ),
+}
+
+
+def asks_caller(text: str) -> bool:
+    """The model's words for this round include a question to the caller."""
+    return "?" in text
+
 
 @dataclass(frozen=True)
 class ToolEvent:
@@ -88,11 +105,21 @@ class TextAgent:
             if not reply.tool_calls:
                 hit_limit = False
                 break
+            asked = asks_caller(reply.text)
             for call in reply.tool_calls:
                 self.history.append(call)
-                event = await self._run(call)
+                if asked and call.name in WAIT_FOR_ANSWER:
+                    event = ToolEvent(call.name, call.arguments, WAITING_FOR_CALLER, 0.0)
+                else:
+                    event = await self._run(call)
                 events.append(event)
+                # Every call needs a result in the history, including the ones held back.
                 self.history.append(ToolOutput(call.call_id, to_json(event.result)))
+            if asked:
+                # The agent asked the caller something. Stop here so the caller can answer,
+                # instead of letting the model carry on as if it had heard a reply.
+                hit_limit = False
+                break
         if hit_limit:
             # The model kept calling tools without answering. Stop it and ask again.
             spoken.append(FALLBACK)
