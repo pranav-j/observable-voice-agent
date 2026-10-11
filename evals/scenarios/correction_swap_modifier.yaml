@@ -9,10 +9,10 @@ persona:
 goal: >
   Order one small cafe latte with oat milk. Right after it is added, change
   your mind: you want hazelnut syrup instead of oat milk.
-customer: {name: Kavya, phone: "9000031415"}
+customer: {name: Kavya, phone: "9876531415"}
 expect:
   status: confirmed
   order:
     items:
       - {item: cafe_latte, size: small, quantity: 1, modifiers: [hazelnut_syrup]}
-    customer: {name: Kavya, phone: "9000031415"}
+    customer: {name: Kavya, phone: "9876531415"}

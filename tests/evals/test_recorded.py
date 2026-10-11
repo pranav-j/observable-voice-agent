@@ -21,7 +21,7 @@ EXPECT = {
     "status": "confirmed",
     "order": {
         "items": [{"item": "masala_dosa", "quantity": 2, "modifiers": []}],
-        "customer": {"name": "Anil", "phone": "9000012345"},
+        "customer": {"name": "Anil", "phone": "9876512345"},
     },
 }
 
@@ -86,7 +86,7 @@ def test_annotation_phone_numbers_stay_fake() -> None:
     items = [{"item": "masala_dosa", "quantity": 2}]
     real_looking = {
         "status": "confirmed",
-        "order": {"items": items, "customer": {"name": "A", "phone": "9876543210"}},
+        "order": {"items": items, "customer": {"name": "A", "phone": "9812345678"}},
     }
     with pytest.raises(ValidationError):
         Annotation.model_validate({"session_id": SESSION, "expect": real_looking})
@@ -106,7 +106,7 @@ def test_no_channels_no_timing(tmp_path: Path) -> None:
 async def test_a_recorded_call_is_scored_from_the_store(tmp_path: Path, menu: Menu) -> None:
     _recording(tmp_path)
     order = state.add_line(state.new_order(SESSION), menu, "masala_dosa", 2, None, [])
-    order = state.mark_readback(state.set_customer(order, "Anil", "9000012345"))
+    order = state.mark_readback(state.set_customer(order, "Anil", "9876512345"))
     store = InMemoryOrderStore()
     await store.save(state.confirm(order))
     annotation = Annotation.model_validate({"session_id": SESSION, "expect": EXPECT})
@@ -130,7 +130,7 @@ async def test_a_missing_recording_is_an_error(tmp_path: Path) -> None:
 
 def test_annotate_draft_starts_from_the_final_order(menu: Menu) -> None:
     order = state.add_line(state.new_order(SESSION), menu, "cold_coffee", 1, "large", ["oat_milk"])
-    order = state.set_customer(order, "Priya", "9000023456")
+    order = state.set_customer(order, "Priya", "9876523456")
     text = draft(SESSION, order)
     assert text.startswith("# What the caller WANTED")
     annotation = Annotation.model_validate(yaml.safe_load(text))

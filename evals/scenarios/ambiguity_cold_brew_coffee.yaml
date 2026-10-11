@@ -9,10 +9,10 @@ persona:
 goal: >
   You want a cold brew, and you call it "a cold brew coffee". If they ask
   whether you mean the cold brew or the cold coffee, it's the cold brew.
-customer: {name: Nikhil, phone: "9000069314"}
+customer: {name: Nikhil, phone: "9876569314"}
 expect:
   status: confirmed
   order:
     items:
       - {item: cold_brew, quantity: 1, modifiers: []}
-    customer: {name: Nikhil, phone: "9000069314"}
+    customer: {name: Nikhil, phone: "9876569314"}

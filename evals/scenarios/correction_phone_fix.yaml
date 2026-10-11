@@ -8,12 +8,12 @@ persona:
   voice: voice_pool.male_2
 goal: >
   Order one paneer tikka roll. When asked for your phone number, say
-  9000027132 by mistake. When the order-taker reads the number back, correct
-  it: the right number is 9000027182.
-customer: {name: Imran, phone: "9000027182"}
+  9876527132 by mistake. When the order-taker reads the number back, correct
+  it: the right number is 9876527182.
+customer: {name: Imran, phone: "9876527182"}
 expect:
   status: confirmed
   order:
     items:
       - {item: paneer_tikka_roll, quantity: 1, modifiers: []}
-    customer: {name: Imran, phone: "9000027182"}
+    customer: {name: Imran, phone: "9876527182"}

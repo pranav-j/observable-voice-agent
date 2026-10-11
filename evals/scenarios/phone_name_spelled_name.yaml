@@ -9,10 +9,10 @@ persona:
 goal: >
   Order one chai latte with oat milk. When asked for your name, say
   "Siddharth, that's S I D D H A R T H".
-customer: {name: Siddharth, phone: "9000091442"}
+customer: {name: Siddharth, phone: "9876591442"}
 expect:
   status: confirmed
   order:
     items:
       - {item: chai_latte, quantity: 1, modifiers: [oat_milk]}
-    customer: {name: Siddharth, phone: "9000091442"}
+    customer: {name: Siddharth, phone: "9876591442"}

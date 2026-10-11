@@ -9,10 +9,10 @@ persona:
 goal: >
   You want a biryani and just say "a biryani" at first. When asked which one,
   say veg. When asked the size, say full.
-customer: {name: Pooja, phone: "9000047712"}
+customer: {name: Pooja, phone: "9876547712"}
 expect:
   status: confirmed
   order:
     items:
       - {item: veg_biryani, size: full, quantity: 1, modifiers: []}
-    customer: {name: Pooja, phone: "9000047712"}
+    customer: {name: Pooja, phone: "9876547712"}

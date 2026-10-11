@@ -9,7 +9,7 @@ persona:
 goal: >
   You can't decide between a cold brew and a medium cold coffee. First ask how
   much each one costs, then order the cold brew.
-customer: {name: Tanvi, phone: "9000028284"}
+customer: {name: Tanvi, phone: "9876528284"}
 behaviors:
   - trigger: {turn: 1}
     action: pause_mid_utterance
@@ -19,4 +19,4 @@ expect:
   order:
     items:
       - {item: cold_brew, quantity: 1, modifiers: []}
-    customer: {name: Tanvi, phone: "9000028284"}
+    customer: {name: Tanvi, phone: "9876528284"}

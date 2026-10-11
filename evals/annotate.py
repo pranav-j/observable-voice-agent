@@ -22,7 +22,7 @@ from voice_order.store.postgres import PostgresOrderStore
 HEADER = """\
 # What the caller WANTED, not what the agent took down. This started as a copy of the
 # agent's final order (status: {status}). Fix anything it got wrong, then save.
-# Phone numbers must stay obviously fake (90000 and five more digits).
+# Phone numbers must stay obviously fake: 98765 and five more digits.
 """
 
 

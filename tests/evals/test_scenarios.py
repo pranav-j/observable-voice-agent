@@ -5,7 +5,14 @@ from typing import Any
 
 import pytest
 import yaml
-from evals.scenario import SCENARIO_DIR, Scenario, load_scenario, load_scenarios, menu_problems
+from evals.scenario import (
+    SCENARIO_DIR,
+    ZERO_RUN_SCENARIO,
+    Scenario,
+    load_scenario,
+    load_scenarios,
+    menu_problems,
+)
 from pydantic import ValidationError
 
 from voice_order.menu.models import Menu
@@ -62,6 +69,12 @@ def test_first_tag_is_a_known_category(path: Path) -> None:
     assert tags[0] in CATEGORIES, f"first tag {tags[0]!r} is not one of {sorted(CATEGORIES)}"
 
 
+def test_only_the_zero_run_scenario_uses_a_run_of_zeros() -> None:
+    # Speech recognition drops digits from "zero zero zero zero"; keep that in one place.
+    zeros = {s.id for s in load_scenarios() if s.customer.phone.startswith("90000")}
+    assert zeros == {ZERO_RUN_SCENARIO}
+
+
 def test_customer_phones_are_unique() -> None:
     phones = [load_scenario(p).customer.phone for p in SCENARIO_FILES]
     assert len(phones) == len(set(phones))
@@ -90,7 +103,7 @@ def test_minimal_scenario_gets_defaults() -> None:
     [
         {"extra_field": 1},
         {"persona": {"name": "A", "style": "grumpy"}},
-        {"customer": {"name": "A", "phone": "9876543210"}},  # a real-looking number
+        {"customer": {"name": "A", "phone": "9812345678"}},  # a real-looking number
         {"runs": 0},
         {"behaviors": [{"trigger": {}, "action": "interrupt", "after_ms": 1, "say": "x"}]},
         {

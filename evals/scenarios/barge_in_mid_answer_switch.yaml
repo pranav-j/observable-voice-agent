@@ -8,7 +8,7 @@ persona:
   voice: voice_pool.male_3
 goal: >
   Order one small cafe latte for pickup.
-customer: {name: Farhan, phone: "9000014142"}
+customer: {name: Farhan, phone: "9876514142"}
 behaviors:
   - trigger: {turn: 2}
     action: interrupt
@@ -19,4 +19,4 @@ expect:
   order:
     items:
       - {item: cappuccino, size: small, quantity: 1, modifiers: []}
-    customer: {name: Farhan, phone: "9000014142"}
+    customer: {name: Farhan, phone: "9876514142"}

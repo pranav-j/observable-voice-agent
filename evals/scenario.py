@@ -12,10 +12,11 @@ from voice_order.order.models import MAX_QUANTITY, OrderStatus
 SCENARIO_DIR = Path(__file__).parent / "scenarios"
 
 Slug = Annotated[str, StringConstraints(pattern=r"^[a-z][a-z0-9_]*$")]
-# Scenario phone numbers must be obviously fake: 90000 and five more digits. Keep the
-# second group varied; a long run of one digit is hard for speech recognition, so only
-# the scenario that tests that on purpose uses one.
-FakePhone = Annotated[str, StringConstraints(pattern=r"^90000\d{5}$")]
+# Scenario phone numbers must be obviously fake: 98765, the usual Indian placeholder, and
+# five more digits with no runs. Speech recognition drops digits from a run of zeros, so
+# only the scenario that tests that on purpose uses a 90000 number.
+FakePhone = Annotated[str, StringConstraints(pattern=r"^(98765|90000)\d{5}$")]
+ZERO_RUN_SCENARIO = "phone_name_spoken_digits"
 Style = Literal["brisk", "chatty", "hesitant", "confused", "adversarial"]
 
 

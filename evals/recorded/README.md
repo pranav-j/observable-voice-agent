@@ -4,7 +4,7 @@ Each file here says what the caller wanted on one real call, so recorded mode ca
 it. The recordings themselves stay in `recordings/`, which is gitignored.
 
 1. `make up` and `make dev`, then place an order from the browser. Use a made-up name
-   and a fake number that starts with 90000, like 90000 31415.
+   and a fake number that starts with 98765, like 98765 31415.
 2. Find the session id: the newest folder in `recordings/`.
 3. `make annotate SESSION=<id>`. It prints the call and writes `<id>.yaml` here,
    starting from the agent's final order.

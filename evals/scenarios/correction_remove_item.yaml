@@ -9,10 +9,10 @@ persona:
 goal: >
   Order a cold brew and a chocolate brownie. Once both are added, decide you
   don't want the brownie after all and ask to remove it.
-customer: {name: Arjun, phone: "9000024680"}
+customer: {name: Arjun, phone: "9876524680"}
 expect:
   status: confirmed
   order:
     items:
       - {item: cold_brew, quantity: 1, modifiers: []}
-    customer: {name: Arjun, phone: "9000024680"}
+    customer: {name: Arjun, phone: "9876524680"}

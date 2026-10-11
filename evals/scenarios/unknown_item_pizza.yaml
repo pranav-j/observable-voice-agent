@@ -9,10 +9,10 @@ persona:
 goal: >
   Ask for a margherita pizza. When you're told it isn't on the menu, order one
   veg club sandwich instead.
-customer: {name: Rahul, phone: "9000081321"}
+customer: {name: Rahul, phone: "9876581321"}
 expect:
   status: confirmed
   order:
     items:
       - {item: veg_club_sandwich, quantity: 1, modifiers: []}
-    customer: {name: Rahul, phone: "9000081321"}
+    customer: {name: Rahul, phone: "9876581321"}

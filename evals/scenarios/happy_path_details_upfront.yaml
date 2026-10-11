@@ -10,11 +10,11 @@ goal: >
   Order one large masala chai and one plate of veg samosas. You are in a hurry,
   so in your very first sentence you also give your name and phone number,
   before anyone asks.
-customer: {name: Vikram, phone: "9000056789"}
+customer: {name: Vikram, phone: "9876556789"}
 expect:
   status: confirmed
   order:
     items:
       - {item: masala_chai, size: large, quantity: 1, modifiers: []}
       - {item: veg_samosa, quantity: 1, modifiers: []}
-    customer: {name: Vikram, phone: "9000056789"}
+    customer: {name: Vikram, phone: "9876556789"}

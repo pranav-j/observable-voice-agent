@@ -3,7 +3,7 @@
 from tests.textmode.fakes import call, readback_text, reply
 
 HAPPY_READBACK = readback_text(
-    ("cold_coffee", 1, "large", ["oat_milk"]), name="Priya", phone="9000023456"
+    ("cold_coffee", 1, "large", ["oat_milk"]), name="Priya", phone="9876523456"
 )
 
 HAPPY_AGENT = [
@@ -18,14 +18,14 @@ HAPPY_AGENT = [
         ),
     ),
     reply("Got it. Your name and number?", tokens=(100, 10)),
-    reply("", call("set_customer", name="Priya", phone="9000023456"), call("get_readback")),
+    reply("", call("set_customer", name="Priya", phone="9876523456"), call("get_readback")),
     reply(HAPPY_READBACK),
     reply("", call("confirm_order")),
     reply("It'll be ready for pickup. Goodbye!"),
 ]
 HAPPY_CALLER = [
     reply("One large cold coffee with oat milk, please.", tokens=(40, 9)),
-    reply("Priya, 9000023456."),
+    reply("Priya, 9876523456."),
     reply("Yes, that's right."),
     reply("Thanks, bye! [END]"),
 ]

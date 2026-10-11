@@ -9,11 +9,11 @@ persona:
 goal: >
   Order one full chicken biryani with extra raita and two plates of gulab jamun
   for pickup.
-customer: {name: Meera, phone: "9000045678"}
+customer: {name: Meera, phone: "9876545678"}
 expect:
   status: confirmed
   order:
     items:
       - {item: chicken_biryani, size: full, quantity: 1, modifiers: [extra_raita]}
       - {item: gulab_jamun, quantity: 2, modifiers: []}
-    customer: {name: Meera, phone: "9000045678"}
+    customer: {name: Meera, phone: "9876545678"}

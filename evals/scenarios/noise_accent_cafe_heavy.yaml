@@ -9,11 +9,11 @@ persona:
   noise: {clip: cafe_02, snr_db: 5}
 goal: >
   Order one medium cold coffee and one veg club sandwich with no onion.
-customer: {name: Manoj, phone: "9000052914"}
+customer: {name: Manoj, phone: "9876552914"}
 expect:
   status: confirmed
   order:
     items:
       - {item: cold_coffee, size: medium, quantity: 1, modifiers: []}
       - {item: veg_club_sandwich, quantity: 1, modifiers: [no_onion]}
-    customer: {name: Manoj, phone: "9000052914"}
+    customer: {name: Manoj, phone: "9876552914"}

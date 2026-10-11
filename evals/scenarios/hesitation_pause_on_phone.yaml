@@ -8,7 +8,7 @@ persona:
   voice: voice_pool.female_1
 goal: >
   Order one chicken tikka roll with an egg for pickup.
-customer: {name: Ritu, phone: "9000026457"}
+customer: {name: Ritu, phone: "9876526457"}
 behaviors:
   - trigger: {phase: phone}
     action: pause_mid_utterance
@@ -18,4 +18,4 @@ expect:
   order:
     items:
       - {item: chicken_tikka_roll, quantity: 1, modifiers: [add_egg]}
-    customer: {name: Ritu, phone: "9000026457"}
+    customer: {name: Ritu, phone: "9876526457"}

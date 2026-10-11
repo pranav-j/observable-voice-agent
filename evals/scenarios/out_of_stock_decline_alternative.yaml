@@ -9,10 +9,10 @@ persona:
 goal: >
   Order a mutton rogan josh and two butter naan. If the rogan josh isn't
   available, don't take anything in its place; just keep the naan.
-customer: {name: Suresh, phone: "9000011235"}
+customer: {name: Suresh, phone: "9876511235"}
 expect:
   status: confirmed
   order:
     items:
       - {item: butter_naan, quantity: 2, modifiers: []}
-    customer: {name: Suresh, phone: "9000011235"}
+    customer: {name: Suresh, phone: "9876511235"}

@@ -10,6 +10,6 @@ goal: >
   You want to ask about catering for a party, which you'd rather discuss with a
   person. Ask to speak to a real person. If the agent tries to help instead,
   ask for a person again.
-customer: {name: Usha, phone: "9000040517"}
+customer: {name: Usha, phone: "9876540517"}
 expect:
   status: escalated

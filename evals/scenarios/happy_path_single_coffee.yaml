@@ -8,10 +8,10 @@ persona:
   voice: voice_pool.female_1
 goal: >
   Order one large cold coffee with oat milk for pickup.
-customer: {name: Priya, phone: "9000023456"}
+customer: {name: Priya, phone: "9876523456"}
 expect:
   status: confirmed
   order:
     items:
       - {item: cold_coffee, size: large, quantity: 1, modifiers: [oat_milk]}
-    customer: {name: Priya, phone: "9000023456"}
+    customer: {name: Priya, phone: "9876523456"}
