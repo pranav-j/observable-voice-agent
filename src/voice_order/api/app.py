@@ -3,10 +3,13 @@
 Run with `uvicorn voice_order.api.app:app` (or `make dev`).
 """
 
+import json
+import re
 import secrets
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Request
@@ -23,6 +26,7 @@ from voice_order.tools.base import Session
 from voice_order.tools.catalog import item_view, order_view
 
 WEB_ORIGINS = ["http://localhost:5173", "http://127.0.0.1:5173"]  # the Vite dev server
+SAFE_ID = re.compile(r"[A-Za-z0-9_-]{1,100}")
 
 
 class TokenResponse(BaseModel):
@@ -94,6 +98,33 @@ def create_app(
         if order is None:
             raise HTTPException(status_code=404, detail=f"no order for session {session_id!r}")
         return order_view(Session(menu=menu, order=order))
+
+    @app.get("/calls/{session_id}")
+    async def get_call(session_id: str, request: Request) -> dict[str, Any]:
+        """The end-of-call summary: final order, plus duration, turns and cost once saved."""
+        if not SAFE_ID.fullmatch(session_id):  # it becomes a folder name below
+            raise HTTPException(status_code=404, detail="no such call")
+        order = await request.app.state.store.get(session_id)
+        if order is None:
+            raise HTTPException(status_code=404, detail=f"no call {session_id!r}")
+        folder = Path(settings.recordings_dir) / session_id
+        usage_file, turns_file = folder / "usage.json", folder / "turns.jsonl"
+        usage = json.loads(usage_file.read_text()) if usage_file.exists() else None
+        turns = 0
+        if turns_file.exists():
+            records = [json.loads(line) for line in turns_file.read_text().splitlines() if line]
+            turns = max((r["turn_index"] for r in records), default=0)
+        return {
+            "session_id": session_id,
+            "order": order_view(Session(menu=menu, order=order)),
+            "saved": usage is not None,  # the worker writes usage.json when the call ends
+            "duration_seconds": usage.get("duration_seconds") if usage else None,
+            "turns": turns,
+            "cost_usd": usage.get("total_cost_usd") if usage else None,
+            "cost_is_estimate": bool(
+                usage and any(m.get("estimated_from_call_length") for m in usage["models"])
+            ),
+        }
 
     return app
 

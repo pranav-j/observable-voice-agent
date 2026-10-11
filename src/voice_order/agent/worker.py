@@ -45,6 +45,7 @@ from voice_order.tools.catalog import order_view
 log = logging.getLogger("voice_order.worker")
 
 ORDER_TOPIC = "order"  # the web UI's order panel listens on this data topic
+TURN_TOPIC = "turn"  # per-turn timings, the same records written to turns.jsonl
 TIME_UP = "Sorry, we're out of time for this call. Please call back to finish your order."
 AWAY = "I haven't heard from you in a while, so I'll end the call. Please call back anytime."
 
@@ -172,7 +173,11 @@ async def entrypoint(ctx: JobContext) -> None:
     @session.on("conversation_item_added")
     def _on_item(ev: ConversationItemAddedEvent) -> None:
         if ev.item.type == "message":
-            turns.add(ev.item)
+            record = turns.add(ev.item)
+            # The UI's latency overlay uses exactly these numbers, so it matches the traces.
+            task = asyncio.create_task(publish(ctx.room, TURN_TOPIC, record))
+            background.add(task)
+            task.add_done_callback(background.discard)
             if ev.item.role == "user":
                 call.caller_spoke()  # lets confirm_order check the caller replied to the read-back
 

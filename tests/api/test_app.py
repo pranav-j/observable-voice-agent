@@ -1,6 +1,8 @@
 """The backend API, with an in-memory store: no Postgres, no LiveKit server needed."""
 
+import json
 from collections.abc import Iterator
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
@@ -71,3 +73,40 @@ def test_web_dev_server_may_call_the_api(client: TestClient) -> None:
         headers={"Origin": "http://localhost:5173", "Access-Control-Request-Method": "POST"},
     )
     assert response.headers["access-control-allow-origin"] == "http://localhost:5173"
+
+
+async def test_call_summary_before_and_after_the_recording_is_saved(
+    store: InMemoryOrderStore, menu: Menu, tmp_path: Path
+) -> None:
+    settings = SETTINGS.model_copy(update={"recordings_dir": str(tmp_path)})
+    order = state.add_line(state.new_order("call-2"), menu, "affogato", 1)
+    await store.save(order)
+    with TestClient(create_app(settings=settings, store=store, menu=menu)) as client:
+        assert client.get("/calls/nope").status_code == 404
+        early = client.get("/calls/call-2").json()
+        assert (early["saved"], early["cost_usd"], early["turns"]) == (False, None, 0)
+        folder = tmp_path / "call-2"
+        folder.mkdir()
+        (folder / "usage.json").write_text(
+            json.dumps(
+                {
+                    "total_cost_usd": 0.0123,
+                    "duration_seconds": 61.5,
+                    "models": [{"estimated_from_call_length": True}],
+                }
+            )
+        )
+        (folder / "turns.jsonl").write_text(
+            "\n".join(json.dumps({"turn_index": i, "role": "user"}) for i in (1, 2, 3)) + "\n"
+        )
+        done = client.get("/calls/call-2").json()
+    assert (done["saved"], done["turns"], done["duration_seconds"]) == (True, 3, 61.5)
+    assert (done["cost_usd"], done["cost_is_estimate"]) == (0.0123, True)
+    assert done["order"]["lines"][0]["description"] == "One Affogato"
+
+
+@pytest.mark.parametrize("bad", ["..", "call-1.json", "a b"])
+def test_call_ids_that_could_escape_the_recordings_folder_are_rejected(
+    client: TestClient, bad: str
+) -> None:
+    assert client.get(f"/calls/{bad}").status_code == 404
