@@ -93,11 +93,38 @@ The phone check strips non-digits, handles a +91 or leading 0, and requires ten 
 
 The menu has "Veg Samosa (2 pcs)". I decided the read-back shouldn't speak the bracket, so it says "Two Veg Samosa". That sounds like two samosas, when it's really two plates of two. In one run the simulated caller kept saying "no, two plates" at the read-back, until the agent asked whether two pieces per plate was what they meant. A real person could get stuck in the same place. The read-back should probably keep the pack size, something like "two Veg Samosa, two pieces each". That decision cost something I hadn't thought about.
 
+## The text-mode baseline
+
+With all 31 scenarios written, I ran each one three times: 93 calls, with `gpt-6-luna` playing both the agent and the caller, on prompt v1. The report is [reports/20261011-074743-text/summary.md](../reports/20261011-074743-text/summary.md). All numbers here come from it or from its `summary.json`.
+
+- Task success was 67.7% (63 of 93 runs), and 11 of 31 scenarios passed all three runs.
+- Order exact match was 72.2% of the scored runs, with a mean field accuracy of 0.90.
+- The agent transferred 12 calls when 3 transfers were expected.
+- 4 runs confirmed in the same turn as the read-back, before the caller could answer.
+
+Reading the failures, most of them come from one behavior: the agent asks something and then carries on as if it had heard an answer. In 15 of the 30 failed runs the customer's details were never set. 9 failed runs ended in a transfer nobody asked for, often after the agent had submitted blank phone numbers on the caller's behalf.
+
+The worst cases are 3 runs where the agent made up a phone number, 98765 43210. Nobody in the scenarios has that number. In one of them, the order was confirmed with it. That run is also one of the 4 flagged for confirming before the caller replied, so the metric earned its place on its first real run.
+
+The understanding side held up well. Hinglish, misheard dish names, injection attempts, price questions and swapping an item mid-answer all passed every run. The problems are about when the agent stops talking, not what it understands.
+
+The order I want to fix things in, re-running after each so every change gets its own before and after:
+
+1. End the turn when the agent asks the caller a question, and only count failed attempts across caller turns.
+2. Reject phone numbers with a leading zero.
+3. Strip quantities and filler from search queries.
+4. Keep the pack size in the read-back.
+5. A code guard so `confirm_order` needs the caller to have spoken since the read-back.
+
+One caveat on the numbers: a couple of the failures were the simulated caller hanging up at the read-back, not the agent. More on that below.
+
 ## The simulated caller can be the thing that fails
 
 Two failures in one batch came from my side of the test, not the agent. In one, I'd told the caller to say "two plates of veg samosas" exactly like that. It took that so literally that it refused a correct read-back three times and gave up. I reworded the goal so it uses the phrase when ordering without being rigid about it.
 
 A failed scenario can be the agent's fault, the scenario's, or the simulated caller's. The only way to tell is to read the transcript, so I do that for every failure before deciding what to fix. I only change a scenario when the scenario is actually wrong.
+
+In the baseline, the caller had its own way of failing. A couple of times it ended the call right after the agent's read-back, without answering yes or no. The orders were left unconfirmed and counted against the agent. In one of those runs, the agent had also said "I'll read your order back again" and then never called the tool, so both sides dropped the ball. Next time I'll make the report tell these apart: a caller ending the call while the order is still a draft and the agent hasn't ended it should get its own end reason, so the numbers don't quietly blame the agent for it.
 
 ## The agent sometimes skips end_call
 
