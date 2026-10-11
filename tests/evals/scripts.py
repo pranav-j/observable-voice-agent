@@ -1,6 +1,10 @@
 """Scripted LLM replies for a full happy-path call, shared by eval tests."""
 
-from tests.textmode.fakes import call, reply
+from tests.textmode.fakes import call, readback_text, reply
+
+HAPPY_READBACK = readback_text(
+    ("cold_coffee", 1, "large", ["oat_milk"]), name="Priya", phone="9000023456"
+)
 
 HAPPY_AGENT = [
     reply(
@@ -15,7 +19,7 @@ HAPPY_AGENT = [
     ),
     reply("Got it. Your name and number?", tokens=(100, 10)),
     reply("", call("set_customer", name="Priya", phone="9000023456"), call("get_readback")),
-    reply("Let me read that back. Is that correct?"),
+    reply(HAPPY_READBACK),
     reply("", call("confirm_order")),
     reply("It'll be ready for pickup. Goodbye!"),
 ]

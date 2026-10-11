@@ -13,6 +13,13 @@ def call(session: Session, tool: str, /, **arguments: Any) -> dict[str, Any]:
     return dispatch(session, TOOLS, tool, arguments)
 
 
+def read_back(session: Session) -> dict[str, Any]:
+    """Fetch the read-back and have the agent say it in full, as the runtimes report."""
+    result = call(session, "get_readback")
+    session.agent_said(result["readback"])
+    return result
+
+
 @pytest.fixture
 def ready(session: Session) -> Session:
     """Items and customer in place, no read-back yet."""
@@ -73,7 +80,7 @@ def test_happy_path_through_dispatch_only(session: Session) -> None:
     )
     call(session, "add_item", item_id="cold_coffee", quantity=1, size_id="large")
     call(session, "set_customer", name="Anil", phone="90000 00001")
-    call(session, "get_readback")
+    read_back(session)
     session.caller_spoke()  # "yes, that's right"
     result = call(session, "confirm_order")
     assert result["ok"] is True
@@ -82,16 +89,16 @@ def test_happy_path_through_dispatch_only(session: Session) -> None:
 
 
 def test_change_after_readback_needs_a_new_readback(ready: Session) -> None:
-    call(ready, "get_readback")
+    read_back(ready)
     call(ready, "add_item", item_id="affogato", quantity=1)
     assert call(ready, "confirm_order")["error"] == "READBACK_REQUIRED"
-    assert "Affogato" in call(ready, "get_readback")["readback"]
+    assert "Affogato" in read_back(ready)["readback"]
     ready.caller_spoke()
     assert call(ready, "confirm_order")["order"]["status"] == "confirmed"
 
 
 def test_readback_after_confirmation_is_refused(ready: Session) -> None:
-    call(ready, "get_readback")
+    read_back(ready)
     ready.caller_spoke()
     call(ready, "confirm_order")
     assert call(ready, "get_readback")["error"] == "ORDER_CLOSED"
@@ -114,7 +121,7 @@ def test_end_call_abandons_an_unconfirmed_order(ready: Session) -> None:
 
 
 def test_end_call_keeps_a_confirmed_order(ready: Session) -> None:
-    call(ready, "get_readback")
+    read_back(ready)
     ready.caller_spoke()
     call(ready, "confirm_order")
     assert call(ready, "end_call", reason="done")["status"] == "confirmed"
@@ -148,27 +155,60 @@ def test_a_fresh_session_has_no_ending(session: Session) -> None:
 
 
 def test_confirm_right_after_the_readback_is_refused(ready: Session) -> None:
-    call(ready, "get_readback")
+    read_back(ready)
     result = call(ready, "confirm_order")
     assert result["error"] == "READBACK_NOT_ANSWERED"
     assert ready.order.status == "draft"
 
 
 def test_confirm_works_once_the_caller_has_replied(ready: Session) -> None:
-    call(ready, "get_readback")
+    read_back(ready)
     ready.caller_spoke()
     assert call(ready, "confirm_order")["order"]["status"] == "confirmed"
 
 
 def test_a_new_readback_needs_a_new_reply(ready: Session) -> None:
-    call(ready, "get_readback")
+    read_back(ready)
     ready.caller_spoke()
-    call(ready, "get_readback")  # read it back again, e.g. after a question
+    read_back(ready)  # read it back again, e.g. after a question
     assert call(ready, "confirm_order")["error"] == "READBACK_NOT_ANSWERED"
 
 
 def test_a_stale_readback_still_says_the_order_changed(ready: Session) -> None:
-    call(ready, "get_readback")
+    read_back(ready)
     call(ready, "add_item", item_id="affogato", quantity=1)
     ready.caller_spoke()
     assert call(ready, "confirm_order")["error"] == "READBACK_REQUIRED"
+
+
+# --- the read-back has to be heard, not just fetched -----------------------------------------
+
+
+def test_a_readback_that_was_never_said_does_not_count(ready: Session) -> None:
+    # Voice: the caller cut in before any of it played, then said "that's right".
+    call(ready, "get_readback")
+    ready.caller_spoke()
+    result = call(ready, "confirm_order")
+    assert result["error"] == "READBACK_NOT_ANSWERED"
+    assert "said in full" in result["message"]
+
+
+def test_an_interrupted_readback_does_not_count(ready: Session) -> None:
+    text = call(ready, "get_readback")["readback"]
+    ready.agent_said(text[: len(text) // 3], complete=False)
+    ready.caller_spoke()
+    assert call(ready, "confirm_order")["error"] == "READBACK_NOT_ANSWERED"
+
+
+def test_other_words_before_the_readback_do_not_count(ready: Session) -> None:
+    call(ready, "get_readback")
+    ready.agent_said("Sure, one moment.")  # said in the same step as the tool call
+    ready.caller_spoke()
+    assert call(ready, "confirm_order")["error"] == "READBACK_NOT_ANSWERED"
+
+
+def test_a_readback_said_with_small_slips_counts(ready: Session) -> None:
+    text = call(ready, "get_readback")["readback"]
+    ready.agent_said("Okay! " + text.replace("Let me read that back.", "Here's your order:"))
+    ready.caller_spoke()
+    assert call(ready, "confirm_order")["order"]["status"] == "confirmed"

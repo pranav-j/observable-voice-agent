@@ -5,7 +5,14 @@ from typing import Any
 
 import pytest
 
-from tests.textmode.fakes import GREETING, CountingStore, ScriptedLLM, call, reply
+from tests.textmode.fakes import (
+    GREETING,
+    CountingStore,
+    ScriptedLLM,
+    call,
+    readback_text,
+    reply,
+)
 from voice_order.menu.models import Menu
 from voice_order.textmode.agent import FALLBACK, CallEndedError, TextAgent
 from voice_order.textmode.llm import AssistantMessage, Message, ToolOutput, Usage, UserMessage
@@ -270,7 +277,7 @@ async def test_confirm_in_the_readback_turn_waits_even_without_a_question_mark(
             call("get_readback"),
             call("confirm_order"),  # no question in the text, so only the guard can stop this
         ),
-        reply("Let me read that back. One Affogato. Please confirm."),
+        reply(readback_text(("affogato", 1, None, []), name="Anil", phone="9000000001")),
         reply("", call("confirm_order")),
         reply("Your order is placed. Goodbye!"),
     )

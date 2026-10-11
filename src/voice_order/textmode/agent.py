@@ -110,7 +110,9 @@ class TextAgent:
             spoken.append(FALLBACK)
             self.history.append(AssistantMessage(FALLBACK))
         self.usage += usage
-        return Turn(" ".join(spoken), tuple(events), usage, self.session.ending, hit_limit)
+        text = " ".join(spoken)
+        self.session.agent_said(text)  # text is never cut off, unlike speech
+        return Turn(text, tuple(events), usage, self.session.ending, hit_limit)
 
     async def hang_up(self, reason: str) -> None:
         """The caller left. Close an unconfirmed order and save the final state."""

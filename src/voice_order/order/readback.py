@@ -1,6 +1,7 @@
 """The canonical read-back. The agent speaks this text word for word before confirming."""
 
 import re
+from difflib import SequenceMatcher
 
 from pydantic import BaseModel, ConfigDict
 
@@ -112,3 +113,17 @@ def spoken_inr(paise: int) -> str:
     if rest:
         parts.append(f"{rest} {'paisa' if rest == 1 else 'paise'}")
     return " ".join(parts)
+
+
+# Most of the read-back's words, in order. Leaves room for a small slip, not for a summary.
+SAID_IN_FULL = 0.8
+
+
+def said_in_full(spoken: str, readback: str) -> bool:
+    """Did the agent say (nearly) the whole read-back? Compares words, ignoring case."""
+    want = re.findall(r"[a-z0-9]+", readback.lower())
+    got = re.findall(r"[a-z0-9]+", spoken.lower())
+    if not want:
+        return True
+    blocks = SequenceMatcher(a=want, b=got, autojunk=False).get_matching_blocks()
+    return sum(b.size for b in blocks) / len(want) >= SAID_IN_FULL

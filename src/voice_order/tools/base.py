@@ -15,6 +15,7 @@ from pydantic import BaseModel, ConfigDict, ValidationError
 from voice_order.menu.models import Menu
 from voice_order.order.errors import OrderError
 from voice_order.order.models import Order
+from voice_order.order.readback import said_in_full
 from voice_order.order.state import new_order
 
 Result = dict[str, Any]
@@ -37,19 +38,31 @@ class Session:
     `ending` is set by end_call or transfer_to_human. Whatever runs the conversation
     (text loop or voice worker) checks it and wraps up after the agent's last words.
 
-    Whatever runs the conversation also calls `caller_spoke()` on every caller utterance,
-    so tools can tell whether the caller has replied since the read-back.
+    Whatever runs the conversation also calls `caller_spoke()` on every caller utterance
+    and `agent_said()` whenever the agent finishes saying something, so tools can tell
+    whether the caller heard the read-back in full and replied to it.
     """
 
     menu: Menu
     order: Order
     ending: CallEnd | None = None
     caller_turns: int = 0
-    readback_caller_turn: int | None = None  # caller_turns when the read-back was given
+    readback_caller_turn: int | None = None  # caller_turns when the read-back was heard
+    readback_text: str | None = None  # fetched by get_readback, not yet said in full
     phone_digits: str = ""  # the start of a phone number the caller is giving in parts
 
     def caller_spoke(self) -> None:
         self.caller_turns += 1
+
+    def agent_said(self, text: str, *, complete: bool = True) -> None:
+        """The agent finished saying `text`; complete=False if the caller cut it off.
+
+        Fetching the read-back isn't the same as saying it. In a voice call the caller can
+        cut in before a word of it is spoken, so it only counts once it was said in full.
+        """
+        if self.readback_text is not None and complete and said_in_full(text, self.readback_text):
+            self.readback_caller_turn = self.caller_turns
+            self.readback_text = None
 
     @property
     def readback_answered(self) -> bool:

@@ -8,7 +8,7 @@ from evals.scenario import SCENARIO_DIR, Scenario, load_scenario
 from evals.text_run import RunResult, run_text_scenario
 
 from tests.evals.scripts import HAPPY_AGENT, HAPPY_CALLER
-from tests.textmode.fakes import ScriptedLLM, call, reply
+from tests.textmode.fakes import ScriptedLLM, ScriptLine, call, readback_text, reply
 from voice_order.menu.models import Menu
 from voice_order.store.base import InMemoryOrderStore
 from voice_order.textmode.llm import LLMReply, Message, ToolSpec
@@ -59,6 +59,9 @@ async def test_happy_path_is_scored_as_a_success(menu: Menu) -> None:
 
 async def test_barge_in_during_readback_changes_the_order(menu: Menu) -> None:
     barge = load_scenario(SCENARIO_DIR / "readback_barge_in_size_change.yaml")
+    large: ScriptLine = ("cold_coffee", 1, "large", [])
+    medium: ScriptLine = ("cold_coffee", 1, "medium", [])
+    dosas: ScriptLine = ("masala_dosa", 2, None, [])
     agent = [
         reply(
             "",
@@ -67,9 +70,9 @@ async def test_barge_in_during_readback_changes_the_order(menu: Menu) -> None:
             call("set_customer", name="Anil", phone="9000012345"),
             call("get_readback"),
         ),
-        reply("Let me read that back. ... Is that correct?"),
+        reply(readback_text(large, dosas, name="Anil", phone="9000012345")),
         reply("", call("update_item", line_id=1, size_id="medium"), call("get_readback")),
-        reply("Sure. Let me read that back again. ... Is that correct?"),
+        reply("Sure. " + readback_text(medium, dosas, name="Anil", phone="9000012345")),
         reply("", call("confirm_order")),
         reply("Ready for pickup. Goodbye!"),
     ]

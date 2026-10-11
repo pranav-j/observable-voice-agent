@@ -263,7 +263,8 @@ def get_readback(session: Session, args: NoArgs) -> Result:
     marked = state.mark_readback(session.order)  # ORDER_CLOSED if already closed
     readback = build_readback(marked, session.menu)  # ORDER_INCOMPLETE if not ready
     session.order = marked  # recorded only once the read-back exists
-    session.readback_caller_turn = session.caller_turns
+    session.readback_text = readback.text  # counts once the agent has said it in full
+    session.readback_caller_turn = None
     return ok(
         readback=readback.text,
         instructions=(
@@ -277,11 +278,14 @@ def get_readback(session: Session, args: NoArgs) -> Result:
 def confirm_order(session: Session, args: NoArgs) -> Result:
     if session.order.readback_is_current and not session.readback_answered:
         # Code can't tell whether the reply was a yes; that stays with the model.
-        # It can make sure the caller had the chance to answer at all.
-        raise OrderError(
-            ErrorCode.READBACK_NOT_ANSWERED,
-            "The caller hasn't replied to the read-back yet. Wait for a clear yes.",
+        # It can make sure the caller heard the read-back and had the chance to answer.
+        message = (
+            "The read-back hasn't been said in full; the caller may have cut in. Say it "
+            "again word for word, then wait for a clear yes."
+            if session.readback_text is not None
+            else "The caller hasn't replied to the read-back yet. Wait for a clear yes."
         )
+        raise OrderError(ErrorCode.READBACK_NOT_ANSWERED, message)
     session.order = state.confirm(session.order)
     return ok(
         order=order_view(session),

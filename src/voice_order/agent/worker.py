@@ -187,6 +187,10 @@ async def entrypoint(ctx: JobContext) -> None:
             task.add_done_callback(background.discard)
             if ev.item.role == "user":
                 call.caller_spoke()  # lets confirm_order check the caller replied to the read-back
+            elif ev.item.role == "assistant":
+                # An interrupted message holds only what was played, so a read-back the
+                # caller cut off doesn't count as heard.
+                call.agent_said(ev.item.text_content or "", complete=not ev.item.interrupted)
 
     @session.on("agent_state_changed")
     def _on_agent_state(ev: AgentStateChangedEvent) -> None:
