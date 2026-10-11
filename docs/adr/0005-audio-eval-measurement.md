@@ -14,7 +14,7 @@ That leaves two decisions:
 
 ## Decision
 
-### Hearing mode: `CALLER_HEARING`, default `transcript`
+### Hearing mode: `--hearing`, default `transcript`
 
 - `transcript` (the default): the caller reads the agent's words from LiveKit's transcription stream, the same text the web UI shows. It costs nothing extra and adds no delay.
 - `stt`: the caller transcribes the agent's received audio itself with `gpt-4o-mini-transcribe`, once each agent utterance ends. This is more faithful, because the caller then hears only what actually came out of the speaker, and an interrupted sentence stays cut off. It costs more and is slower.
@@ -49,4 +49,4 @@ The detector only ever runs on the agent's track. That audio is synthesized spee
 - One-way network delay is included in the measured response latency, which is what a real caller experiences too. In local runs it's small.
 - Timing resolution is bounded by the 10 ms frame size and the audio buffering on the send side. That's fine for metrics reported in hundreds of milliseconds.
 - Every audio run keeps the agent's received audio and the event timeline, so metrics can be recomputed if the detector ever changes.
-- In `transcript` mode, the caller "hears" a whole sentence even if the agent was cut off mid-way. Scenarios where that matters, like interruptions, can be run with `CALLER_HEARING=stt`.
+- In `transcript` mode, the caller "hears" a whole sentence even if the agent was cut off mid-way. Scenarios where that matters, like interruptions, can be run with `--hearing stt`.
