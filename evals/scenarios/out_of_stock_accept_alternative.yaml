@@ -1,0 +1,18 @@
+id: out_of_stock_accept_alternative
+description: The drink the caller wants is sold out; they take the offered alternative.
+tags: [out_of_stock]
+runs: 3
+persona:
+  name: Aisha
+  style: brisk
+  voice: voice_pool.female_2
+goal: >
+  Order a large mango lassi. If it isn't available, take a large sweet lassi
+  instead.
+customer: {name: Aisha, phone: "9000000019"}
+expect:
+  status: confirmed
+  order:
+    items:
+      - {item: sweet_lassi, size: large, quantity: 1, modifiers: []}
+    customer: {name: Aisha, phone: "9000000019"}

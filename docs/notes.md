@@ -71,7 +71,25 @@ Next I'll record the baseline, then add a code guard and re-run. The guard: `con
 
 "one plate of veg samosas" didn't find Veg Samosa on the first search. The agent needed a second one. Plurals and extra words pull the score down.
 
-A later run was worse. The agent searched for "one plate of veg samosas", got only weak matches, and told the caller that veg samosas "aren't available on the menu". They are on the menu, and in stock. So this bug can lose a sale, not just cost an extra search. The fix I have in mind is to singularize query words before scoring. Same plan as above: baseline first, then fix and compare. A dedicated scenario will catch it on purpose.
+A later run was worse. The agent searched for "one plate of veg samosas", got only weak matches, and told the caller that veg samosas "aren't available on the menu". They are on the menu, and in stock. So this bug can lose a sale, not just cost an extra search.
+
+When I probed the search directly, it turned out to be mostly the filler words, not the plural. "veg samosas" scores as a strong match, and "two plates of veg samosas" falls below the weak line. So it depends on how the model phrases its query. When it trims the caller's words down to the item name, everything works. When it passes them straight through, it fails. That makes the bug intermittent, which is exactly the kind of thing several runs per scenario are for. The fix should strip quantities and words like "plate of" and "some" before scoring, and maybe singularize too. Same plan as above: baseline first, then fix and compare.
+
+## The agent asked a question, then answered it itself and hung up
+
+In one run the caller asked for "a cold brew coffee", which matches Cold Brew and Cold Coffee equally. The agent did the right thing at first and asked which one. Then, in the same turn, with no reply from the caller, it added the cold brew on its own and called `end_call` with the reason "caller stopped responding". It invented the silence.
+
+Part of the cause is my loop. When the model returns text and tool calls together, the loop keeps calling it so it can finish its tool work, which is what you want for "let me check that" plus a search. Here the model kept going past its own question and treated the extra rounds as time passing. It doesn't happen every time; the re-run was fine. I'm leaving the fix until after the baseline. The likely shape is a code rule, like the read-back one: no ending the call or picking an item on the caller's behalf in a turn where the agent has just asked the caller something.
+
+## The read-back drops pack sizes
+
+The menu has "Veg Samosa (2 pcs)". I decided the read-back shouldn't speak the bracket, so it says "Two Veg Samosa". That sounds like two samosas, when it's really two plates of two. In one run the simulated caller kept saying "no, two plates" at the read-back, until the agent asked whether two pieces per plate was what they meant. A real person could get stuck in the same place. The read-back should probably keep the pack size, something like "two Veg Samosa, two pieces each". That decision cost something I hadn't thought about.
+
+## The simulated caller can be the thing that fails
+
+Two failures in one batch came from my side of the test, not the agent. In one, I'd told the caller to say "two plates of veg samosas" exactly like that. It took that so literally that it refused a correct read-back three times and gave up. I reworded the goal so it uses the phrase when ordering without being rigid about it.
+
+A failed scenario can be the agent's fault, the scenario's, or the simulated caller's. The only way to tell is to read the transcript, so I do that for every failure before deciding what to fix. I only change a scenario when the scenario is actually wrong.
 
 ## The agent sometimes skips end_call
 

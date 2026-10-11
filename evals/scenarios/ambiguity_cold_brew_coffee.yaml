@@ -1,0 +1,18 @@
+id: ambiguity_cold_brew_coffee
+description: Caller says "cold brew coffee", which sits between Cold Brew and Cold Coffee.
+tags: [ambiguity, confusable]
+runs: 3
+persona:
+  name: Nikhil
+  style: brisk
+  voice: voice_pool.male_3
+goal: >
+  You want a cold brew, and you call it "a cold brew coffee". If they ask
+  whether you mean the cold brew or the cold coffee, it's the cold brew.
+customer: {name: Nikhil, phone: "9000000018"}
+expect:
+  status: confirmed
+  order:
+    items:
+      - {item: cold_brew, quantity: 1, modifiers: []}
+    customer: {name: Nikhil, phone: "9000000018"}

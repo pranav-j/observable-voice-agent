@@ -1,0 +1,19 @@
+id: ambiguity_paneer_tikka_roll
+description: Caller says "paneer tikka" but means the roll, and corrects it at the read-back.
+tags: [ambiguity, confusable]
+runs: 3
+persona:
+  name: Gaurav
+  style: brisk
+  voice: voice_pool.male_2
+goal: >
+  You want one paneer tikka roll, but you just call it "paneer tikka". If they
+  ask which one you mean, it's the roll. If the read-back says plain paneer
+  tikka, correct it to the roll.
+customer: {name: Gaurav, phone: "9000000016"}
+expect:
+  status: confirmed
+  order:
+    items:
+      - {item: paneer_tikka_roll, quantity: 1, modifiers: []}
+    customer: {name: Gaurav, phone: "9000000016"}

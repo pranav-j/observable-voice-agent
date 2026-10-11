@@ -1,0 +1,18 @@
+id: out_of_stock_decline_alternative
+description: A main is sold out; the caller declines any substitute and keeps the rest.
+tags: [out_of_stock]
+runs: 3
+persona:
+  name: Suresh
+  style: brisk
+  voice: voice_pool.male_1
+goal: >
+  Order a mutton rogan josh and two butter naan. If the rogan josh isn't
+  available, don't take anything in its place; just keep the naan.
+customer: {name: Suresh, phone: "9000000020"}
+expect:
+  status: confirmed
+  order:
+    items:
+      - {item: butter_naan, quantity: 2, modifiers: []}
+    customer: {name: Suresh, phone: "9000000020"}

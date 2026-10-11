@@ -1,0 +1,18 @@
+id: ambiguity_which_biryani
+description: Caller asks for "a biryani", which matches two items equally.
+tags: [ambiguity]
+runs: 3
+persona:
+  name: Pooja
+  style: chatty
+  voice: voice_pool.female_1
+goal: >
+  You want a biryani and just say "a biryani" at first. When asked which one,
+  say veg. When asked the size, say full.
+customer: {name: Pooja, phone: "9000000017"}
+expect:
+  status: confirmed
+  order:
+    items:
+      - {item: veg_biryani, size: full, quantity: 1, modifiers: []}
+    customer: {name: Pooja, phone: "9000000017"}

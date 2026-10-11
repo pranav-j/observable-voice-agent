@@ -1,0 +1,18 @@
+id: unknown_item_plural_samosas
+description: Caller orders an item in the plural; it must not be treated as off the menu.
+tags: [out_of_stock, plural_search]
+runs: 3
+persona:
+  name: Divya
+  style: brisk
+  voice: voice_pool.female_3
+goal: >
+  Order two plates of veg samosas, and use those words when you order. One
+  plate is the two-piece veg samosa on the menu.
+customer: {name: Divya, phone: "9000000022"}
+expect:
+  status: confirmed
+  order:
+    items:
+      - {item: veg_samosa, quantity: 2, modifiers: []}
+    customer: {name: Divya, phone: "9000000022"}
