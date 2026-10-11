@@ -35,4 +35,4 @@ Run `make help` for all targets.
 
 ## Design decisions
 
-See [docs/adr/](docs/adr/).
+See [docs/adr/](docs/adr/). Problems found along the way, and what I did about them, are in [docs/notes.md](docs/notes.md).
