@@ -1,0 +1,19 @@
+# Provider prices used to estimate the cost of a call, in US dollars.
+# Source: OpenAI API pricing page (developers.openai.com/api/docs/pricing), checked 2026-10-11.
+# Prices change: update them here. No price is hard-coded anywhere else.
+#
+# Keys are "provider/model", matching the usage LiveKit reports for each session.
+
+llm:
+  openai/gpt-6-luna: {input_per_1m: 0.10, cached_input_per_1m: 0.01, output_per_1m: 0.50}
+  openai/gpt-6.1-sol: {input_per_1m: 2.00, cached_input_per_1m: 0.10, output_per_1m: 10.00}
+  openai/gpt-5.4-mini: {input_per_1m: 0.75, cached_input_per_1m: 0.075, output_per_1m: 4.50}
+
+stt:
+  openai/gpt-live-transcribe: {per_minute: 0.017}
+  openai/gpt-realtime-whisper: {per_minute: 0.017}
+  openai/gpt-4o-mini-transcribe: {per_minute: 0.003}
+
+tts:
+  openai/gpt-4o-mini-tts: {input_per_1m: 0.60, output_per_1m: 12.00}
+  openai/tts-1: {per_1m_characters: 15.00}

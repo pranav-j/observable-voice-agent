@@ -231,6 +231,21 @@ So I moved the rule into the core, where both runtimes can use one definition: w
 
 Telemetry was working by then too. Every span LiveKit creates reaches Phoenix tagged with the session id, and each turn's timings go into `turns.jsonl` next to the recording. The first numbers I saw in a dev call were slow, with most of the time spent waiting for the end of the turn, in the LLM's tool rounds and in waiting for the first sentence of speech. I'll only write numbers down once they come from a proper report, but that's where the latency work will start.
 
+## Recording calls, and two ways cost could have read zero
+
+Every call now leaves a folder in `recordings/`:
+
+- LiveKit's stereo recording, plus the caller and agent split into separate WAV files
+- the transcript, every tool call with its result, and LiveKit's full session report
+- the per-turn timings
+- a usage file with the estimated cost
+
+LiveKit records into a temporary directory that it deletes when the job ends, so the copy happens in the session-end hook. The channel split is tested with a synthetic stereo file: a tone on the caller's side and silence on the agent's.
+
+Prices live in `config/rates.yaml`, not in code, and a model with no rate is reported as unpriced rather than counted as free. That rule paid off on the first real call. Everything came out unpriced, because LiveKit reports the provider as `api.openai.com` and my rates file says `openai`. Without the rule, every call would have looked like it cost nothing.
+
+The second catch was quieter. The streaming speech-to-text reports no audio duration at all, so its cost would also have come out as zero, even though it's billed for every minute of audio sent. The caller's audio streams for the whole call, so the call's length is a fair stand-in. When that fallback is used, the usage line says it's an estimate, so a guess never gets presented as a measurement.
+
 ## The simulated caller can be the thing that fails
 
 Two failures in one batch came from my side of the test, not the agent. In one, I'd told the caller to say "two plates of veg samosas" exactly like that. It took that so literally that it refused a correct read-back three times and gave up. I reworded the goal so it uses the phrase when ordering without being rigid about it.

@@ -34,9 +34,11 @@ from voice_order.config import Settings, get_settings
 from voice_order.menu.loader import load_menu
 from voice_order.order.state import abandon
 from voice_order.prompts.loader import agent_system_prompt, greeting_prompt
+from voice_order.recording.session import save_session
 from voice_order.store.postgres import PostgresOrderStore
 from voice_order.telemetry.tracing import setup_tracing
 from voice_order.telemetry.turns import TurnLog
+from voice_order.telemetry.usage import load_rates
 from voice_order.tools.base import CallEnd, Result, Session
 from voice_order.tools.catalog import order_view
 
@@ -104,7 +106,21 @@ server = AgentServer(
 )
 
 
-@server.rtc_session(agent_name=settings.agent_name)
+async def on_session_end(ctx: JobContext) -> None:
+    # Runs after the session closes and before LiveKit deletes the job's temp directory,
+    # which is where the audio recording lives.
+    try:
+        out = save_session(
+            ctx.make_session_report(),
+            Path(settings.recordings_dir) / ctx.job.room.name,
+            load_rates(),
+        )
+        log.info("saved recording to %s", out)
+    except Exception:
+        log.exception("could not save the session recording")
+
+
+@server.rtc_session(agent_name=settings.agent_name, on_session_end=on_session_end)
 async def entrypoint(ctx: JobContext) -> None:
     menu = load_menu()
     call = Session.start(menu, ctx.job.room.name)  # the room name is the session id
@@ -181,7 +197,7 @@ async def entrypoint(ctx: JobContext) -> None:
             background.add(task)
             task.add_done_callback(background.discard)
 
-    await session.start(agent, room=ctx.room)
+    await session.start(agent, room=ctx.room, record=True)  # stereo: caller left, agent right
     await publish(ctx.room, ORDER_TOPIC, {"session_id": call.order.session_id, **order_view(call)})
     await session.say(greeting_prompt(menu.restaurant).text)
 
