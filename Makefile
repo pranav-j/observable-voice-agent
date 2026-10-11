@@ -38,8 +38,9 @@ $(VENV)/bin/python:
 $(WEB_DEPS): web/package-lock.json
 	@$(NVM_USE) echo "web: npm ci (node $$(node --version))" && cd web && npm ci --no-fund
 
-setup: $(VENV)/bin/python $(WEB_DEPS) ## Create .venv, install locked Python and web deps
+setup: $(VENV)/bin/python $(WEB_DEPS) ## Create .venv, install locked deps and git hooks
 	$(UV) sync --locked
+	$(UV) run --locked pre-commit install
 	@test -f .env || { cp .env.example .env; echo "created .env from .env.example"; }
 
 up: ## Start postgres, livekit-server, phoenix and wait until healthy

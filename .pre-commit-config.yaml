@@ -1,0 +1,49 @@
+# Installed into .git/hooks by `make setup`. Run on everything with:
+#   uv run pre-commit run --all-files
+minimum_pre_commit_version: "4.4.0"
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+        exclude: (^|/)tsconfig.*\.json$ # tsconfig allows comments
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=500]
+      - id: detect-private-key
+
+  # Python tools run from .venv so hooks use exactly the versions pinned in uv.lock.
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff check
+        entry: .venv/bin/ruff check --fix --force-exclude
+        language: unsupported
+        types_or: [python, pyi]
+        require_serial: true
+      - id: ruff-format
+        name: ruff format
+        entry: .venv/bin/ruff format --force-exclude
+        language: unsupported
+        types_or: [python, pyi]
+        require_serial: true
+      - id: mypy
+        name: mypy
+        entry: .venv/bin/mypy
+        language: unsupported
+        types_or: [python, pyi]
+        pass_filenames: false # check the whole project, same as `make lint`
+        require_serial: true
+      - id: no-env-files
+        name: refuse .env files
+        entry: .env files hold secrets and stay out of git (.env.example is fine)
+        language: fail
+        files: (^|/)\.env(\..+)?$
+        exclude: (^|/)\.env\.example$
