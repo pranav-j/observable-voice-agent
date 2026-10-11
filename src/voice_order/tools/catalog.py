@@ -222,6 +222,13 @@ class SetCustomerArgs(ToolArgs):
     )
 
 
+UNCHANGED_CUSTOMER = (
+    "Nothing changed: that name and number are already on the order. If the caller says "
+    "the name is wrong, speech recognition is mishearing it the same way: ask them to "
+    "spell it letter by letter, and pass the letters."
+)
+
+
 def _whole_phone(session: Session, said: str) -> str | None:
     """The number to use, or None while the caller is still saying it in parts.
 
@@ -258,6 +265,10 @@ def set_customer(session: Session, args: SetCustomerArgs) -> Result:
     new = state.set_customer(session.order, args.name, phone)
     session.phone_digits = ""
     phone_text = group_phone(new.customer.phone) if new.customer else None
+    if new is session.order:
+        # A correction that sets the same name again: speech recognition heard it the
+        # same wrong way twice, so asking again won't help, but a spelling will.
+        return _changed(session, new, read_phone_back_as=phone_text, note=UNCHANGED_CUSTOMER)
     return _changed(session, new, read_phone_back_as=phone_text)
 
 

@@ -71,6 +71,13 @@ def test_set_customer_normalizes_and_groups_the_phone(session: Session) -> None:
     assert result["read_phone_back_as"] == "90000 00001"
 
 
+def test_setting_the_same_customer_again_suggests_spelling(session: Session) -> None:
+    first = call(session, "set_customer", name="Nick Hill", phone="98765 69314")
+    assert "note" not in first
+    again = call(session, "set_customer", name="Nick Hill", phone="98765 69314")
+    assert "spell it letter by letter" in again["note"]
+
+
 def test_a_number_given_in_two_parts_is_joined(session: Session) -> None:
     # The caller paused after five digits and the pause ended their turn.
     first = call(session, "set_customer", name="Priya", phone="nine zero zero zero zero")
