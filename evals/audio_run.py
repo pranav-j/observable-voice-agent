@@ -203,6 +203,10 @@ async def run_audio_scenario(
         error = f"{type(exc).__name__}: {exc}"
     finally:
         await caller.leave()
+    if caller.send_glitches and error is None:
+        # The harness failed, not the agent: don't let it count as the agent's failure.
+        end_reason = "error"
+        error = f"caller audio went out faster than real time: {caller.send_glitches[0]!r}"
 
     folder = Path(settings.recordings_dir) / session_id
     usage = await _read_usage(folder)

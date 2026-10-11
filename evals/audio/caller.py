@@ -31,6 +31,9 @@ FRAME = SPEAK_RATE // 100  # 10 ms
 Hearing = Literal["transcript", "stt"]
 # If the agent's transcript stream never closes, this much silence still ends its turn.
 STUCK_QUIET_S = 5.0
+# Speech shorter than this per word was cut off by text-to-speech; fast talkers stay above.
+MIN_SECONDS_PER_WORD = 0.2
+TTS_ATTEMPTS = 3
 
 # Scenario voices -> OpenAI TTS voices. Changing this changes what callers sound like,
 # so reports record the pool.
@@ -143,6 +146,7 @@ class AudioCaller:
         self.agent = AgentState()
         self.utterances: list[CallerUtterance] = []
         self.heard_caller: list[tuple[float, str]] = []
+        self.send_glitches: list[str] = []  # lines that went out much faster than real time
         self._agent_frames: list[np.ndarray[Any, Any]] = []
         self._agent_audio_start: float | None = None
         self._queue: asyncio.Queue[_Speech] = asyncio.Queue()
@@ -263,6 +267,9 @@ class AudioCaller:
                     pos += FRAME
                 if pos >= len(current.pcm) and not pauses:
                     end = self.now()
+                    if end - started < 0.5 * len(current.pcm) / SPEAK_RATE:
+                        # Real-time pacing broke: the agent can't have heard this properly.
+                        self.send_glitches.append(current.text)
                     utterance = CallerUtterance(
                         current.text,
                         started,
@@ -281,14 +288,25 @@ class AudioCaller:
             )
 
     async def synthesize(self, text: str) -> np.ndarray[Any, Any]:
-        response = await self.client.audio.speech.create(
-            model="gpt-4o-mini-tts",
-            voice=self.voice,
-            input=speakable(text),
-            instructions=self.instructions,
-            response_format="pcm",
-        )
-        return speech_at_level(np.frombuffer(response.content, dtype=np.int16))
+        """The line as speech. Clipped audio is retried, then reported as a harness error.
+
+        Once in a few hundred lines, text-to-speech came back far too short to hold the
+        words. The agent never heard the line, and the run counted as the agent's failure.
+        """
+        spoken = speakable(text)
+        shortest = MIN_SECONDS_PER_WORD * len(spoken.split())
+        for _ in range(TTS_ATTEMPTS):
+            response = await self.client.audio.speech.create(
+                model="gpt-4o-mini-tts",
+                voice=self.voice,
+                input=spoken,
+                instructions=self.instructions,
+                response_format="pcm",
+            )
+            pcm = np.frombuffer(response.content, dtype=np.int16)
+            if len(pcm) / SPEAK_RATE >= shortest:
+                return speech_at_level(pcm)
+        raise RuntimeError(f"text-to-speech kept returning clipped audio for {text!r}")
 
     async def say(
         self, text: str, *, pause_ms: int = 0, interrupt: bool = False

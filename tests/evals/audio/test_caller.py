@@ -1,10 +1,12 @@
 """Pure helpers of the audio caller."""
 
+import numpy as np
 import pytest
 from evals.audio.caller import (
     STUCK_QUIET_S,
     VOICE_POOL,
     AgentState,
+    AudioCaller,
     speakable,
     split_for_pause,
     tts_instructions,
@@ -81,3 +83,36 @@ def test_phone_number_utterances_are_recognized() -> None:
     assert gives_phone_number("It's 90000 26457.")
     assert gives_phone_number("nine zero zero zero zero, two six four five seven")
     assert not gives_phone_number("Two masala dosas and one coffee, please.")
+
+
+class _FakeSpeech:
+    """Stands in for the OpenAI client: returns the queued audio lengths in order."""
+
+    def __init__(self, *seconds: float) -> None:
+        self.seconds = list(seconds)
+        self.calls = 0
+        self.audio = self
+        self.speech = self
+
+    async def create(self, **kwargs: object) -> object:
+        self.calls += 1
+        n = int(self.seconds.pop(0) * 24_000)
+        tone = (3000 * np.sin(np.arange(n) / 5)).astype(np.int16)
+        return type("Response", (), {"content": tone.tobytes()})()
+
+
+def _caller(fake: _FakeSpeech) -> AudioCaller:
+    return AudioCaller(client=fake, voice="", style="brisk", noise=None)  # type: ignore[arg-type]
+
+
+async def test_clipped_speech_is_retried() -> None:
+    fake = _FakeSpeech(0.1, 1.5)
+    pcm = await _caller(fake).synthesize("Yes. Goodbye.")
+    assert fake.calls == 2
+    assert len(pcm) == int(1.5 * 24_000)
+
+
+async def test_speech_that_stays_clipped_is_a_harness_error() -> None:
+    fake = _FakeSpeech(0.1, 0.1, 0.1)
+    with pytest.raises(RuntimeError, match="clipped"):
+        await _caller(fake).synthesize("Yes. Goodbye.")
