@@ -140,3 +140,41 @@ def audio_metrics(timeline: Timeline) -> dict[str, Any]:
         "wer_errors": errors,
         "wer_words": words,
     }
+
+
+# --- real calls: both sides from the worker's two-channel recording ---------------------------
+
+
+def recording_metrics(caller: list[Segment], agent: list[Segment]) -> dict[str, Any]:
+    """Timing for a real call, where nothing was scripted and both sides are detected.
+
+    Response latency runs from the end of the caller's speech to the agent's next onset,
+    when the last thing before that onset was the caller (not the agent's own previous
+    sentence) and the caller wasn't still talking. Barge-in stop runs from caller speech
+    starting while the agent talks to the end of that agent segment. Short backchannels
+    ("mm-hmm") count as barge-ins too; nothing here knows what was said.
+    """
+    latencies: list[float] = []
+    for a in agent:
+        if any(c.start < a.start < c.end for c in caller):
+            continue  # the agent started over the caller
+        before = [(s.end, "caller") for s in caller if s.end <= a.start]
+        before += [(s.end, "agent") for s in agent if s.end <= a.start]
+        if before:
+            end, who = max(before)
+            if who == "caller":
+                latencies.append(a.start - end)
+    stops = [
+        next(a.end - c.start for a in agent if a.start < c.start < a.end)
+        for c in caller
+        if any(a.start < c.start < a.end for a in agent)
+    ]
+    return {
+        "response_latencies_ms": [round(x * 1000) for x in latencies],
+        "dead_air_turns": sum(x > DEAD_AIR_SECONDS for x in latencies),
+        "barge_in_stop_ms": [round(x * 1000) for x in stops],
+        "false_cutoffs": 0,  # needs scripted pauses
+        "scripted_pauses": 0,
+        "wer_errors": 0,  # needs a script of what the caller said
+        "wer_words": 0,
+    }

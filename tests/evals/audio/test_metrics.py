@@ -2,7 +2,7 @@
 
 import numpy as np
 import pytest
-from evals.audio.detector import SAMPLE_RATE
+from evals.audio.detector import SAMPLE_RATE, Segment
 from evals.audio.metrics import (
     CallerUtterance,
     Timeline,
@@ -10,6 +10,7 @@ from evals.audio.metrics import (
     barge_in_stop_times,
     false_cutoffs,
     normalize_words,
+    recording_metrics,
     response_latencies,
     utterance_wer,
     word_errors,
@@ -103,3 +104,32 @@ def test_summary_counts_dead_air() -> None:
     summary = audio_metrics(timeline)
     assert summary["response_latencies_ms"] == pytest.approx([2500, 1000], abs=15)
     assert summary["dead_air_turns"] == 1
+
+
+# --- recording_metrics: real calls -------------------------------------------------------
+
+
+def test_recording_latency_counts_only_caller_to_agent_gaps() -> None:
+    caller = [Segment(1.0, 2.0), Segment(2.4, 3.0), Segment(9.0, 9.5)]
+    agent = [Segment(4.5, 6.0), Segment(6.5, 7.5), Segment(10.0, 11.0)]
+    m = recording_metrics(caller, agent)
+    # 3.0 -> 4.5 and 9.5 -> 10.0; 6.5 follows the agent's own sentence
+    assert m["response_latencies_ms"] == [1500, 500]
+    assert m["dead_air_turns"] == 0
+
+
+def test_recording_agent_starting_over_the_caller_is_not_a_latency() -> None:
+    m = recording_metrics([Segment(1.0, 4.0)], [Segment(3.0, 5.0)])
+    assert m["response_latencies_ms"] == []
+
+
+def test_recording_barge_in_stop() -> None:
+    caller = [Segment(0.0, 1.0), Segment(3.0, 3.6)]
+    agent = [Segment(1.5, 3.8)]
+    m = recording_metrics(caller, agent)
+    assert m["barge_in_stop_ms"] == [800]
+
+
+def test_recording_dead_air() -> None:
+    m = recording_metrics([Segment(0.0, 1.0)], [Segment(3.5, 4.0)])
+    assert (m["response_latencies_ms"], m["dead_air_turns"]) == ([2500], 1)
