@@ -1,0 +1,21 @@
+id: noise_accent_misheard_names
+description: Item names arrive the way speech recognition tends to mangle them.
+tags: [noise_accent, stt_hard]
+runs: 3
+persona:
+  name: Geeta
+  style: brisk
+  voice: voice_pool.female_2
+  noise: {clip: street_01, snr_db: 10}
+goal: >
+  Order one pesarattu and one bisi bele bath. When you say the item names,
+  write them the way a bad transcription would: "pessarattoo" and
+  "bisi bella bath".
+customer: {name: Geeta, phone: "9000000028"}
+expect:
+  status: confirmed
+  order:
+    items:
+      - {item: pesarattu, quantity: 1, modifiers: []}
+      - {item: bisi_bele_bath, quantity: 1, modifiers: []}
+    customer: {name: Geeta, phone: "9000000028"}

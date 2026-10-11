@@ -1,0 +1,18 @@
+id: phone_name_spoken_digits
+description: Caller says the phone number as words, in two groups.
+tags: [phone_name, phone]
+runs: 3
+persona:
+  name: Karan
+  style: brisk
+  voice: voice_pool.male_1
+goal: >
+  Order one americano. When asked for your phone number, say it in words, in
+  two groups: "nine zero zero zero zero, zero zero zero two three".
+customer: {name: Karan, phone: "9000000023"}
+expect:
+  status: confirmed
+  order:
+    items:
+      - {item: americano, quantity: 1, modifiers: []}
+    customer: {name: Karan, phone: "9000000023"}

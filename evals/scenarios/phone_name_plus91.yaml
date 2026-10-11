@@ -1,0 +1,20 @@
+id: phone_name_plus91
+description: Caller gives the phone number with the +91 country code.
+tags: [phone_name, phone]
+runs: 3
+persona:
+  name: Ananya
+  style: chatty
+  voice: voice_pool.female_1
+goal: >
+  Order one masala dosa and one regular fresh lime soda. When asked for your
+  phone number, say "plus nine one, nine zero zero zero zero, zero zero zero
+  two five".
+customer: {name: Ananya, phone: "9000000025"}
+expect:
+  status: confirmed
+  order:
+    items:
+      - {item: masala_dosa, quantity: 1, modifiers: []}
+      - {item: fresh_lime_soda, size: regular, quantity: 1, modifiers: []}
+    customer: {name: Ananya, phone: "9000000025"}

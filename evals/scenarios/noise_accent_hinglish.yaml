@@ -1,0 +1,20 @@
+id: noise_accent_hinglish
+description: Caller mixes Hindi number words into an English order.
+tags: [noise_accent, accent]
+runs: 3
+persona:
+  name: Ravi
+  style: chatty
+  voice: voice_pool.male_1
+goal: >
+  Speak Indian English with a few Hindi words. Ask for "ek masala dosa" and
+  "do masala chai, regular wali". You want one masala dosa and two regular
+  masala chai.
+customer: {name: Ravi, phone: "9000000027"}
+expect:
+  status: confirmed
+  order:
+    items:
+      - {item: masala_dosa, quantity: 1, modifiers: []}
+      - {item: masala_chai, size: regular, quantity: 2, modifiers: []}
+    customer: {name: Ravi, phone: "9000000027"}

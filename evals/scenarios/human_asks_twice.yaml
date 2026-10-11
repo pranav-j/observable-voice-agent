@@ -1,0 +1,15 @@
+id: human_asks_twice
+description: Caller asks to speak to a person twice; the agent should hand over.
+tags: [human]
+runs: 3
+persona:
+  name: Usha
+  style: confused
+  voice: voice_pool.female_3
+goal: >
+  You want to ask about catering for a party, which you'd rather discuss with a
+  person. Ask to speak to a real person. If the agent tries to help instead,
+  ask for a person again.
+customer: {name: Usha, phone: "9000000031"}
+expect:
+  status: escalated

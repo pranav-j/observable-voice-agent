@@ -1,0 +1,18 @@
+id: phone_name_spelled_name
+description: Caller spells out a name that is easy to get wrong.
+tags: [phone_name, name]
+runs: 3
+persona:
+  name: Siddharth
+  style: brisk
+  voice: voice_pool.male_2
+goal: >
+  Order one chai latte with oat milk. When asked for your name, say
+  "Siddharth, that's S I D D H A R T H".
+customer: {name: Siddharth, phone: "9000000024"}
+expect:
+  status: confirmed
+  order:
+    items:
+      - {item: chai_latte, quantity: 1, modifiers: [oat_milk]}
+    customer: {name: Siddharth, phone: "9000000024"}

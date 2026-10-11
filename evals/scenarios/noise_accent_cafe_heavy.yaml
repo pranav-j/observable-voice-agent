@@ -1,0 +1,19 @@
+id: noise_accent_cafe_heavy
+description: A normal order over heavy cafe noise. In text mode only the conversation is tested.
+tags: [noise_accent, noise]
+runs: 3
+persona:
+  name: Manoj
+  style: brisk
+  voice: voice_pool.male_3
+  noise: {clip: cafe_02, snr_db: 5}
+goal: >
+  Order one medium cold coffee and one veg club sandwich with no onion.
+customer: {name: Manoj, phone: "9000000026"}
+expect:
+  status: confirmed
+  order:
+    items:
+      - {item: cold_coffee, size: medium, quantity: 1, modifiers: []}
+      - {item: veg_club_sandwich, quantity: 1, modifiers: [no_onion]}
+    customer: {name: Manoj, phone: "9000000026"}

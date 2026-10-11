@@ -79,7 +79,15 @@ When I probed the search directly, it turned out to be mostly the filler words, 
 
 In one run the caller asked for "a cold brew coffee", which matches Cold Brew and Cold Coffee equally. The agent did the right thing at first and asked which one. Then, in the same turn, with no reply from the caller, it added the cold brew on its own and called `end_call` with the reason "caller stopped responding". It invented the silence.
 
-Part of the cause is my loop. When the model returns text and tool calls together, the loop keeps calling it so it can finish its tool work, which is what you want for "let me check that" plus a search. Here the model kept going past its own question and treated the extra rounds as time passing. It doesn't happen every time; the re-run was fine. I'm leaving the fix until after the baseline. The likely shape is a code rule, like the read-back one: no ending the call or picking an item on the caller's behalf in a turn where the agent has just asked the caller something.
+Part of the cause is my loop. When the model returns text and tool calls together, the loop keeps calling it so it can finish its tool work, which is what you want for "let me check that" plus a search. Here the model kept going past its own question and treated the extra rounds as time passing. It doesn't happen every time; the re-run was fine.
+
+The next batch of scenarios showed it isn't a one-off. It's the most common way the agent fails. In three runs it asked for the phone number and, in the same breath, called `set_customer` with an answer it made up: an empty string, a single space, and "0000000000". One run then ended the call because the caller had "stopped responding". Another tried the blank number three times within that one turn, which tripped my prompt rule to transfer after three failed attempts at the same step. So it escalated over failures it had produced itself. And in the scenario where the caller asks for a person, it transferred on the first request instead of the second, right after asking "would you like to place an order?".
+
+I'm leaving the fix until after the baseline. The likely shape is a code rule in the loop: if the model's words in a round end with a question to the caller, run that round's tool calls but don't call the model again, and end the turn so the caller can answer. It's a heuristic, but a narrow one, and easy to test. The "three failed attempts" count should also only count attempts across caller turns, not retries inside one turn.
+
+## A made-up phone number passed validation
+
+The phone check strips non-digits, handles a +91 or leading 0, and requires ten digits. "0000000000" is ten digits, so when the agent invented it as a placeholder, it was saved as the customer's number. Indian numbers don't start with 0 once the prefix is gone, so the check should reject a leading zero. It's a small rule, but without it, an order could be confirmed with a phone number nobody can call.
 
 ## The read-back drops pack sizes
 
