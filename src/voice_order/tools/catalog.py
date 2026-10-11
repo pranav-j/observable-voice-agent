@@ -255,6 +255,15 @@ def _whole_phone(session: Session, said: str) -> str | None:
 
 
 def set_customer(session: Session, args: SetCustomerArgs) -> Result:
+    if not state.spoken_digits(args.phone):
+        # The agent saving the name before asking for the number. Not a failed attempt:
+        # counting it as one got a call transferred before the caller had said a digit.
+        return error(
+            ErrorCode.PHONE_MISSING,
+            "No phone number yet, so nothing was saved. That's expected before you've "
+            "asked: ask for the 10-digit number, then call set_customer with the name and "
+            "the number. This doesn't count as a failed attempt.",
+        )
     phone = _whole_phone(session, args.phone)
     if phone is None:
         held = session.phone_digits
