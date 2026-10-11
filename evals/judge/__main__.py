@@ -65,7 +65,11 @@ def _sample(reports: list[Path], settings: Settings, n: int, force: bool) -> int
         return 2
     recordings = Path(settings.recordings_dir)
     cases = [
-        c for report in reports for r in load_results(report) for c in error_cases(r, recordings)
+        c
+        for report in reports
+        for r in load_results(report)
+        for c in error_cases(r, recordings)
+        if c.reply.strip()  # silence isn't judged, so there's nothing to label
     ]
     if not cases:
         print("Those reports have no tool errors to sample.", file=sys.stderr)
