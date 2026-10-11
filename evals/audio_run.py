@@ -35,7 +35,7 @@ from voice_order.textmode.llm import LLMClient, Usage
 
 GREETING_WAIT_S = 30.0
 REPLY_WAIT_S = 30.0
-USAGE_WAIT_S = 15.0
+USAGE_WAIT_S = 60.0  # saving the recording can take a while after the caller leaves
 
 
 def _pauses(scenario: Scenario) -> dict[int, int]:
