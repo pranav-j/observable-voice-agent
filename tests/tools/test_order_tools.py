@@ -71,6 +71,38 @@ def test_set_customer_normalizes_and_groups_the_phone(session: Session) -> None:
     assert result["read_phone_back_as"] == "90000 00001"
 
 
+def test_a_number_given_in_two_parts_is_joined(session: Session) -> None:
+    # The caller paused after five digits and the pause ended their turn.
+    first = call(session, "set_customer", name="Priya", phone="nine zero zero zero zero")
+    assert first["error"] == "PHONE_INCOMPLETE"
+    assert first["digits_so_far"] == 5
+    assert session.order.customer is None
+    second = call(session, "set_customer", name="Priya", phone="zero zero zero zero two")
+    assert second["order"]["customer"] == {"name": "Priya", "phone": "9000000002"}
+    assert session.phone_digits == ""
+
+
+def test_a_number_in_three_parts_with_a_prefix(session: Session) -> None:
+    assert call(session, "set_customer", name="Anil", phone="+91 98")["ok"] is False
+    assert call(session, "set_customer", name="Anil", phone="765")["ok"] is False
+    result = call(session, "set_customer", name="Anil", phone="43210")
+    assert result["order"]["customer"]["phone"] == "9876543210"
+
+
+def test_a_whole_number_replaces_a_held_part(session: Session) -> None:
+    call(session, "set_customer", name="Priya", phone="9 0 0")
+    result = call(session, "set_customer", name="Priya", phone="98765 43210")
+    assert result["order"]["customer"]["phone"] == "9876543210"
+    assert session.phone_digits == ""
+
+
+def test_too_many_digits_drops_the_held_part(session: Session) -> None:
+    call(session, "set_customer", name="Priya", phone="90000")
+    result = call(session, "set_customer", name="Priya", phone="900000000")
+    assert result["error"] == "INVALID_PHONE"
+    assert session.phone_digits == ""
+
+
 # --- every error path ------------------------------------------------------------------
 
 
@@ -100,7 +132,9 @@ def test_set_customer_normalizes_and_groups_the_phone(session: Session) -> None:
         ("update_item", {"line_id": 1, "modifier_ids": ["cheese"]}, "INVALID_MODIFIER"),
         ("remove_item", {"line_id": 9}, "UNKNOWN_LINE"),
         ("set_customer", {"name": "  ", "phone": "9000000001"}, "INVALID_NAME"),
-        ("set_customer", {"name": "Anil", "phone": "12345"}, "INVALID_PHONE"),
+        ("set_customer", {"name": "Anil", "phone": "0123456789"}, "INVALID_PHONE"),
+        ("set_customer", {"name": "Anil", "phone": "my number"}, "INVALID_PHONE"),
+        ("set_customer", {"name": "Anil", "phone": "12345"}, "PHONE_INCOMPLETE"),
         ("set_customer", {"name": "Anil"}, "INVALID_ARGUMENTS"),
     ],
 )

@@ -46,6 +46,7 @@ class Session:
     ending: CallEnd | None = None
     caller_turns: int = 0
     readback_caller_turn: int | None = None  # caller_turns when the read-back was given
+    phone_digits: str = ""  # the start of a phone number the caller is giving in parts
 
     def caller_spoke(self) -> None:
         self.caller_turns += 1

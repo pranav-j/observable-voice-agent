@@ -11,7 +11,17 @@ from voice_order.order.errors import ErrorCode, OrderError
 from voice_order.order.models import Order
 from voice_order.order.pricing import price_order
 from voice_order.order.readback import build_readback, describe_line, group_phone, spoken_inr
-from voice_order.tools.base import CallEnd, EndKind, NoArgs, Result, Session, Tool, ToolArgs, ok
+from voice_order.tools.base import (
+    CallEnd,
+    EndKind,
+    NoArgs,
+    Result,
+    Session,
+    Tool,
+    ToolArgs,
+    error,
+    ok,
+)
 
 # Measured on the seed menu: real matches score 93+, items not on the menu stay under 75.
 STRONG_MATCH = 90
@@ -201,15 +211,48 @@ class SetCustomerArgs(ToolArgs):
     phone: str = Field(
         description=(
             "The caller's phone number exactly as they said it, in digits or words. "
-            "Spaces, +91 and spoken forms like 'nine double zero' are fine."
+            "Spaces, +91 and spoken forms like 'nine double zero' are fine. If they give "
+            "it in parts, pass each part as it comes; the parts are joined."
         )
     )
 
 
+def _whole_phone(session: Session, said: str) -> str | None:
+    """The number to use, or None while the caller is still saying it in parts.
+
+    On a call people often pause halfway through a number, and the pause can end their
+    turn, so each part arrives on its own. Joining parts is counting, which belongs in
+    code. A part that doesn't fit (too many digits) drops what was held.
+    """
+    if state.normalize_phone(said) is not None:
+        return said
+    digits = state.spoken_digits(said)
+    joined = session.phone_digits + digits
+    if state.normalize_phone(joined) is not None:
+        return joined
+    if digits and len(joined) < 10:
+        session.phone_digits = joined
+        return None
+    session.phone_digits = ""
+    return said  # not a number; set_customer rejects it
+
+
 def set_customer(session: Session, args: SetCustomerArgs) -> Result:
-    new = state.set_customer(session.order, args.name, args.phone)
-    phone = group_phone(new.customer.phone) if new.customer else None
-    return _changed(session, new, read_phone_back_as=phone)
+    phone = _whole_phone(session, args.phone)
+    if phone is None:
+        held = session.phone_digits
+        return error(
+            ErrorCode.PHONE_INCOMPLETE,
+            f"Got {len(held)} digits so far ({' '.join(held)}), not the full 10. The caller "
+            "is probably still saying it: say something short like 'okay, go on', and when "
+            "they say the rest, call set_customer with just the new digits. If they say "
+            "that was all, ask for the whole number again.",
+            digits_so_far=len(held),
+        )
+    new = state.set_customer(session.order, args.name, phone)
+    session.phone_digits = ""
+    phone_text = group_phone(new.customer.phone) if new.customer else None
+    return _changed(session, new, read_phone_back_as=phone_text)
 
 
 # --- read-back, confirmation and ending the call ---------------------------------------------
