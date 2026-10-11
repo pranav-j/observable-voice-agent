@@ -119,10 +119,15 @@ def load_scenarios(pattern: str = "*", directory: Path = SCENARIO_DIR) -> list[S
 
 def menu_problems(scenario: Scenario, menu: Menu) -> list[str]:
     """Ways the expected order can't exist on this menu. Empty means it's consistent."""
-    if scenario.expect.order is None:
+    return expectation_problems(scenario.expect, menu)
+
+
+def expectation_problems(expect: Expectation, menu: Menu) -> list[str]:
+    """menu_problems for an expectation on its own, e.g. an annotated real call."""
+    if expect.order is None:
         return []
     problems = []
-    for expected in scenario.expect.order.items:
+    for expected in expect.order.items:
         item = menu.item(expected.item)
         if item is None:
             problems.append(f"unknown item {expected.item!r}")
@@ -136,6 +141,6 @@ def menu_problems(scenario: Scenario, menu: Menu) -> list[str]:
         for mod in expected.modifiers:
             if mod not in modifiers:
                 problems.append(f"{item.id}: unknown modifier {mod!r}")
-        if not item.in_stock and scenario.expect.status == "confirmed":
+        if not item.in_stock and expect.status == "confirmed":
             problems.append(f"{item.id} is out of stock but expected in a confirmed order")
     return problems
