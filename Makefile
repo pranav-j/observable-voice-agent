@@ -59,8 +59,8 @@ dev: ## Run backend + agent worker + web (not implemented yet)
 test: $(VENV)/bin/python ## Unit tests (deterministic, no network)
 	$(UV) run --locked pytest -m "not integration"
 
-test-integration: $(VENV)/bin/python ## Integration tests (skip when API keys are missing)
-	@$(UV) run --locked pytest -m integration; status=$$?; \
+test-integration: $(VENV)/bin/python ## Integration tests: real Postgres, API keys (from .env)
+	@$(UV) run --locked $(if $(wildcard .env),--env-file .env) pytest -m integration; status=$$?; \
 	if [ $$status -eq 5 ]; then echo "no integration tests collected"; else exit $$status; fi
 
 lint: $(VENV)/bin/python $(WEB_DEPS) ## ruff + mypy + web typecheck + oxlint

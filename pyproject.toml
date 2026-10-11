@@ -5,6 +5,8 @@ description = "Real-time voice agent for pickup food orders, with an audio eval 
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "psycopg-pool>=3.3.3",
+    "psycopg[binary]>=3.3.6",
     "pydantic>=2.10",
     "rapidfuzz>=3.14.6",
 ]
