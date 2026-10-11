@@ -17,6 +17,24 @@ jobs:
     name: lint, types, tests
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+
+    # Same image and credentials as docker-compose and .env.example, so the
+    # integration tests need no CI-specific config.
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: voice
+          POSTGRES_PASSWORD: voice
+          POSTGRES_DB: voice_order
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U voice -d voice_order"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 12
+
     steps:
       # Actions are pinned to commit SHAs; tags can be moved, SHAs can't.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -42,6 +60,9 @@ jobs:
       - run: make setup
       - run: make lint
       - run: make test
+      # Real Postgres from the service above. Tests needing API keys skip here,
+      # because .env (copied from .env.example by make setup) holds no real keys.
+      - run: make test-integration
 
       # Hygiene hooks too, in case a commit skipped them with --no-verify.
       # ruff and mypy are skipped here because `make lint` already ran them.
