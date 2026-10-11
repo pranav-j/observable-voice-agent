@@ -247,6 +247,7 @@ def audio_result(run: int, *, noise: dict[str, Any] | None, **audio: Any) -> Run
         "agent_cost_is_estimate": False,
         "call_seconds": 60.0,
         "detector": DETECTOR,
+        "agent_config": {"eou_silence_ms": 500},
     }
     return r.model_copy(update={"mode": "audio", "audio": metrics | audio})
 
@@ -309,6 +310,20 @@ def test_audio_markdown_shows_metrics_and_detector() -> None:
     assert "| Response latency p50 / p95 (ms) | 1000 / 1000 (1 turns) |" in md
     assert "| Agent cost per minute | n/a |" in md
     assert "Detector: frame_ms 10, threshold_dbfs -45." in md
+    assert "Agent config: eou_silence_ms 500." in md
+
+
+def test_mixed_agent_configs_are_all_listed() -> None:
+    a = audio_result(1, noise=None)
+    b = audio_result(2, noise=None, agent_config={"eou_silence_ms": 150})
+    configs = summarize([a, b], mode="audio", started_at=STARTED)["audio"]["agent_configs"]
+    assert configs == [{"eou_silence_ms": 150}, {"eou_silence_ms": 500}]
+
+
+def test_concurrency_is_recorded() -> None:
+    summary = summarize([result("x", 1)], mode="audio", started_at=STARTED, concurrency=2)
+    assert summary["concurrency"] == 2
+    assert "2 calls at a time." in render_markdown(summary)
 
 
 def test_audio_report_dir_can_be_created_first(tmp_path: Path) -> None:

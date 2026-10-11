@@ -204,7 +204,12 @@ async def main(
             await pg.close()
 
     out = write_report(
-        results, mode=args.mode, started_at=started_at, reports_dir=args.reports_dir, out=out
+        results,
+        mode=args.mode,
+        started_at=started_at,
+        reports_dir=args.reports_dir,
+        out=out,
+        concurrency=concurrency,
     )
     passed = sum(r.score.task_success for r in results)
     print(f"task success {passed}/{len(results)}. Report: {out / 'summary.md'}")

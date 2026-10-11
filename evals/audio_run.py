@@ -204,7 +204,10 @@ async def run_audio_scenario(
     finally:
         await caller.leave()
 
-    usage = await _read_usage(Path(settings.recordings_dir) / session_id)
+    folder = Path(settings.recordings_dir) / session_id
+    usage = await _read_usage(folder)
+    config_file = folder / "config.json"  # written by the worker just before usage.json
+    agent_config = json.loads(config_file.read_text()) if config_file.exists() else None
     final = await store.get(session_id)
     timeline = caller.timeline()
     if raw_dir is not None:
@@ -241,6 +244,7 @@ async def run_audio_scenario(
                 usage and any(m.get("estimated_from_call_length") for m in usage.get("models", []))
             ),
             "call_seconds": usage.get("duration_seconds") if usage else round(duration, 1),
+            "agent_config": agent_config,
             "detector": DETECTOR_SETTINGS,
         },
     )

@@ -55,6 +55,7 @@ def _audio_summary(results: list[RunResult]) -> dict[str, Any] | None:
     cost = sum(float(a["agent_cost_usd"]) for a in priced)
     minutes = sum(float(a["call_seconds"]) for a in priced) / 60
     detectors = {json.dumps(a.get("detector"), sort_keys=True) for a in audio}
+    configs = {json.dumps(a.get("agent_config"), sort_keys=True) for a in audio}
     errors, words = wer.pop("all")
     return {
         "runs": len(audio),
@@ -82,10 +83,18 @@ def _audio_summary(results: list[RunResult]) -> dict[str, Any] | None:
         "hearing": sorted({str(a.get("hearing")) for a in audio}),
         # Timing depends on these; runs scored with different settings can't be compared.
         "detector": [json.loads(d) for d in sorted(detectors)],
+        # What the worker reported for each call. More than one means mixed settings.
+        "agent_configs": [json.loads(c) for c in sorted(configs)],
     }
 
 
-def summarize(results: list[RunResult], *, mode: str, started_at: datetime) -> dict[str, Any]:
+def summarize(
+    results: list[RunResult],
+    *,
+    mode: str,
+    started_at: datetime,
+    concurrency: int | None = None,
+) -> dict[str, Any]:
     by_scenario: dict[str, list[RunResult]] = defaultdict(list)
     by_tag: dict[str, list[RunResult]] = defaultdict(list)
     for r in results:
@@ -184,6 +193,7 @@ def summarize(results: list[RunResult], *, mode: str, started_at: datetime) -> d
     return {
         "mode": mode,
         "started_at": started_at.isoformat(timespec="seconds"),
+        "concurrency": concurrency,
         "agent_models": sorted({r.agent_model for r in results}),
         "caller_models": sorted({r.caller_model for r in results}),
         "agent_prompt_versions": sorted({r.agent_prompt_version for r in results}),
@@ -217,7 +227,12 @@ def render_markdown(summary: dict[str, Any]) -> str:
         f"Agent {', '.join(summary['agent_models'])} "
         f"(prompt {', '.join(summary['agent_prompt_versions'])}), "
         f"caller {', '.join(summary['caller_models'])} "
-        f"(prompt {', '.join(summary['caller_prompt_versions'])}).",
+        f"(prompt {', '.join(summary['caller_prompt_versions'])})."
+        + (
+            f" {summary['concurrency']} calls at a time."
+            if summary.get("concurrency") is not None
+            else ""
+        ),
         "",
         "## Overall",
         "",
@@ -282,6 +297,10 @@ def render_markdown(summary: dict[str, Any]) -> str:
     return "\n".join(lines) + "\n"
 
 
+def _settings_text(settings: dict[str, Any] | None) -> str:
+    return ", ".join(f"{k} {v}" for k, v in sorted(settings.items())) if settings else "unknown"
+
+
 def _audio_markdown(a: dict[str, Any] | None) -> list[str]:
     if a is None:
         return []
@@ -315,12 +334,9 @@ def _audio_markdown(a: dict[str, Any] | None) -> list[str]:
         f"| Agent cost per minute | {cost} |",
         f"| Caller hearing | {', '.join(a['hearing'])} |",
         "",
-        "Detector: "
-        + "; ".join(
-            ", ".join(f"{k} {v}" for k, v in sorted(d.items())) if d else "unknown"
-            for d in a["detector"]
-        )
-        + ".",
+        "Detector: " + "; ".join(_settings_text(d) for d in a["detector"]) + ".",
+        "",
+        "Agent config: " + "; ".join(_settings_text(c) for c in a.get("agent_configs", [])) + ".",
     ]
     return lines
 
@@ -342,6 +358,7 @@ def write_report(
     started_at: datetime,
     reports_dir: Path,
     out: Path | None = None,
+    concurrency: int | None = None,
 ) -> Path:
     """Write the report directory and return its path.
 
@@ -360,7 +377,7 @@ def write_report(
             f.write(
                 r.model_dump_json(include={"scenario_id", "run", "session_id", "transcript"}) + "\n"
             )
-    summary = summarize(results, mode=mode, started_at=started_at)
+    summary = summarize(results, mode=mode, started_at=started_at, concurrency=concurrency)
     (out / "summary.json").write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
     (out / "summary.md").write_text(render_markdown(summary), encoding="utf-8")
     return out
