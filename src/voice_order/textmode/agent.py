@@ -18,26 +18,10 @@ from voice_order.textmode.llm import (
 )
 from voice_order.tools.base import CallEnd, Result, Session, Tool, dispatch, to_json
 from voice_order.tools.catalog import TOOLS
+from voice_order.tools.turns import WAIT_FOR_ANSWER, WAITING_FOR_CALLER, asks_caller
 
 MAX_TOOL_ROUNDS = 8
 FALLBACK = "Sorry, I didn't catch that. Could you say it again?"
-
-# When the agent asks the caller something, these must wait for the answer. Order changes in
-# the same reply still run ("I've added it. Anything else?"), but these never should.
-WAIT_FOR_ANSWER = frozenset({"get_readback", "confirm_order", "end_call", "transfer_to_human"})
-WAITING_FOR_CALLER: Result = {
-    "ok": False,
-    "error": "WAITING_FOR_CALLER",
-    "message": (
-        "Not run: you asked the caller a question in this reply. "
-        "Wait for their answer, then call it again if it's still needed."
-    ),
-}
-
-
-def asks_caller(text: str) -> bool:
-    """The model's words for this round include a question to the caller."""
-    return "?" in text
 
 
 @dataclass(frozen=True)

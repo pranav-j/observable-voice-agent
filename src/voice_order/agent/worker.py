@@ -7,6 +7,7 @@ Run with `python -m livekit.agents start src/voice_order/agent/worker.py --dev`
 import asyncio
 import json
 import logging
+from collections.abc import AsyncIterable
 from pathlib import Path
 from typing import Any
 
@@ -19,14 +20,16 @@ from livekit.agents import (
     ConversationItemAddedEvent,
     JobContext,
     JobProcess,
+    ModelSettings,
     UserStateChangedEvent,
     inference,
+    llm,
 )
 from livekit.plugins import openai as lk_openai
 from livekit.plugins import silero
 from openai.types import Reasoning
 
-from voice_order.agent.tools import livekit_tools
+from voice_order.agent.tools import StepText, livekit_tools
 from voice_order.config import Settings, get_settings
 from voice_order.menu.loader import load_menu
 from voice_order.order.state import abandon
@@ -42,6 +45,22 @@ log = logging.getLogger("voice_order.worker")
 ORDER_TOPIC = "order"  # the web UI's order panel listens on this data topic
 TIME_UP = "Sorry, we're out of time for this call. Please call back to finish your order."
 AWAY = "I haven't heard from you in a while, so I'll end the call. Please call back anytime."
+
+
+class OrderAgent(Agent):
+    """Records the text of each LLM step, so the tools can tell when it asked the caller."""
+
+    def __init__(self, *, step: StepText, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self.step = step
+
+    async def llm_node(
+        self, chat_ctx: llm.ChatContext, tools: list[llm.Tool], model_settings: ModelSettings
+    ) -> AsyncIterable[Any]:
+        self.step.reset()
+        async for chunk in Agent.default.llm_node(self, chat_ctx, tools, model_settings):
+            self.step.add(chunk)
+            yield chunk
 
 
 def prewarm(proc: JobProcess) -> None:
@@ -125,9 +144,11 @@ async def entrypoint(ctx: JobContext) -> None:
             ctx.room, ORDER_TOPIC, {"session_id": call.order.session_id, **order_view(call)}
         )
 
-    agent = Agent(
+    step = StepText()
+    agent = OrderAgent(
+        step=step,
         instructions=agent_system_prompt(menu.restaurant).text,
-        tools=livekit_tools(call, store, on_tool_result),  # type: ignore[arg-type]
+        tools=livekit_tools(call, store, on_tool_result, step),
     )
     session = build_session(settings, ctx.proc.userdata["vad"])
     background: set[asyncio.Task[None]] = set()

@@ -223,6 +223,14 @@ On the first run, a masala dosa got ordered and confirmed by voice. The order wa
 - **Barge-in works.** My script talked over the agent's phone read-back, and the agent stopped mid-sentence.
 - **One agent reply had a sentence repeated.** It might be preemptive generation, where LiveKit starts a reply before the turn is confirmed, or an interruption artifact. Traces should show which.
 
+## Fix 1 again, this time for voice
+
+The second voice call failed the same way the text agent used to. It asked "may I have your name?", then in the same turn said "I'm sorry, I can't complete…" and ended the call. Fix 1 lived in my text loop, and the voice worker doesn't use that loop. LiveKit runs the tool loop itself, and by default it asks the model for another reply after every tool result.
+
+So I moved the rule into the core, where both runtimes can use one definition: which actions wait for the caller's answer, the "waiting for the caller" result, and the question check. In voice, the agent class records the text the model produces in each step. When a tool runs in a step whose text asks the caller something, the final actions are held back, and the tool result tells LiveKit no follow-up reply is needed, so the turn ends there. Running the exact same call again, the agent asked, waited, read back, waited for the yes, and confirmed.
+
+Telemetry was working by then too. Every span LiveKit creates reaches Phoenix tagged with the session id, and each turn's timings go into `turns.jsonl` next to the recording. The first numbers I saw in a dev call were slow, with most of the time spent waiting for the end of the turn, in the LLM's tool rounds and in waiting for the first sentence of speech. I'll only write numbers down once they come from a proper report, but that's where the latency work will start.
+
 ## The simulated caller can be the thing that fails
 
 Two failures in one batch came from my side of the test, not the agent. In one, I'd told the caller to say "two plates of veg samosas" exactly like that. It took that so literally that it refused a correct read-back three times and gave up. I reworded the goal so it uses the phrase when ordering without being rigid about it.
