@@ -158,3 +158,11 @@ def test_menu_problems_are_found(menu: Menu, item: dict[str, Any], problem: str)
 def test_unscored_order_has_no_menu_problems(menu: Menu) -> None:
     scenario = Scenario.model_validate(minimal(expect={"status": "escalated"}))
     assert menu_problems(scenario, menu) == []
+
+
+def test_load_scenarios_takes_comma_separated_globs() -> None:
+    ids = [s.id for s in load_scenarios("happy_path_single_coffee, correction_*,happy_path_*")]
+    assert "happy_path_single_coffee" in ids
+    assert any(i.startswith("correction_") for i in ids)
+    assert len(ids) == len(set(ids))  # overlapping globs don't load a file twice
+    assert ids == sorted(ids)

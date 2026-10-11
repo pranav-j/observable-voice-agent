@@ -106,8 +106,10 @@ def load_scenario(path: Path) -> Scenario:
 
 
 def load_scenarios(pattern: str = "*", directory: Path = SCENARIO_DIR) -> list[Scenario]:
-    """All scenarios whose file name matches `pattern` (a glob without the .yaml)."""
-    return [load_scenario(p) for p in sorted(directory.glob(f"{pattern}.yaml"))]
+    """Scenarios whose file name matches `pattern`: one or more comma-separated globs,
+    without the .yaml. Each file is loaded once even if several globs match it."""
+    paths = {p for glob in pattern.split(",") for p in directory.glob(f"{glob.strip()}.yaml")}
+    return [load_scenario(p) for p in sorted(paths)]
 
 
 def menu_problems(scenario: Scenario, menu: Menu) -> list[str]:
