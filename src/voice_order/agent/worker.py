@@ -7,6 +7,7 @@ Run with `python -m livekit.agents start src/voice_order/agent/worker.py --dev`
 import asyncio
 import json
 import logging
+from pathlib import Path
 from typing import Any
 
 from livekit import rtc
@@ -31,6 +32,8 @@ from voice_order.menu.loader import load_menu
 from voice_order.order.state import abandon
 from voice_order.prompts.loader import agent_system_prompt, greeting_prompt
 from voice_order.store.postgres import PostgresOrderStore
+from voice_order.telemetry.tracing import setup_tracing
+from voice_order.telemetry.turns import TurnLog
 from voice_order.tools.base import CallEnd, Result, Session
 from voice_order.tools.catalog import order_view
 
@@ -86,6 +89,25 @@ server = AgentServer(
 async def entrypoint(ctx: JobContext) -> None:
     menu = load_menu()
     call = Session.start(menu, ctx.job.room.name)  # the room name is the session id
+    session_id = call.order.session_id
+    tracing = setup_tracing(
+        settings.phoenix_collector_endpoint,
+        {
+            "session_id": session_id,
+            "stt.provider": "openai",
+            "stt.model": settings.stt_model,
+            "llm.provider": "openai",
+            "llm.model": settings.llm_model,
+            "tts.provider": "openai",
+            "tts.model": settings.tts_model,
+        },
+    )
+
+    async def flush_traces() -> None:
+        tracing.force_flush()
+
+    ctx.add_shutdown_callback(flush_traces)
+    turns = TurnLog(Path(settings.recordings_dir) / session_id / "turns.jsonl")
     store = await PostgresOrderStore.connect(settings.database_url)
 
     async def close_store() -> None:
@@ -112,8 +134,10 @@ async def entrypoint(ctx: JobContext) -> None:
 
     @session.on("conversation_item_added")
     def _on_item(ev: ConversationItemAddedEvent) -> None:
-        if ev.item.type == "message" and ev.item.role == "user":
-            call.caller_spoke()  # lets confirm_order check the caller replied to the read-back
+        if ev.item.type == "message":
+            turns.add(ev.item)
+            if ev.item.role == "user":
+                call.caller_spoke()  # lets confirm_order check the caller replied to the read-back
 
     @session.on("agent_state_changed")
     def _on_agent_state(ev: AgentStateChangedEvent) -> None:
