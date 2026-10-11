@@ -21,7 +21,7 @@ NVM_USE := if [ "$$(node --version 2>/dev/null)" != "v$$(cat .nvmrc)" ]; then \
 	if [ -s "$$NVM_DIR/nvm.sh" ]; then . "$$NVM_DIR/nvm.sh" && nvm use >/dev/null || exit 1; fi; \
 	fi;
 
-.PHONY: help setup up down dev worker voice-smoke chat test test-integration lint fmt eval annotate judge judge-sample judge-calibrate gate baseline
+.PHONY: help setup up down dev worker voice-smoke chat test test-integration lint fmt eval annotate judge judge-sample judge-calibrate gate baseline compare
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*## "} /^[a-zA-Z_-]+:.*## / {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -110,6 +110,10 @@ gate: $(VENV)/bin/python ## make gate REPORT=<dir>: fail if the report is worse 
 baseline: $(VENV)/bin/python ## make baseline REPORT=<dir>: record a reviewed report as the baseline
 	@test -n "$(REPORT)" || { echo "Usage: make baseline REPORT=reports/<run>"; exit 2; }
 	$(UV) run --locked python -m evals.gate '$(REPORT)' --update-baseline
+
+compare: $(VENV)/bin/python ## make compare BEFORE=<dir> AFTER=<dir>: two reports side by side
+	@test -n "$(BEFORE)" -a -n "$(AFTER)" || { echo "Usage: make compare BEFORE=reports/<a> AFTER=reports/<b>"; exit 2; }
+	$(UV) run --locked python -m evals.compare '$(BEFORE)' '$(AFTER)'
 
 annotate: $(VENV)/bin/python ## make annotate SESSION=<id>: start the expected order for a real call
 	@test -n "$(SESSION)" || { echo "Usage: make annotate SESSION=<session id from recordings/>"; exit 2; }
