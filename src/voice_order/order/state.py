@@ -94,7 +94,7 @@ def remove_line(order: Order, line_id: int) -> Order:
 
 def set_customer(order: Order, name: str, phone: str) -> Order:
     _require_draft(order)
-    clean_name = " ".join(name.split())
+    clean_name = spelled_name(name) or " ".join(name.split())
     if not clean_name:
         raise OrderError(ErrorCode.INVALID_NAME, "The customer name is empty.")
     digits = normalize_phone(phone)
@@ -129,6 +129,18 @@ def normalize_phone(raw: str) -> str | None:
     elif len(digits) == 11 and digits.startswith("0"):
         digits = digits[1:]
     return digits if len(digits) == 10 and digits[0] != "0" else None
+
+
+def spelled_name(raw: str) -> str | None:
+    """'K-A-V-Y-A' or 'K A V Y A' -> 'Kavya'. None if it isn't spelled letter by letter.
+
+    Speech recognition turns unusual names into common words ("Kavya" became "Caviar"),
+    so callers spell them. The letters are what the caller meant.
+    """
+    letters = re.split(r"[\s.\-]+", raw.strip())
+    if len(letters) < 2 or not all(len(x) == 1 and x.isalpha() for x in letters):
+        return None
+    return "".join(letters).capitalize()
 
 
 def spoken_digits(raw: str) -> str:

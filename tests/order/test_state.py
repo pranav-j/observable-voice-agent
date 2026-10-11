@@ -230,6 +230,23 @@ def test_invalid_phone(empty: Order, raw: str) -> None:
     expect_error(ErrorCode.INVALID_PHONE, lambda: state.set_customer(empty, "Anil", raw))
 
 
+@pytest.mark.parametrize(
+    ("raw", "name"),
+    [
+        ("K-A-V-Y-A", "Kavya"),
+        ("k a v y a", "Kavya"),
+        ("N. I. K. H. I. L", "Nikhil"),
+        ("Kavya", "Kavya"),
+        ("Mary Ann", "Mary Ann"),
+        ("A J", "Aj"),
+    ],
+)
+def test_spelled_names_are_joined(empty: Order, raw: str, name: str) -> None:
+    customer = state.set_customer(empty, raw, PHONE).customer
+    assert customer is not None
+    assert customer.name == name
+
+
 def test_blank_name(empty: Order) -> None:
     expect_error(ErrorCode.INVALID_NAME, lambda: state.set_customer(empty, "   ", PHONE))
 
