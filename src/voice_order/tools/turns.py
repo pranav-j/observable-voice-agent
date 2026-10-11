@@ -7,6 +7,10 @@ reply: retrying with made-up details, ending the call, or transferring it.
 
 from voice_order.tools.base import Result
 
+# How many tool rounds one agent turn may take before it has to answer. A two-item order
+# can need four (search, add, search, add) when the model makes the calls one at a time.
+MAX_TOOL_ROUNDS = 8
+
 # These must wait for the caller's answer if the agent has just asked something.
 # Order changes in the same reply still run ("I've added it. Anything else?").
 WAIT_FOR_ANSWER = frozenset({"get_readback", "confirm_order", "end_call", "transfer_to_human"})

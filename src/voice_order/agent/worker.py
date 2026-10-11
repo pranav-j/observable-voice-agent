@@ -41,6 +41,7 @@ from voice_order.telemetry.turns import TurnLog
 from voice_order.telemetry.usage import load_rates
 from voice_order.tools.base import CallEnd, Result, Session
 from voice_order.tools.catalog import order_view
+from voice_order.tools.turns import MAX_TOOL_ROUNDS
 
 log = logging.getLogger("voice_order.worker")
 
@@ -95,6 +96,7 @@ def build_session(settings: Settings, vad: Any) -> AgentSession[None]:
             "preemptive_generation": {"enabled": settings.enable_preemptive_generation},
         },
         user_away_timeout=settings.idle_timeout_seconds,
+        max_tool_steps=MAX_TOOL_ROUNDS,  # LiveKit's default is 3; text mode allows the same
     )
 
 

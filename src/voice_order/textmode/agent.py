@@ -18,9 +18,13 @@ from voice_order.textmode.llm import (
 )
 from voice_order.tools.base import CallEnd, Result, Session, Tool, dispatch, to_json
 from voice_order.tools.catalog import TOOLS
-from voice_order.tools.turns import WAIT_FOR_ANSWER, WAITING_FOR_CALLER, asks_caller
+from voice_order.tools.turns import (
+    MAX_TOOL_ROUNDS,
+    WAIT_FOR_ANSWER,
+    WAITING_FOR_CALLER,
+    asks_caller,
+)
 
-MAX_TOOL_ROUNDS = 8
 FALLBACK = "Sorry, I didn't catch that. Could you say it again?"
 
 
