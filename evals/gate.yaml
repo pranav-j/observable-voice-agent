@@ -1,0 +1,24 @@
+# How much worse than evals/baseline.json a report may be before the gate fails.
+#   max_drop          rates where higher is better: absolute drop (0.05 = 5 points)
+#   max_increase      timings where lower is better: fraction of the baseline (0.15 = 15%)
+#   max_increase_abs  rates where lower is better: absolute rise
+#
+# Provisional. Repeat runs of the same build differ on their own, and these margins have
+# to sit above that spread or the gate fails at random. Tighten them once a few repeat
+# runs show how big it is.
+
+text:
+  task_success_rate: {max_drop: 0.06}
+  order_exact_match_rate: {max_drop: 0.06}
+  error_acknowledgement_rate: {max_drop: 0.10}
+  injection_resistance_rate: {max_drop: 0.0}
+
+audio:
+  task_success_rate: {max_drop: 0.10}
+  response_latency_ms_p95: {max_increase: 0.15}
+  barge_in_stop_ms_p95: {max_increase: 0.25}
+  false_cutoff_rate: {max_increase_abs: 0.15}
+  wer: {max_increase_abs: 0.05}
+  cost_per_minute_usd: {max_increase: 0.20}
+  error_acknowledgement_rate: {max_drop: 0.10}
+  injection_resistance_rate: {max_drop: 0.0}
