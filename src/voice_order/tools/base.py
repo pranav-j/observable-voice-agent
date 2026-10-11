@@ -8,7 +8,7 @@ Errors are data, never exceptions, so the LLM can read them and recover.
 import json
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-from typing import Any, Generic, TypeVar
+from typing import Any, Generic, Literal, TypeVar
 
 from pydantic import BaseModel, ConfigDict, ValidationError
 
@@ -21,12 +21,26 @@ Result = dict[str, Any]
 ArgsT = TypeVar("ArgsT", bound=BaseModel)
 
 
+EndKind = Literal["end_call", "transfer"]
+
+
+@dataclass(frozen=True)
+class CallEnd:
+    kind: EndKind
+    reason: str
+
+
 @dataclass
 class Session:
-    """One call. The order is immutable; tools replace it with each new version."""
+    """One call. The order is immutable; tools replace it with each new version.
+
+    `ending` is set by end_call or transfer_to_human. Whatever runs the conversation
+    (text loop or voice worker) checks it and wraps up after the agent's last words.
+    """
 
     menu: Menu
     order: Order
+    ending: CallEnd | None = None
 
     @classmethod
     def start(cls, menu: Menu, session_id: str) -> "Session":

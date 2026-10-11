@@ -1,16 +1,16 @@
 """The tools the agent can call, with the descriptions and schemas the LLM sees."""
 
-from typing import Any
+from typing import Annotated, Any
 
-from pydantic import Field, field_validator
+from pydantic import Field, StringConstraints, field_validator
 
 from voice_order.menu.models import MenuItem
 from voice_order.menu.search import search
 from voice_order.order import state
 from voice_order.order.models import Order
 from voice_order.order.pricing import price_order
-from voice_order.order.readback import describe_line, group_phone, spoken_inr
-from voice_order.tools.base import NoArgs, Result, Session, Tool, ToolArgs, ok
+from voice_order.order.readback import build_readback, describe_line, group_phone, spoken_inr
+from voice_order.tools.base import CallEnd, EndKind, NoArgs, Result, Session, Tool, ToolArgs, ok
 
 # Measured on the seed menu: real matches score 93+, items not on the menu stay under 75.
 STRONG_MATCH = 90
@@ -196,6 +196,63 @@ def set_customer(session: Session, args: SetCustomerArgs) -> Result:
     return _changed(session, new, read_phone_back_as=phone)
 
 
+# --- read-back, confirmation and ending the call ---------------------------------------------
+
+
+def get_readback(session: Session, args: NoArgs) -> Result:
+    marked = state.mark_readback(session.order)  # ORDER_CLOSED if already closed
+    readback = build_readback(marked, session.menu)  # ORDER_INCOMPLETE if not ready
+    session.order = marked  # recorded only once the read-back exists
+    return ok(
+        readback=readback.text,
+        instructions=(
+            "Say the read-back to the caller word for word, then wait for a clear yes before "
+            "calling confirm_order. If they change anything, update the order and call "
+            "get_readback again."
+        ),
+    )
+
+
+def confirm_order(session: Session, args: NoArgs) -> Result:
+    session.order = state.confirm(session.order)
+    return ok(
+        order=order_view(session),
+        instructions=(
+            "The order is placed. Tell the caller it will be ready for pickup, thank them and "
+            "say goodbye, then call end_call."
+        ),
+    )
+
+
+class ReasonArgs(ToolArgs):
+    reason: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)] = Field(
+        description="A short reason, e.g. 'caller asked for a person twice'."
+    )
+
+
+def _end(session: Session, kind: EndKind, reason: str) -> None:
+    if session.ending is None:  # the first ending wins
+        session.ending = CallEnd(kind=kind, reason=reason)
+
+
+def transfer_to_human(session: Session, args: ReasonArgs) -> Result:
+    session.order = state.escalate(session.order)
+    _end(session, "transfer", args.reason)
+    return ok(
+        status=session.order.status,
+        instructions="Tell the caller you are connecting them to a team member, then stop.",
+    )
+
+
+def end_call(session: Session, args: ReasonArgs) -> Result:
+    session.order = state.abandon(session.order)
+    _end(session, "end_call", args.reason)
+    return ok(
+        status=session.order.status,
+        instructions="Say a short goodbye if you haven't already. The call will end.",
+    )
+
+
 # --- registry --------------------------------------------------------------------------
 
 # Annotated: Tool is invariant in its args type, so mypy would infer list[object].
@@ -254,6 +311,43 @@ ALL_TOOLS: list[Tool[Any]] = [
         ),
         args_model=SetCustomerArgs,
         handler=set_customer,
+    ),
+    Tool(
+        name="get_readback",
+        description=(
+            "Get the official read-back of the order: items, total, name and phone. Call it "
+            "once the items and the caller's details are complete, speak it word for word, "
+            "and wait for a clear yes. Any change afterwards needs a new read-back."
+        ),
+        args_model=NoArgs,
+        handler=get_readback,
+    ),
+    Tool(
+        name="confirm_order",
+        description=(
+            "Place the order. Only call it after the caller clearly said yes to the read-back "
+            "from get_readback, with no changes since."
+        ),
+        args_model=NoArgs,
+        handler=confirm_order,
+    ),
+    Tool(
+        name="transfer_to_human",
+        description=(
+            "Hand the call to a team member. Use it if the caller asks for a person twice, or "
+            "after three failed attempts at the same step."
+        ),
+        args_model=ReasonArgs,
+        handler=transfer_to_human,
+    ),
+    Tool(
+        name="end_call",
+        description=(
+            "End the call. Use it after saying goodbye, or when the caller hangs up or wants "
+            "to stop. An order that was not confirmed is dropped."
+        ),
+        args_model=ReasonArgs,
+        handler=end_call,
     ),
 ]
 
