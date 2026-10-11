@@ -246,6 +246,14 @@ Prices live in `config/rates.yaml`, not in code, and a model with no rate is rep
 
 The second catch was quieter. The streaming speech-to-text reports no audio duration at all, so its cost would also have come out as zero, even though it's billed for every minute of audio sent. The caller's audio streams for the whole call, so the call's length is a fair stand-in. When that fallback is used, the usage line says it's an estimate, so a guess never gets presented as a measurement.
 
+## The web UI, and a crash only a real browser could find
+
+The dashboard has a Start call button, a live transcript of both sides, an order panel driven by the worker's updates, a latency overlay, and an end-of-call summary with duration, turns and estimated cost. The overlay shows the last turn as a waterfall (transcript, end of turn, tool rounds, LLM first token, first audio) plus a rolling p50 and p95. The worker publishes each turn's timing record to the room, the same record it writes to `turns.jsonl`, and the same numbers LiveKit attaches to the spans in Phoenix. So the overlay matches the traces by construction, and when I checked a call, every number lined up with both.
+
+To test it without talking into a microphone myself, I ran the real page in Chromium with a WAV file standing in for the mic: a caller script synthesized with text-to-speech, with long pauses for the agent to answer. The first attempt showed a blank page. The browser's error log said React had crashed with "destroy is not a function". My transcript component scrolled to the bottom in a one-line effect, `useEffect(() => el?.scrollIntoView(), [lines])`. That one-liner returns whatever `scrollIntoView` returns, and recent Chromium versions return a Promise from it. React treats an effect's return value as its cleanup function, so it tried to call the Promise and took the whole page down. Typecheck and lint passed, and so did the build. Only running it in a real, current browser caught it.
+
+With that fixed, the browser call went all the way through: ordered, name and number taken, read back, confirmed, and the summary card filled in once the worker saved the call. Speech recognition also wrote the caller's "Meera" as "Mira", and that's the name on the order. That's the kind of thing the name-spelling scenarios will measure once the eval harness runs over audio.
+
 ## The simulated caller can be the thing that fails
 
 Two failures in one batch came from my side of the test, not the agent. In one, I'd told the caller to say "two plates of veg samosas" exactly like that. It took that so literally that it refused a correct read-back three times and gave up. I reworded the goal so it uses the phrase when ordering without being rigid about it.

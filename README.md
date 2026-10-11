@@ -14,12 +14,14 @@ A real-time voice agent that takes pickup food orders for a fictional restaurant
 ## Setup
 
 ```sh
-cp .env.example .env
+cp .env.example .env   # then add your OPENAI_API_KEY
 make setup    # .venv from the pyenv interpreter, uv sync, pre-commit, web deps
 make up       # postgres, livekit-server, phoenix
 make test
 make lint
 ```
+
+To talk to the agent, run `make dev` (backend, agent worker and web app together) and open http://localhost:5173. `make chat` is a text-only version in the terminal. Each call is saved under `recordings/<session_id>/`, and its traces are in Phoenix.
 
 `make setup` creates `.venv` with `python -m venv` using the pyenv-selected interpreter, then uses uv to install the locked dependencies into it. uv is configured never to download or choose its own Python. To work in the shell, run `source .venv/bin/activate`.
 

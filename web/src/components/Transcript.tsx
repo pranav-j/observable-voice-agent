@@ -4,7 +4,11 @@ import { useCallStore } from '../store/call'
 export function Transcript() {
   const lines = useCallStore((s) => s.transcript)
   const end = useRef<HTMLDivElement>(null)
-  useEffect(() => end.current?.scrollIntoView({ block: 'nearest' }), [lines])
+  useEffect(() => {
+    // Block body on purpose: newer browsers return a Promise from scrollIntoView, and an
+    // effect must return nothing or a cleanup function, or React crashes on unmount.
+    void end.current?.scrollIntoView({ block: 'nearest' })
+  }, [lines])
   return (
     <section className="card transcript">
       <h2>Transcript</h2>

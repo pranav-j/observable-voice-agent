@@ -22,7 +22,7 @@ export function LatencyPanel() {
           <dd>{fmt(percentile(latencies, 95))}</dd>
         </div>
         <div>
-          <dt>turns</dt>
+          <dt>replies</dt>
           <dd>{latencies.length}</dd>
         </div>
       </dl>
