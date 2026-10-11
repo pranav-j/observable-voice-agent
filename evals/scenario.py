@@ -42,7 +42,8 @@ class Customer(_Strict):
 
 
 class Trigger(_Strict):
-    phase: Literal["readback", "any_agent_speech"] | None = None
+    # "phone": the caller's utterance that gives the phone number (pauses only).
+    phase: Literal["readback", "any_agent_speech", "phone"] | None = None
     turn: Annotated[int, Field(ge=1)] | None = None
 
     @model_validator(mode="after")
@@ -67,6 +68,8 @@ class Behavior(_Strict):
             raise ValueError("interrupt needs after_ms and say")
         if self.action == "pause_mid_utterance" and self.pause_ms is None:
             raise ValueError("pause_mid_utterance needs pause_ms")
+        if self.action == "interrupt" and self.trigger.phase == "phone":
+            raise ValueError("the phone phase is for pauses, not interruptions")
         return self
 
 

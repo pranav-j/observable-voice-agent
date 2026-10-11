@@ -6,8 +6,10 @@ from evals.audio.caller import (
     VOICE_POOL,
     AgentState,
     speakable,
+    split_for_pause,
     tts_instructions,
 )
+from evals.audio_run import gives_phone_number
 from evals.scenario import load_scenarios
 
 
@@ -58,3 +60,24 @@ def test_long_silence_ends_the_turn_even_if_a_stream_never_closes() -> None:
 
 def test_agent_leaving_ends_the_wait() -> None:
     assert AgentState(left=True).done_speaking(since=5.0, now=6.0, quiet=1.2)
+
+
+@pytest.mark.parametrize(
+    ("text", "first", "second"),
+    [
+        ("It's 9000026457.", "It's 90000", "26457."),
+        ("+91 90000 26457", "+91 90000", "26457"),
+        ("9000-026-457 please", "9000-0", "26-457 please"),
+        ("one chicken tikka roll please", "one chicken", "tikka roll please"),
+    ],
+)
+def test_pause_goes_between_the_halves_of_a_phone_number(
+    text: str, first: str, second: str
+) -> None:
+    assert split_for_pause(text) == (first, second)
+
+
+def test_phone_number_utterances_are_recognized() -> None:
+    assert gives_phone_number("It's 90000 26457.")
+    assert gives_phone_number("nine zero zero zero zero, two six four five seven")
+    assert not gives_phone_number("Two masala dosas and one coffee, please.")

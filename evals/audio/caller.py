@@ -68,6 +68,19 @@ def speakable(text: str) -> str:
     return re.sub(r"\d{5,}", spell, re.sub(r"(?<=\d)[ -](?=\d)", "", text))
 
 
+def split_for_pause(text: str) -> tuple[str, str]:
+    """Where a scripted pause goes: before the last five digits of a phone number, the
+    way people pause between the two halves, or else halfway through the words."""
+    number = re.search(r"\d(?:[ -]?\d){9,}", text)
+    if number:
+        positions = [i for i in range(number.start(), number.end()) if text[i].isdigit()]
+        cut = positions[-5]
+        return text[:cut].rstrip(" -"), text[cut:]
+    words = text.split()
+    half = len(words) // 2
+    return " ".join(words[:half]), " ".join(words[half:])
+
+
 def tts_instructions(style: str) -> str:
     return (
         "You are a customer phoning a restaurant to order food. Speak in Indian English, "
@@ -280,10 +293,9 @@ class AudioCaller:
     async def say(
         self, text: str, *, pause_ms: int = 0, interrupt: bool = False
     ) -> CallerUtterance:
-        """Speak `text`. With pause_ms, a silence is inserted halfway, at a word boundary."""
-        if pause_ms and len(text.split()) > 1:
-            words = text.split()
-            first, second = " ".join(words[: len(words) // 2]), " ".join(words[len(words) // 2 :])
+        """Speak `text`. With pause_ms, a silence is inserted where `split_for_pause` says."""
+        first, second = split_for_pause(text)
+        if pause_ms and first and second:
             a, b = await asyncio.gather(self.synthesize(first), self.synthesize(second))
             pcm = np.concatenate([a, b])
             pauses = [(len(a), int(SPEAK_RATE * pause_ms / 1000))]

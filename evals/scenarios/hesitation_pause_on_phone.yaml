@@ -10,7 +10,7 @@ goal: >
   Order one chicken tikka roll with an egg for pickup.
 customer: {name: Ritu, phone: "9000026457"}
 behaviors:
-  - trigger: {turn: 3}
+  - trigger: {phase: phone}
     action: pause_mid_utterance
     pause_ms: 1800
 expect:

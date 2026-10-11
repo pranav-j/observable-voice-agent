@@ -28,6 +28,7 @@ from evals.text_run import EndReason, RunResult, TranscriptEntry
 from voice_order.api.app import join_token
 from voice_order.config import Settings
 from voice_order.menu.models import Menu
+from voice_order.order.state import spoken_digits
 from voice_order.prompts.loader import AGENT_SYSTEM_VERSION
 from voice_order.store.base import OrderStore
 from voice_order.textmode.llm import LLMClient, Usage
@@ -43,6 +44,22 @@ def _pauses(scenario: Scenario) -> dict[int, int]:
         for b in scenario.behaviors
         if b.action == "pause_mid_utterance" and b.trigger.turn is not None
     }
+
+
+def _phone_pause(scenario: Scenario) -> int:
+    """The pause for the utterance that gives the phone number, whichever turn that is."""
+    return next(
+        (
+            b.pause_ms or 0
+            for b in scenario.behaviors
+            if b.action == "pause_mid_utterance" and b.trigger.phase == "phone"
+        ),
+        0,
+    )
+
+
+def gives_phone_number(text: str) -> bool:
+    return len(spoken_digits(text)) >= 10
 
 
 async def _read_usage(folder: Path) -> dict[str, Any] | None:
@@ -98,6 +115,7 @@ async def run_audio_scenario(
     brain = TextCaller(caller_llm, scenario, menu.restaurant)
     transcript: list[TranscriptEntry] = []
     pauses = _pauses(scenario)
+    phone_pause = _phone_pause(scenario)
     interrupts = [b for b in scenario.behaviors if b.action == "interrupt"]
     fired: set[int] = set()
     end_reason: EndReason = "max_turns"
@@ -168,7 +186,10 @@ async def run_audio_scenario(
                 )
                 break
             turns += 1
-            spoken = await caller.say(said.text, pause_ms=pauses.get(turns, 0))
+            pause = pauses.get(turns, 0)
+            if not pause and phone_pause and gives_phone_number(said.text):
+                pause, phone_pause = phone_pause, 0  # only the first time
+            spoken = await caller.say(said.text, pause_ms=pause)
             last_end = spoken.end
             agent_text = await agent_turn(spoken.end)
             transcript.append(TranscriptEntry(speaker="agent", text=agent_text))

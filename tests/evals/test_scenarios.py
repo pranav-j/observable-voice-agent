@@ -105,6 +105,12 @@ def test_minimal_scenario_gets_defaults() -> None:
         },
         {"behaviors": [{"trigger": {"phase": "readback"}, "action": "interrupt", "after_ms": 1}]},
         {"behaviors": [{"trigger": {"turn": 2}, "action": "pause_mid_utterance"}]},
+        {
+            "behaviors": [
+                {"trigger": {"phase": "phone"}, "action": "interrupt", "after_ms": 1, "say": "x"}
+            ]
+        },
+        {"customer": {"name": "A", "phone": "9000100000"}},  # not the 90000 prefix
         {"expect": {"status": "shipped"}},
         {"expect": {"status": "confirmed", "order": {"items": [{"item": "x", "quantity": 0}]}}},
     ],
@@ -117,6 +123,8 @@ def test_minimal_scenario_gets_defaults() -> None:
         "two-triggers",
         "interrupt-without-say",
         "pause-without-ms",
+        "interrupt-on-phone",
+        "wrong-fake-prefix",
         "bad-status",
         "zero-quantity",
     ],
