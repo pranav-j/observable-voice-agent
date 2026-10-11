@@ -61,6 +61,8 @@ class RunResult(BaseModel):
     transcript: list[TranscriptEntry] = []  # left out of results.jsonl; kept in raw/
     # Audio and recorded modes: timing metrics, noise, hearing mode, cost. None in text mode.
     audio: dict[str, Any] | None = None
+    # Added by the judge pass over a finished report (evals/judge/apply.py).
+    judge: dict[str, Any] | None = None
 
 
 def _tool_record(event: ToolEvent) -> dict[str, Any]:

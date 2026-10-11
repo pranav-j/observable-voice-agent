@@ -88,6 +88,32 @@ def _audio_summary(results: list[RunResult]) -> dict[str, Any] | None:
     }
 
 
+def _judge_summary(results: list[RunResult]) -> dict[str, Any] | None:
+    judged = [r.judge for r in results if r.judge]
+    if not judged:
+        return None
+    ack = [j["error_ack"] for j in judged if "error_ack" in j]
+    cases = sum(a["cases"] for a in ack)
+    acknowledged = sum(a["acknowledged"] for a in ack)
+    unreadable = sum(a["unreadable"] for a in ack)
+    injection = [j["injection"] for j in judged if "injection" in j]
+    resisted = [i["resisted"] for i in injection]
+    known = [x for x in resisted if x is not None]
+    return {
+        "error_ack_versions": sorted({a["version"] for a in ack}),
+        "error_ack_cases": cases,
+        "error_ack_acknowledged": acknowledged,
+        "error_ack_unreadable": unreadable,
+        "error_acknowledgement_rate": _rate(acknowledged, cases - unreadable),
+        "injection_runs": len(injection),
+        "injection_resisted": sum(known),
+        "injection_unknown": len(resisted) - len(known),
+        "injection_resistance_rate": _rate(sum(known), len(known)),
+        "discount_agreed_runs": sum(i["agreed_to_discount"] is True for i in injection),
+        "total_mismatch_runs": sum(i["total_matches_menu"] is False for i in injection),
+    }
+
+
 def summarize(
     results: list[RunResult],
     *,
@@ -204,6 +230,7 @@ def summarize(
         "failures": failures,
         "rule_violations": violations,
         "audio": _audio_summary(results),
+        "judged": _judge_summary(results),
     }
 
 
@@ -280,6 +307,7 @@ def render_markdown(summary: dict[str, Any]) -> str:
             f"{_num(s['mean_field_accuracy'])} | {reasons} |"
         )
     lines += _audio_markdown(summary.get("audio"), summary["mode"])
+    lines += _judged_markdown(summary.get("judged"), summary.get("judge_calibration"))
     lines += ["", "## Failures", ""]
     if not summary["failures"]:
         lines.append("None.")
@@ -295,6 +323,34 @@ def render_markdown(summary: dict[str, Any]) -> str:
             f"read-back, before the caller replied (x{v['confirmed_before_reply']})"
         )
     return "\n".join(lines) + "\n"
+
+
+def _judged_markdown(j: dict[str, Any] | None, calibration: dict[str, Any] | None) -> list[str]:
+    if j is None:
+        return []
+    if calibration:
+        agreement = (
+            f"{calibration['agreed']}/{calibration['labeled']} hand labels "
+            f"({_pct(calibration['agreement'])}), judge {calibration['version']}"
+        )
+    else:
+        agreement = "not calibrated yet"
+    return [
+        "",
+        "## Judged",
+        "",
+        "| Metric | Value |",
+        "|---|---|",
+        f"| Error acknowledgement | {_pct(j['error_acknowledgement_rate'])} "
+        f"({j['error_ack_acknowledged']} of {j['error_ack_cases']} tool errors"
+        f"{f', {u} unreadable' if (u := j['error_ack_unreadable']) else ''}) |",
+        f"| Judge agreement | {agreement} |",
+        f"| Injection resistance | {_pct(j['injection_resistance_rate'])} "
+        f"({j['injection_resisted']} of {j['injection_runs']} runs"
+        f"{f', {n} unknown' if (n := j['injection_unknown']) else ''}) |",
+        f"| Agreed to a discount | {j['discount_agreed_runs']} runs |",
+        f"| Total differs from the menu price | {j['total_mismatch_runs']} runs |",
+    ]
 
 
 def _settings_text(settings: dict[str, Any] | None) -> str:
