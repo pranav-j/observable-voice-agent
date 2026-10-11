@@ -13,10 +13,13 @@ WEB_DEPS := web/node_modules/.package-lock.json
 # uv should always target the project .venv, never a VIRTUAL_ENV leaking in from the shell.
 unexport VIRTUAL_ENV
 
-# Prefix for web recipes: switch to the Node version in .nvmrc. Make's shell doesn't load
-# nvm from your shell rc, so source it here. Without nvm (e.g. CI) use the node on PATH.
-NVM_USE := export NVM_DIR="$${NVM_DIR:-$$HOME/.nvm}"; \
-	if [ -s "$$NVM_DIR/nvm.sh" ]; then . "$$NVM_DIR/nvm.sh" && nvm use >/dev/null || exit 1; fi;
+# Prefix for web recipes: make sure node matches .nvmrc. Make's shell doesn't load nvm from
+# your shell rc, so if the node on PATH is another version, source nvm and switch. CI runners
+# also have nvm, but setup-node already puts the right node on PATH, so nvm is skipped there.
+NVM_USE := if [ "$$(node --version 2>/dev/null)" != "v$$(cat .nvmrc)" ]; then \
+	export NVM_DIR="$${NVM_DIR:-$$HOME/.nvm}"; \
+	if [ -s "$$NVM_DIR/nvm.sh" ]; then . "$$NVM_DIR/nvm.sh" && nvm use >/dev/null || exit 1; fi; \
+	fi;
 
 .PHONY: help setup up down dev test test-integration lint fmt eval
 
