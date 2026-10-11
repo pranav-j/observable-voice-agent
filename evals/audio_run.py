@@ -198,6 +198,8 @@ async def run_audio_scenario(
                     "transferred" if caller.agent.order_status == "escalated" else "agent_ended"
                 )
                 break
+        if end_reason == "max_turns" and time.monotonic() - started >= settings.max_call_seconds:
+            end_reason = "time_limit"
     except Exception as exc:  # one failed call must not stop the suite
         end_reason = "error"
         error = f"{type(exc).__name__}: {exc}"

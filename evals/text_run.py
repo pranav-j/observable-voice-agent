@@ -24,6 +24,7 @@ EndReason = Literal[
     "transferred",
     "caller_gave_up",
     "max_turns",
+    "time_limit",  # audio: the call reached MAX_CALL_SECONDS
     "error",
     "recorded_call",  # recorded mode: a real call, ended however it ended
 ]
