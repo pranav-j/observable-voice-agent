@@ -4,6 +4,7 @@ import time
 from dataclasses import dataclass
 from typing import Any
 
+from voice_order.order.state import abandon
 from voice_order.store.base import OrderStore
 from voice_order.textmode.llm import (
     AssistantMessage,
@@ -98,6 +99,13 @@ class TextAgent:
             self.history.append(AssistantMessage(FALLBACK))
         self.usage += usage
         return Turn(" ".join(spoken), tuple(events), usage, self.session.ending, hit_limit)
+
+    async def hang_up(self, reason: str) -> None:
+        """The caller left. Close an unconfirmed order and save the final state."""
+        if self.session.ending is None:
+            self.session.order = abandon(self.session.order)
+            self.session.ending = CallEnd(kind="end_call", reason=reason)
+            await self.store.save(self.session.order)
 
     async def _run(self, call: ToolCall) -> ToolEvent:
         before = self.session.order

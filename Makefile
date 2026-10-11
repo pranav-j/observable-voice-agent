@@ -21,7 +21,7 @@ NVM_USE := if [ "$$(node --version 2>/dev/null)" != "v$$(cat .nvmrc)" ]; then \
 	if [ -s "$$NVM_DIR/nvm.sh" ]; then . "$$NVM_DIR/nvm.sh" && nvm use >/dev/null || exit 1; fi; \
 	fi;
 
-.PHONY: help setup up down dev test test-integration lint fmt eval
+.PHONY: help setup up down dev chat test test-integration lint fmt eval
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*## "} /^[a-zA-Z_-]+:.*## / {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -55,6 +55,9 @@ down: ## Stop services (data volumes are kept)
 
 dev: ## Run backend + agent worker + web (not implemented yet)
 	@echo "make dev: not implemented yet"; exit 1
+
+chat: $(VENV)/bin/python ## Talk to the agent as the caller (ARGS=--memory to skip Postgres)
+	$(UV) run --locked python -m voice_order.textmode $(ARGS)
 
 test: $(VENV)/bin/python ## Unit tests (deterministic, no network)
 	$(UV) run --locked pytest -m "not integration"

@@ -1,71 +1,16 @@
 """The agent loop, driven by a scripted LLM. The LLM is faked; the loop is real."""
 
 import json
-from collections.abc import Sequence
-from itertools import count
 from typing import Any
 
 import pytest
 
+from tests.textmode.fakes import GREETING, CountingStore, ScriptedLLM, call, reply
 from voice_order.menu.models import Menu
-from voice_order.order.models import Order
-from voice_order.store.base import InMemoryOrderStore
 from voice_order.textmode.agent import FALLBACK, CallEndedError, TextAgent
-from voice_order.textmode.llm import (
-    AssistantMessage,
-    LLMReply,
-    Message,
-    ToolCall,
-    ToolOutput,
-    ToolSpec,
-    Usage,
-    UserMessage,
-)
+from voice_order.textmode.llm import AssistantMessage, Message, ToolOutput, Usage, UserMessage
 from voice_order.tools.base import CallEnd, Session
 from voice_order.tools.catalog import TOOLS
-
-GREETING = "Hi, thanks for calling. What would you like to order?"
-_ids = count(1)
-
-
-def call(tool: str, /, **arguments: Any) -> ToolCall:
-    return ToolCall(call_id=f"call_{next(_ids)}", name=tool, arguments=json.dumps(arguments))
-
-
-def reply(text: str = "", *calls: ToolCall, tokens: tuple[int, int] = (10, 2)) -> LLMReply:
-    return LLMReply(text=text, tool_calls=calls, usage=Usage(*tokens))
-
-
-class ScriptedLLM:
-    """Returns scripted replies in order and records every request."""
-
-    model = "scripted"
-
-    def __init__(self, *replies: LLMReply) -> None:
-        self.replies = list(replies)
-        self.requests: list[list[Message]] = []
-        self.instructions: list[str] = []
-        self.tools: list[list[ToolSpec]] = []
-
-    async def complete(
-        self, instructions: str, messages: Sequence[Message], tools: Sequence[ToolSpec]
-    ) -> LLMReply:
-        self.requests.append(list(messages))
-        self.instructions.append(instructions)
-        self.tools.append(list(tools))
-        if not self.replies:
-            raise AssertionError("LLM called more times than scripted")
-        return self.replies.pop(0)
-
-
-class CountingStore(InMemoryOrderStore):
-    def __init__(self) -> None:
-        super().__init__()
-        self.saves = 0
-
-    async def save(self, order: Order) -> None:
-        self.saves += 1
-        await super().save(order)
 
 
 @pytest.fixture
@@ -230,3 +175,14 @@ async def test_usage_is_summed_per_turn_and_per_call(menu: Menu, store: Counting
     assert first.usage == Usage(220, 13)
     assert second.usage == Usage(130, 4)
     assert agent.usage == Usage(350, 17)
+
+
+async def test_hang_up_abandons_and_saves(menu: Menu, store: CountingStore) -> None:
+    agent = await make_agent(menu, store, ScriptedLLM())
+    await agent.hang_up("caller hung up")
+    await agent.hang_up("again")  # idempotent: the first reason stays
+    assert agent.session.ending == CallEnd(kind="end_call", reason="caller hung up")
+    saved = await store.get("t1")
+    assert saved is not None
+    assert saved.status == "abandoned"
+    assert store.saves == 2
