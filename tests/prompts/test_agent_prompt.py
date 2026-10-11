@@ -6,7 +6,12 @@ from typing import Any
 import pytest
 
 from voice_order.menu.models import Menu
-from voice_order.prompts.loader import AGENT_SYSTEM_VERSION, agent_system_prompt, load_prompt
+from voice_order.prompts.loader import (
+    AGENT_SYSTEM_VERSION,
+    agent_system_prompt,
+    greeting_prompt,
+    load_prompt,
+)
 from voice_order.tools import catalog
 from voice_order.tools.base import Session, dispatch
 from voice_order.tools.catalog import TOOLS
@@ -77,3 +82,11 @@ def test_missing_value_fails_loudly() -> None:
 def test_unknown_version_fails_loudly() -> None:
     with pytest.raises(FileNotFoundError):
         load_prompt("agent_system", "v999", restaurant="x")
+
+
+def test_greeting_names_the_restaurant() -> None:
+    greeting = greeting_prompt("Juniper Street Kitchen")
+    assert (
+        greeting.text
+        == "Hi, thanks for calling Juniper Street Kitchen. What would you like to order?"
+    )
