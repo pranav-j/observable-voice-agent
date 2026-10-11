@@ -297,3 +297,29 @@ With the harness fixed, a real agent weakness showed up. The caller says the num
 Joining the parts is counting, and counting belongs in code. `set_customer` now holds a partial number and joins it with the next part. If the parts add up to a valid number, it's used. A whole number on its own replaces whatever was held, and too many digits drops the held part. While a number is incomplete, the tool says how many digits it has and tells the agent to say something short like "okay, go on". The agent still reads the full number back, so a wrong join gets caught on the call.
 
 The calls are also slow. The caller-side latency on these runs is far beyond what a phone call can feel natural with. Speech-to-text, end-of-turn detection, a separate LLM round for each tool and text-to-speech all add up. I'll write numbers down once they come from a proper report. That's the next big piece of work after the harness.
+
+## The fake phone numbers were the hardest case
+
+Every scenario used a number like 9000000014, which keeps them obviously fake. Over audio, that's about the worst number you can pick. Speech recognition can't count a long run of "zero zero zero zero", and it kept dropping one or two. So most audio failures were really about that one fixture choice, not about anything the scenario was meant to test.
+
+The numbers still start with 90000, so they're still obviously fake, but the second half now varies, like 90000 26457. One scenario keeps a number that's mostly zeros on purpose, so that weakness gets measured on its own instead of leaking into every result.
+
+The same runs showed a problem with how I'd taught the agent to handle partial numbers. When digits went missing under noise, the agent asked for "the last two digits". But the caller had said the whole number, and the dropped digits were from the middle, so the caller supplied the end and the join glued it in the wrong place. Now the agent reads back what it has and asks for the whole number again. If the caller carries on with the rest instead, the code still joins the parts.
+
+## Fetched isn't the same as heard
+
+This one would have been bad in production. The caller said "Yes, that's right" with a little pause in the middle, so it arrived as two turns. On "Yes", the agent fetched the read-back. "That's right" then interrupted it before a single word played. And "that's right" counted as the caller's answer to the read-back, so the order was confirmed without the caller ever hearing it.
+
+The rule in code said a read-back had to be fetched after the last change, and the caller had to speak after that. In text mode, fetching and showing are the same thing. In voice they aren't. Now the runtime tells the session what the agent actually finished saying, with a flag when the caller cut it off. A read-back only counts once most of its words have been said, in order, without an interruption. The confirm tool explains which case it is, so the agent knows to say the read-back again rather than just wait.
+
+I would not have found this with text evals or unit tests. It took a simulated caller with a realistic pause in the middle of a sentence.
+
+## Preemptive generation goes off
+
+With preemptive generation on, the agent sometimes said the same sentence twice: "May I have your name for the order? May I have your name for the order?" The caller's transcript, which follows what's actually played, had it twice too, so the caller heard it. Every time I saw this, preemptive generation was on, and I haven't seen it with it off. It's off by default now. It exists to cut latency, so the latency experiments will measure what it actually saves. If that's worth having, I'll find out why it doubles before turning it back on.
+
+## Smaller harness fixes
+
+- The scripted pause in the "pause while giving the phone number" scenario was tied to the caller's third turn. A hesitant caller reached the number later, so the pause landed on "No, that's all". Pauses can now be tied to the phone number itself, and they go between its two halves, the way people actually pause.
+- The simulated caller accepted "Riddle" as its own name in a read-back. Its prompt told it to check the order, not its own details. It checks its name and number now.
+- "Okay, go on" confused the simulated caller. In replays it hung up, said "that's all", or even answered as if it were the restaurant. Reading back the digits so far worked every time, and it's what a person taking the call would do anyway.
