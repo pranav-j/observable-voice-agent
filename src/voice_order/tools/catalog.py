@@ -354,20 +354,26 @@ def transfer_to_human(session: Session, args: ReasonArgs) -> Result:
 
 def end_call(session: Session, args: ReasonArgs) -> Result:
     order = session.order
-    if (
-        order.status == "draft"
-        and order.readback_is_current
-        and session.readback_answered
-        and not session.end_call_held
-    ):
-        # "Yes, that's right." and "Goodbye." can arrive as two turns, and the agent
-        # sometimes answers the goodbye and forgets the yes. Hold it once to check.
+    if order.status == "draft" and order.lines and not session.end_call_held:
+        # Ending with items still unplaced is usually a misread: "Yes, that's right." and
+        # "Goodbye." arriving as two turns, or "No, that's all" taken as a goodbye when
+        # it meant "nothing else to order". Hold it once so the agent can check.
         session.end_call_held = True
+        if order.readback_is_current and session.readback_answered:
+            message = (
+                "Not ended: the caller answered the read-back, but the order isn't "
+                "confirmed. If they said yes, call confirm_order first, then say goodbye "
+                "and end the call."
+            )
+        else:
+            message = (
+                "Not ended: the order has items but hasn't been placed. If the caller only "
+                "meant they've finished choosing, carry on: take their name and number "
+                "and read the order back."
+            )
         return error(
             ErrorCode.ORDER_NOT_CONFIRMED,
-            "Not ended: the caller answered the read-back, but the order isn't confirmed. "
-            "If they said yes, call confirm_order first, then say goodbye and end the call. "
-            "If they really want to stop without ordering, call end_call again.",
+            f"{message} If they really want to stop without ordering, call end_call again.",
         )
     session.order = state.abandon(session.order)
     _end(session, "end_call", args.reason)

@@ -114,7 +114,15 @@ def test_transfer_escalates_and_flags_the_session(ready: Session) -> None:
     assert ready.ending == CallEnd(kind="transfer", reason="asked for a person twice")
 
 
+def end(session: Session, reason: str) -> dict[str, Any]:
+    """end_call until it ends: with items on the order, the first call is held once."""
+    result = call(session, "end_call", reason=reason)
+    return call(session, "end_call", reason=reason) if not result["ok"] else result
+
+
 def test_end_call_abandons_an_unconfirmed_order(ready: Session) -> None:
+    held = call(ready, "end_call", reason="caller hung up")
+    assert held["error"] == "ORDER_NOT_CONFIRMED"
     result = call(ready, "end_call", reason="caller hung up")
     assert result["status"] == "abandoned"
     assert ready.ending == CallEnd(kind="end_call", reason="caller hung up")
@@ -129,13 +137,13 @@ def test_end_call_keeps_a_confirmed_order(ready: Session) -> None:
 
 
 def test_first_ending_wins(ready: Session) -> None:
-    call(ready, "end_call", reason="first")
+    end(ready, "first")
     call(ready, "transfer_to_human", reason="second")
     assert ready.ending == CallEnd(kind="end_call", reason="first")
 
 
 def test_no_changes_after_the_call_ends(ready: Session) -> None:
-    call(ready, "end_call", reason="caller hung up")
+    end(ready, "caller hung up")
     assert call(ready, "add_item", item_id="affogato", quantity=1)["error"] == "ORDER_CLOSED"
 
 
@@ -244,6 +252,13 @@ def test_confirming_after_the_hold_works(ready: Session) -> None:
     assert call(ready, "confirm_order")["order"]["status"] == "confirmed"
 
 
-def test_end_call_before_any_readback_is_not_held(ready: Session) -> None:
-    ready.caller_spoke()
-    assert call(ready, "end_call", reason="caller hung up")["status"] == "abandoned"
+def test_end_call_with_nothing_ordered_is_not_held(session: Session) -> None:
+    assert call(session, "end_call", reason="wrong number")["status"] == "abandoned"
+
+
+def test_thats_all_is_not_a_goodbye(ready: Session) -> None:
+    # "No, that's all" meant nothing else to order, not goodbye.
+    held = call(ready, "end_call", reason="caller said that's all")
+    assert held["error"] == "ORDER_NOT_CONFIRMED"
+    assert "finished choosing" in held["message"]
+    assert ready.ending is None
