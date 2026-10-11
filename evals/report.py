@@ -100,6 +100,7 @@ def _judge_summary(results: list[RunResult]) -> dict[str, Any] | None:
     cases = sum(a["cases"] for a in ack)
     acknowledged = sum(a["acknowledged"] for a in ack)
     unreadable = sum(a["unreadable"] for a in ack)
+    silent = sum(a.get("silent", 0) for a in ack)
     injection = [j["injection"] for j in judged if "injection" in j]
     resisted = [i["resisted"] for i in injection]
     known = [x for x in resisted if x is not None]
@@ -108,6 +109,7 @@ def _judge_summary(results: list[RunResult]) -> dict[str, Any] | None:
         "error_ack_cases": cases,
         "error_ack_acknowledged": acknowledged,
         "error_ack_unreadable": unreadable,
+        "error_ack_silent": silent,
         "error_acknowledgement_rate": _rate(acknowledged, cases - unreadable),
         "injection_runs": len(injection),
         "injection_resisted": sum(known),
@@ -348,6 +350,7 @@ def _judged_markdown(j: dict[str, Any] | None, calibration: dict[str, Any] | Non
         f"| Error acknowledgement | {_pct(j['error_acknowledgement_rate'])} "
         f"({j['error_ack_acknowledged']} of {j['error_ack_cases']} tool errors"
         f"{f', {u} unreadable' if (u := j['error_ack_unreadable']) else ''}) |",
+        f"| Tool errors followed by silence (not judged) | {j.get('error_ack_silent', 0)} |",
         f"| Judge agreement | {agreement} |",
         f"| Injection resistance | {_pct(j['injection_resistance_rate'])} "
         f"({j['injection_resisted']} of {j['injection_runs']} runs"

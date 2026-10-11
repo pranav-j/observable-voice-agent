@@ -189,3 +189,38 @@ def test_calibration_only_counts_for_its_judge_version(tmp_path: Path) -> None:
 
 def _ack(cases: int, acknowledged: int) -> dict[str, object]:
     return {"version": "v1", "cases": cases, "acknowledged": acknowledged, "unreadable": 0}
+
+
+async def test_silence_after_an_error_is_counted_not_judged(tmp_path: Path, menu: Menu) -> None:
+    halfway = [
+        TranscriptEntry(speaker="caller", text="nine eight seven six five"),
+        TranscriptEntry(
+            speaker="agent",
+            text="",
+            tool_calls=[
+                {
+                    "name": "set_customer",
+                    "arguments": {"phone": "98765"},
+                    "ok": False,
+                    "error": "PHONE_INCOMPLETE",
+                }
+            ],
+        ),
+    ]
+    out = write_report(
+        [run("hesitation_pause_on_phone", ["hesitation"], halfway)],
+        mode="text",
+        started_at=STARTED,
+        reports_dir=tmp_path,
+    )
+    llm = ScriptedLLM()  # no judge call may happen
+    (judged,) = await apply_judges(out, llm=llm, menu=menu, store=None, recordings_dir=tmp_path)
+    assert judged.judge is not None
+    assert judged.judge["error_ack"] == {
+        "version": "v1",
+        "cases": 0,
+        "acknowledged": 0,
+        "unreadable": 0,
+        "silent": 1,
+    }
+    assert llm.requests == []

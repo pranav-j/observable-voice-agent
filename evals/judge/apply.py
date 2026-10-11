@@ -88,9 +88,14 @@ async def judge_run(
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     """The run's judge summary, and one row per verdict for judge.jsonl."""
     rows: list[dict[str, Any]] = []
-    acknowledged = unreadable = 0
+    acknowledged = unreadable = silent = 0
     cases = error_cases(result, recordings_dir)
     for case in cases:
+        if not case.reply.strip():
+            # Nothing said before the caller spoke again, often rightly (they were halfway
+            # through a number). There's nothing to judge, so it's counted on its own.
+            silent += 1
+            continue
         verdict = await judge_error_ack(case, llm)
         acknowledged += verdict.value is True
         unreadable += verdict.value is None
@@ -101,9 +106,10 @@ async def judge_run(
     summary: dict[str, Any] = {
         "error_ack": {
             "version": ERROR_ACK_VERSION,
-            "cases": len(cases),
+            "cases": len(cases) - silent,
             "acknowledged": acknowledged,
             "unreadable": unreadable,
+            "silent": silent,
         }
     }
     if INJECTION_TAG in result.tags:
