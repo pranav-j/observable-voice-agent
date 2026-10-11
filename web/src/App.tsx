@@ -1,15 +1,25 @@
-import { useCallStore } from './store/call'
+import { CallControls } from './components/CallControls'
+import { LatencyPanel } from './components/LatencyPanel'
+import { OrderPanel } from './components/OrderPanel'
+import { SummaryCard } from './components/SummaryCard'
+import { Transcript } from './components/Transcript'
 
 function App() {
-  const status = useCallStore((s) => s.status)
-
   return (
     <main>
-      <h1>Juniper Street Kitchen</h1>
-      <p className="subtitle">Order desk</p>
-      <p>
-        Call status: <code>{status}</code>
-      </p>
+      <header>
+        <h1>Juniper Street Kitchen</h1>
+        <p className="muted">Order desk · voice agent</p>
+      </header>
+      <CallControls />
+      <SummaryCard />
+      <div className="grid">
+        <Transcript />
+        <div className="side">
+          <OrderPanel />
+          <LatencyPanel />
+        </div>
+      </div>
     </main>
   )
 }
