@@ -193,6 +193,16 @@ When a caller asked to swap a latte for a cappuccino, the model tried `update_it
 
 I didn't run an eval for this one. It came up once in 93 runs, so a targeted run would mostly measure luck. What the unit tests check is the part that matters: the message names the recovery, and the order is left alone. It's a small thing, but it changed how I think about tool errors. They're the agent's only instructions at the moment it's stuck, so they should say what to do next, not just what went wrong.
 
+## Second reference, before the voice work
+
+After fixes 2 to 5, the confirm guard and caller prompt v2, I re-ran the whole suite as the reference for everything that follows. Report: [reports/20261011-103854-text/summary.md](../reports/20261011-103854-text/summary.md). It folds in several changes at once, so the per-fix sections above are where individual effects were measured.
+
+Task success was 93.5% (87 of 93), against 94.6% for the previous reference. That's one run, which is noise. What did change: the simulated caller hanging up mid-order went from 2 runs to 0, transfers came out at exactly the 3 expected, and premature confirm attempts dropped from 11 to 4. The caller prompt changes did what they were meant to.
+
+The six failures left are a different kind of problem. In five of them, the agent lost something: an item the caller asked for, a quantity change, or the latte-to-cappuccino swap. The read-back showed the mistake plainly, and the simulated caller said "yes" anyway. In one, the caller had just asked for a cappuccino, heard "one small Cafe Latte", and said "yes, that's correct".
+
+So two things are true. The agent's main weakness now is keeping track of edits across turns, especially after an interruption or a correction. And the read-back only works as a safety net if the person listening actually listens. My simulated caller, on the cheap model, isn't careful enough to play that part well. Scoring still counts these runs as failures, which is right, since the order is wrong. But a real person would probably have caught most of them. A stronger model for the caller would make the harness more realistic, at a higher cost per run. I noted that trade-off when I picked the models, and now there's evidence for it.
+
 ## The simulated caller can be the thing that fails
 
 Two failures in one batch came from my side of the test, not the agent. In one, I'd told the caller to say "two plates of veg samosas" exactly like that. It took that so literally that it refused a correct read-back three times and gave up. I reworded the goal so it uses the phrase when ordering without being rigid about it.
