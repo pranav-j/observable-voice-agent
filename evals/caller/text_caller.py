@@ -13,7 +13,7 @@ from typing import Literal
 from evals.scenario import Behavior, Scenario
 from voice_order.textmode.llm import AssistantMessage, LLMClient, Message, Usage, UserMessage
 
-CALLER_PROMPT_VERSION = "v2"
+CALLER_PROMPT_VERSION = "v3"
 END = "[END]"
 GIVE_UP = "[GIVE UP]"
 _MARKERS = re.compile(r"\[(END|GIVE UP)\]", re.IGNORECASE)
