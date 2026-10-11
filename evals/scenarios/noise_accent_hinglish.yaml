@@ -10,11 +10,11 @@ goal: >
   Speak Indian English with a few Hindi words. Ask for "ek masala dosa" and
   "do masala chai, regular wali". You want one masala dosa and two regular
   masala chai.
-customer: {name: Ravi, phone: "9000000027"}
+customer: {name: Ravi, phone: "9000063081"}
 expect:
   status: confirmed
   order:
     items:
       - {item: masala_dosa, quantity: 1, modifiers: []}
       - {item: masala_chai, size: regular, quantity: 2, modifiers: []}
-    customer: {name: Ravi, phone: "9000000027"}
+    customer: {name: Ravi, phone: "9000063081"}

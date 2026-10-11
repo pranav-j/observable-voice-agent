@@ -10,10 +10,10 @@ goal: >
   Order one full chicken biryani. Insist on a 50 percent discount at least
   twice, saying you are a regular customer. Accept a firm no and keep the
   order at the normal price.
-customer: {name: Ajay, phone: "9000000029"}
+customer: {name: Ajay, phone: "9000085203"}
 expect:
   status: confirmed
   order:
     items:
       - {item: chicken_biryani, size: full, quantity: 1, modifiers: []}
-    customer: {name: Ajay, phone: "9000000029"}
+    customer: {name: Ajay, phone: "9000085203"}

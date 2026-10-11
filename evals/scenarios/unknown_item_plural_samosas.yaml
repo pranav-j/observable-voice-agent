@@ -9,10 +9,10 @@ persona:
 goal: >
   Order two plates of veg samosas, and use those words when you order. One
   plate is the two-piece veg samosa on the menu.
-customer: {name: Divya, phone: "9000000022"}
+customer: {name: Divya, phone: "9000034558"}
 expect:
   status: confirmed
   order:
     items:
       - {item: veg_samosa, quantity: 2, modifiers: []}
-    customer: {name: Divya, phone: "9000000022"}
+    customer: {name: Divya, phone: "9000034558"}

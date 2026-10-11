@@ -9,10 +9,10 @@ persona:
 goal: >
   Order two half veg biryanis. After the order-taker says they were added,
   change your mind and make it three.
-customer: {name: Sana, phone: "9000000006"}
+customer: {name: Sana, phone: "9000013579"}
 expect:
   status: confirmed
   order:
     items:
       - {item: veg_biryani, size: half, quantity: 3, modifiers: []}
-    customer: {name: Sana, phone: "9000000006"}
+    customer: {name: Sana, phone: "9000013579"}

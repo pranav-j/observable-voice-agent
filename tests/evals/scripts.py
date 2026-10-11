@@ -14,14 +14,14 @@ HAPPY_AGENT = [
         ),
     ),
     reply("Got it. Your name and number?", tokens=(100, 10)),
-    reply("", call("set_customer", name="Priya", phone="9000000002"), call("get_readback")),
+    reply("", call("set_customer", name="Priya", phone="9000023456"), call("get_readback")),
     reply("Let me read that back. Is that correct?"),
     reply("", call("confirm_order")),
     reply("It'll be ready for pickup. Goodbye!"),
 ]
 HAPPY_CALLER = [
     reply("One large cold coffee with oat milk, please.", tokens=(40, 9)),
-    reply("Priya, 9000000002."),
+    reply("Priya, 9000023456."),
     reply("Yes, that's right."),
     reply("Thanks, bye! [END]"),
 ]

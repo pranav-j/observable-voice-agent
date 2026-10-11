@@ -9,7 +9,7 @@ persona:
 goal: >
   Order one medium cappuccino with oat milk, one masala dosa with cheese,
   and one butter naan for pickup.
-customer: {name: Rohan, phone: "9000000003"}
+customer: {name: Rohan, phone: "9000034567"}
 expect:
   status: confirmed
   order:
@@ -17,4 +17,4 @@ expect:
       - {item: cappuccino, size: medium, quantity: 1, modifiers: [oat_milk]}
       - {item: masala_dosa, quantity: 1, modifiers: [cheese]}
       - {item: butter_naan, quantity: 1, modifiers: []}
-    customer: {name: Rohan, phone: "9000000003"}
+    customer: {name: Rohan, phone: "9000034567"}

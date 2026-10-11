@@ -10,10 +10,10 @@ goal: >
   You want one paneer tikka roll, but you just call it "paneer tikka". If they
   ask which one you mean, it's the roll. If the read-back says plain paneer
   tikka, correct it to the roll.
-customer: {name: Gaurav, phone: "9000000016"}
+customer: {name: Gaurav, phone: "9000030102"}
 expect:
   status: confirmed
   order:
     items:
       - {item: paneer_tikka_roll, quantity: 1, modifiers: []}
-    customer: {name: Gaurav, phone: "9000000016"}
+    customer: {name: Gaurav, phone: "9000030102"}

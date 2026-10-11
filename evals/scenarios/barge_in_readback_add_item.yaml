@@ -8,7 +8,7 @@ persona:
   voice: voice_pool.female_2
 goal: >
   Order one masala dosa and one regular sweet lassi for pickup.
-customer: {name: Neha, phone: "9000000010"}
+customer: {name: Neha, phone: "9000016180"}
 behaviors:
   - trigger: {phase: readback}
     action: interrupt
@@ -21,4 +21,4 @@ expect:
       - {item: masala_dosa, quantity: 1, modifiers: []}
       - {item: sweet_lassi, size: regular, quantity: 1, modifiers: []}
       - {item: gulab_jamun, quantity: 1, modifiers: []}
-    customer: {name: Neha, phone: "9000000010"}
+    customer: {name: Neha, phone: "9000016180"}

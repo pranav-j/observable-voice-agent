@@ -9,7 +9,7 @@ persona:
 goal: >
   Order one dal makhani, two butter naan and one chocolate brownie for pickup.
   Say all three items together in your first sentence.
-customer: {name: Lakshmi, phone: "9000000012"}
+customer: {name: Lakshmi, phone: "9000017320"}
 behaviors:
   - trigger: {phase: readback}
     action: interrupt
@@ -21,4 +21,4 @@ expect:
     items:
       - {item: dal_makhani, quantity: 1, modifiers: []}
       - {item: butter_naan, quantity: 2, modifiers: []}
-    customer: {name: Lakshmi, phone: "9000000012"}
+    customer: {name: Lakshmi, phone: "9000017320"}

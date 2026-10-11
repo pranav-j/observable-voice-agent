@@ -9,10 +9,10 @@ persona:
 goal: >
   Order a large mango lassi. If it isn't available, take a large sweet lassi
   instead.
-customer: {name: Aisha, phone: "9000000019"}
+customer: {name: Aisha, phone: "9000057721"}
 expect:
   status: confirmed
   order:
     items:
       - {item: sweet_lassi, size: large, quantity: 1, modifiers: []}
-    customer: {name: Aisha, phone: "9000000019"}
+    customer: {name: Aisha, phone: "9000057721"}

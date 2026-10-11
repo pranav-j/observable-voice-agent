@@ -64,7 +64,7 @@ async def test_barge_in_during_readback_changes_the_order(menu: Menu) -> None:
             "",
             call("add_item", item_id="cold_coffee", quantity=1, size_id="large"),
             call("add_item", item_id="masala_dosa", quantity=2),
-            call("set_customer", name="Anil", phone="9000000001"),
+            call("set_customer", name="Anil", phone="9000012345"),
             call("get_readback"),
         ),
         reply("Let me read that back. ... Is that correct?"),
@@ -74,7 +74,7 @@ async def test_barge_in_during_readback_changes_the_order(menu: Menu) -> None:
         reply("Ready for pickup. Goodbye!"),
     ]
     caller = [
-        reply("A large cold coffee and two masala dosas. I'm Anil, 9000000001."),
+        reply("A large cold coffee and two masala dosas. I'm Anil, 9000012345."),
         # turn 2 is the read-back: the scripted interrupt speaks, the LLM is not asked
         reply("Yes, that's correct."),
         reply("[END]"),
@@ -161,14 +161,14 @@ async def test_confirming_in_the_readback_turn_is_counted(menu: Menu) -> None:
                 size_id="large",
                 modifier_ids=["oat_milk"],
             ),
-            call("set_customer", name="Priya", phone="9000000002"),
+            call("set_customer", name="Priya", phone="9000023456"),
             call("get_readback"),
             call("confirm_order"),
         ),
         reply("Let me read that back. ... Is that correct? Your order is placed."),
     ]
     caller = [
-        reply("One large cold coffee with oat milk. Priya, 9000000002."),
+        reply("One large cold coffee with oat milk. Priya, 9000023456."),
         reply("[END]"),
     ]
     result, _ = await play(menu, HAPPY, agent, caller)
@@ -195,7 +195,7 @@ async def test_a_final_yes_with_goodbye_still_confirms(menu: Menu) -> None:
     ]
     caller = [
         reply("One large cold coffee with oat milk, please."),
-        reply("Priya, 9000000002."),
+        reply("Priya, 9000023456."),
         reply("Yes, that's correct. Goodbye. [END]"),  # yes and hang up in one breath
     ]
     result, _ = await play(menu, HAPPY, agent, caller)

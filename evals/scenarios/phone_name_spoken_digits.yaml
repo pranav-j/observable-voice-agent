@@ -1,5 +1,5 @@
 id: phone_name_spoken_digits
-description: Caller says the phone number as words, in two groups.
+description: Caller says the phone number as words, in two groups. The number is mostly zeros on purpose, the hardest case for speech recognition.
 tags: [phone_name, phone]
 runs: 3
 persona:

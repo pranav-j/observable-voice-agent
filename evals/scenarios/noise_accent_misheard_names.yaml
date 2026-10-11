@@ -11,11 +11,11 @@ goal: >
   Order one pesarattu and one bisi bele bath. When you say the item names,
   write them the way a bad transcription would: "pessarattoo" and
   "bisi bella bath".
-customer: {name: Geeta, phone: "9000000028"}
+customer: {name: Geeta, phone: "9000074196"}
 expect:
   status: confirmed
   order:
     items:
       - {item: pesarattu, quantity: 1, modifiers: []}
       - {item: bisi_bele_bath, quantity: 1, modifiers: []}
-    customer: {name: Geeta, phone: "9000000028"}
+    customer: {name: Geeta, phone: "9000074196"}

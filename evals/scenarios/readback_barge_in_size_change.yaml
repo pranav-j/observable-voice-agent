@@ -9,7 +9,7 @@ persona:
   noise: {clip: cafe_01, snr_db: 15}
 goal: >
   Order one large cold coffee and two masala dosas for pickup.
-customer: {name: Anil, phone: "9000000001"}
+customer: {name: Anil, phone: "9000012345"}
 behaviors:
   - trigger: {phase: readback}
     action: interrupt
@@ -24,4 +24,4 @@ expect:
     items:
       - {item: cold_coffee, size: medium, quantity: 1, modifiers: []}
       - {item: masala_dosa, quantity: 2, modifiers: []}
-    customer: {name: Anil, phone: "9000000001"}
+    customer: {name: Anil, phone: "9000012345"}
