@@ -213,6 +213,16 @@ Before writing the worker I read LiveKit's source for the exact version I'm pinn
 - Tool results go through `str()`, so returning a dict would show the model a Python repr instead of JSON.
 - The built-in recorder writes to a temporary folder that's deleted when the session ends, so the recording has to be copied out in the session-end hook.
 
+## The first voice call
+
+The worker wires the same core into LiveKit Agents. The tools are registered from the same schemas and run the same `dispatch`, with OpenAI for speech-to-text, the LLM and text-to-speech, and Silero voice detection plus LiveKit's local turn detector. To test it without a browser, I wrote a small caller script. It gets a token the same way the backend does, joins the room, speaks lines generated with text-to-speech over a real WebRTC audio track (with silence between lines, so voice detection can find the end of each turn), and prints what the agent says from LiveKit's transcription stream.
+
+On the first run, a masala dosa got ordered and confirmed by voice. The order was in Postgres as confirmed, the phone number was read back in groups, and when the agent called `end_call` after its goodbye, the worker hung up and saved the final state. A few things showed up that I want to look at properly rather than tune by feel:
+
+- **Caller lines were split at pauses.** "Hi, can I get one masala dosa please?" came through as "Hi." and then the rest. The worker log said why: the transcript arrived after the turn had already been committed, and LiveKit suggested raising the minimum silence before a turn can end. That's the core trade-off of turn detection: wait longer and the agent feels slow, wait less and it cuts people off. It's exactly what the turn-detection experiment is for.
+- **Barge-in works.** My script talked over the agent's phone read-back, and the agent stopped mid-sentence.
+- **One agent reply had a sentence repeated.** It might be preemptive generation, where LiveKit starts a reply before the turn is confirmed, or an interruption artifact. Traces should show which.
+
 ## The simulated caller can be the thing that fails
 
 Two failures in one batch came from my side of the test, not the agent. In one, I'd told the caller to say "two plates of veg samosas" exactly like that. It took that so literally that it refused a correct read-back three times and gave up. I reworded the goal so it uses the phrase when ordering without being rigid about it.

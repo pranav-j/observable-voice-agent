@@ -1,0 +1,152 @@
+"""LiveKit Agents worker. Voice wiring only: all order logic lives in the core.
+
+Run with `python -m livekit.agents start src/voice_order/agent/worker.py --dev`
+(or `make dev`). See docs/adr/0004-voice-pipeline.md for the choices made here.
+"""
+
+import asyncio
+import json
+import logging
+from typing import Any
+
+from livekit import rtc
+from livekit.agents import (
+    Agent,
+    AgentServer,
+    AgentSession,
+    AgentStateChangedEvent,
+    ConversationItemAddedEvent,
+    JobContext,
+    JobProcess,
+    UserStateChangedEvent,
+    inference,
+)
+from livekit.plugins import openai as lk_openai
+from livekit.plugins import silero
+from openai.types import Reasoning
+
+from voice_order.agent.tools import livekit_tools
+from voice_order.config import Settings, get_settings
+from voice_order.menu.loader import load_menu
+from voice_order.order.state import abandon
+from voice_order.prompts.loader import agent_system_prompt, greeting_prompt
+from voice_order.store.postgres import PostgresOrderStore
+from voice_order.tools.base import CallEnd, Result, Session
+from voice_order.tools.catalog import order_view
+
+log = logging.getLogger("voice_order.worker")
+
+ORDER_TOPIC = "order"  # the web UI's order panel listens on this data topic
+TIME_UP = "Sorry, we're out of time for this call. Please call back to finish your order."
+AWAY = "I haven't heard from you in a while, so I'll end the call. Please call back anytime."
+
+
+def prewarm(proc: JobProcess) -> None:
+    # Loading the VAD model blocks, so do it once per process, before calls arrive.
+    proc.userdata["vad"] = silero.VAD.load()
+
+
+def build_session(settings: Settings, vad: Any) -> AgentSession[None]:
+    key = settings.openai_api_key.get_secret_value()
+    return AgentSession(
+        stt=lk_openai.STT(model=settings.stt_model, api_key=key),
+        llm=lk_openai.responses.LLM(
+            model=settings.llm_model, api_key=key, reasoning=Reasoning(effort="none")
+        ),
+        tts=lk_openai.TTS(model=settings.tts_model, voice=settings.tts_voice, api_key=key),
+        vad=vad,
+        turn_handling={
+            # Local models only: the defaults in dev mode would call LiveKit's cloud.
+            "turn_detection": inference.TurnDetector(version="v1-mini"),
+            "endpointing": {"min_delay": settings.eou_silence_ms / 1000},
+            "interruption": {"enabled": True, "mode": "vad"},
+            "preemptive_generation": {"enabled": settings.enable_preemptive_generation},
+        },
+        user_away_timeout=settings.idle_timeout_seconds,
+    )
+
+
+async def publish(room: rtc.Room, topic: str, payload: dict[str, Any]) -> None:
+    try:
+        await room.local_participant.publish_data(json.dumps(payload), topic=topic, reliable=True)
+    except Exception:  # the UI missing an update must never break the call
+        log.warning("could not publish %s update", topic, exc_info=True)
+
+
+settings = get_settings()
+server = AgentServer(
+    setup_fnc=prewarm,
+    ws_url=settings.livekit_url,
+    api_key=settings.livekit_api_key,
+    api_secret=settings.livekit_api_secret.get_secret_value(),
+)
+
+
+@server.rtc_session(agent_name=settings.agent_name)
+async def entrypoint(ctx: JobContext) -> None:
+    menu = load_menu()
+    call = Session.start(menu, ctx.job.room.name)  # the room name is the session id
+    store = await PostgresOrderStore.connect(settings.database_url)
+
+    async def close_store() -> None:
+        # The caller may hang up mid-order: close the order and save its final state.
+        if call.ending is None:
+            call.order = abandon(call.order)
+            await store.save(call.order)
+        await store.close()
+
+    ctx.add_shutdown_callback(close_store)
+    await store.save(call.order)
+
+    async def on_tool_result(name: str, result: Result) -> None:
+        await publish(
+            ctx.room, ORDER_TOPIC, {"session_id": call.order.session_id, **order_view(call)}
+        )
+
+    agent = Agent(
+        instructions=agent_system_prompt(menu.restaurant).text,
+        tools=livekit_tools(call, store, on_tool_result),  # type: ignore[arg-type]
+    )
+    session = build_session(settings, ctx.proc.userdata["vad"])
+    background: set[asyncio.Task[None]] = set()
+
+    @session.on("conversation_item_added")
+    def _on_item(ev: ConversationItemAddedEvent) -> None:
+        if ev.item.type == "message" and ev.item.role == "user":
+            call.caller_spoke()  # lets confirm_order check the caller replied to the read-back
+
+    @session.on("agent_state_changed")
+    def _on_agent_state(ev: AgentStateChangedEvent) -> None:
+        # end_call or transfer_to_human ran and the goodbye has been spoken: hang up.
+        if call.ending is not None and ev.new_state == "listening":
+            ctx.shutdown(reason=f"{call.ending.kind}: {call.ending.reason}")
+
+    async def end_with(line: str, reason: str) -> None:
+        if call.ending is None:
+            call.order = abandon(call.order)
+            call.ending = CallEnd(kind="end_call", reason=reason)
+            await store.save(call.order)
+            await session.say(line, allow_interruptions=False)
+
+    @session.on("user_state_changed")
+    def _on_user_state(ev: UserStateChangedEvent) -> None:
+        if ev.new_state == "away":
+            # The loop only holds weak references to tasks; keep one until it's done.
+            task = asyncio.create_task(end_with(AWAY, "caller went quiet"))
+            background.add(task)
+            task.add_done_callback(background.discard)
+
+    await session.start(agent, room=ctx.room)
+    await publish(ctx.room, ORDER_TOPIC, {"session_id": call.order.session_id, **order_view(call)})
+    await session.say(greeting_prompt(menu.restaurant).text)
+
+    async def time_limit() -> None:
+        await asyncio.sleep(settings.max_call_seconds)
+        await end_with(TIME_UP, "max call length reached")
+
+    timer = asyncio.create_task(time_limit())
+    ctx.add_shutdown_callback(lambda: _cancel(timer))
+
+
+async def _cancel(task: asyncio.Task[None]) -> None:
+    task.cancel()

@@ -21,7 +21,7 @@ NVM_USE := if [ "$$(node --version 2>/dev/null)" != "v$$(cat .nvmrc)" ]; then \
 	if [ -s "$$NVM_DIR/nvm.sh" ]; then . "$$NVM_DIR/nvm.sh" && nvm use >/dev/null || exit 1; fi; \
 	fi;
 
-.PHONY: help setup up down dev chat test test-integration lint fmt eval
+.PHONY: help setup up down dev worker voice-smoke chat test test-integration lint fmt eval
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*## "} /^[a-zA-Z_-]+:.*## / {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -53,8 +53,18 @@ up: ## Start postgres, livekit-server, phoenix and wait until healthy
 down: ## Stop services (data volumes are kept)
 	docker compose down
 
-dev: ## Run backend + agent worker + web (not implemented yet)
-	@echo "make dev: not implemented yet"; exit 1
+dev: $(VENV)/bin/python $(WEB_DEPS) ## Run backend (:8000), agent worker and web (:5173) together
+	@$(NVM_USE) trap 'kill 0' EXIT; \
+	$(UV) run --locked uvicorn voice_order.api.app:app --port 8000 & \
+	$(UV) run --locked python -m livekit.agents start src/voice_order/agent/worker.py --dev & \
+	(cd web && npm run dev) & \
+	wait
+
+worker: $(VENV)/bin/python ## Run only the LiveKit agent worker
+	$(UV) run --locked python -m livekit.agents start src/voice_order/agent/worker.py --dev
+
+voice-smoke: $(VENV)/bin/python ## Scripted voice call against a running worker (ARGS="line one" "line two")
+	$(UV) run --locked python -m evals.caller.voice_smoke $(ARGS)
 
 chat: $(VENV)/bin/python ## Talk to the agent as the caller (ARGS=--memory to skip Postgres)
 	$(UV) run --locked python -m voice_order.textmode $(ARGS)
