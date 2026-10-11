@@ -76,7 +76,14 @@ def build_session(settings: Settings, vad: Any) -> AgentSession[None]:
     return AgentSession(
         stt=lk_openai.STT(model=settings.stt_model, api_key=key),
         llm=lk_openai.responses.LLM(
-            model=settings.llm_model, api_key=key, reasoning=Reasoning(effort="none")
+            model=settings.llm_model,
+            api_key=key,
+            reasoning=Reasoning(effort="none"),
+            # Resend the whole conversation each step instead of chaining on the last
+            # response. When chaining, the plugin resends tool calls the server already
+            # has, so each call shows up twice with one output, and the model sometimes
+            # repeats the call it thinks is unanswered (an item added three times).
+            store=False,
         ),
         tts=lk_openai.TTS(model=settings.tts_model, voice=settings.tts_voice, api_key=key),
         vad=vad,
