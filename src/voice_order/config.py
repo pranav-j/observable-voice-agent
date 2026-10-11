@@ -32,6 +32,7 @@ class Settings(BaseSettings):
     stt_model: str = "gpt-live-transcribe"
     tts_model: str = "gpt-4o-mini-tts"
     tts_voice: str = "coral"
+    tts_format: Literal["mp3", "pcm"] = "mp3"  # pcm skips decoding before playback
     eou_silence_ms: int = Field(default=500, ge=0)  # silence before a turn may end
     enable_preemptive_generation: bool = False  # on, it sometimes said a sentence twice
     enable_filler_phrases: bool = False
@@ -59,9 +60,11 @@ class Settings(BaseSettings):
             "stt_model": self.stt_model,
             "tts_model": self.tts_model,
             "tts_voice": self.tts_voice,
+            "tts_format": self.tts_format,
             "eou_silence_ms": self.effective_eou_silence_ms,
             "preemptive_generation": self.enable_preemptive_generation,
             "filler_phrases": self.enable_filler_phrases,
+            "filler_after_ms": self.filler_after_ms,
             "fault": self.fault,
         }
 

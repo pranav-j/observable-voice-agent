@@ -30,6 +30,7 @@ from livekit.plugins import silero
 from openai.types import Reasoning
 
 from voice_order.agent.faults import SLOW_LLM_DELAY_S, delay_first
+from voice_order.agent.filler import fillers, with_filler
 from voice_order.agent.tools import StepText, livekit_tools
 from voice_order.config import Settings, get_settings
 from voice_order.menu.loader import load_menu
@@ -55,19 +56,48 @@ AWAY = "I haven't heard from you in a while, so I'll end the call. Please call b
 class OrderAgent(Agent):
     """Records the text of each LLM step, so the tools can tell when it asked the caller."""
 
-    def __init__(self, *, step: StepText, first_token_delay: float = 0.0, **kwargs: Any) -> None:
+    def __init__(
+        self,
+        *,
+        step: StepText,
+        first_token_delay: float = 0.0,
+        filler_after: float | None = None,
+        **kwargs: Any,
+    ) -> None:
         super().__init__(**kwargs)
         self.step = step
         self.first_token_delay = first_token_delay  # only set by FAULT=slow_llm
+        self.filler_after = filler_after  # None: no filler phrases
+        self.next_filler = fillers()
+        self.filler_due = False
+
+    async def on_user_turn_completed(
+        self, turn_ctx: llm.ChatContext, new_message: llm.ChatMessage
+    ) -> None:
+        self.filler_due = True  # only the first LLM step of a turn may get a filler
 
     async def llm_node(
         self, chat_ctx: llm.ChatContext, tools: list[llm.Tool], model_settings: ModelSettings
     ) -> AsyncIterable[Any]:
         self.step.reset()
-        chunks = Agent.default.llm_node(self, chat_ctx, tools, model_settings)
-        async for chunk in delay_first(chunks, self.first_token_delay):
+        chunks = delay_first(
+            Agent.default.llm_node(self, chat_ctx, tools, model_settings), self.first_token_delay
+        )
+        filler_due, self.filler_due = self.filler_due, False
+        if filler_due and self.filler_after is not None:
+            chunks = with_filler(
+                chunks,
+                after=self.filler_after,
+                filler=self.next_filler(),
+                starts_tool_call=_is_tool_call,
+            )
+        async for chunk in chunks:
             self.step.add(chunk)
             yield chunk
+
+
+def _is_tool_call(chunk: object) -> bool:
+    return isinstance(chunk, llm.ChatChunk) and bool(chunk.delta and chunk.delta.tool_calls)
 
 
 def prewarm(proc: JobProcess) -> None:
@@ -89,7 +119,12 @@ def build_session(settings: Settings, vad: Any) -> AgentSession[None]:
             # repeats the call it thinks is unanswered (an item added three times).
             store=False,
         ),
-        tts=lk_openai.TTS(model=settings.tts_model, voice=settings.tts_voice, api_key=key),
+        tts=lk_openai.TTS(
+            model=settings.tts_model,
+            voice=settings.tts_voice,
+            api_key=key,
+            response_format=settings.tts_format,
+        ),
         vad=vad,
         turn_handling={
             # Local models only: the defaults in dev mode would call LiveKit's cloud.
@@ -183,6 +218,7 @@ async def entrypoint(ctx: JobContext) -> None:
     agent = OrderAgent(
         step=step,
         first_token_delay=SLOW_LLM_DELAY_S if settings.fault == "slow_llm" else 0.0,
+        filler_after=settings.filler_after_ms / 1000 if settings.enable_filler_phrases else None,
         instructions=agent_system_prompt(menu.restaurant).text,
         tools=livekit_tools(
             call, store, on_tool_result, step, drop_modifiers=settings.fault == "drop_modifiers"
