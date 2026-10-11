@@ -14,8 +14,15 @@ from psycopg_pool import PoolTimeout
 from evals.audio.caller import Hearing
 from evals.audio.cost import estimate, past_call_costs
 from evals.audio_run import run_audio_scenario
+from evals.recorded import RECORDED_DIR, load_annotations, score_recorded
 from evals.report import report_dir, write_report
-from evals.scenario import SCENARIO_DIR, Scenario, load_scenarios, menu_problems
+from evals.scenario import (
+    SCENARIO_DIR,
+    Scenario,
+    expectation_problems,
+    load_scenarios,
+    menu_problems,
+)
 from evals.text_run import RunResult, run_text_scenario
 from voice_order.config import Settings, get_settings
 from voice_order.menu.loader import load_menu
@@ -103,7 +110,9 @@ def audio_player(
 def _parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description="Run eval scenarios and write a report.")
     p.add_argument("--mode", choices=["text", "audio", "recorded"], default="text")
-    p.add_argument("--scenarios", default="*", help="glob over scenario file names")
+    p.add_argument(
+        "--scenarios", default="*", help="glob over scenario names (recorded: session ids)"
+    )
     p.add_argument("--runs", type=int, help="runs per scenario (default: each scenario's own)")
     p.add_argument("--concurrency", type=int, help="calls at once (default: 4 text, 2 audio)")
     p.add_argument("--memory", action="store_true", help="in-memory store instead of Postgres")
@@ -116,6 +125,7 @@ def _parser() -> argparse.ArgumentParser:
     p.add_argument("--yes", action="store_true", help="audio: run even if the estimate is high")
     p.add_argument("--reports-dir", type=Path, default=Path("reports"))
     p.add_argument("--scenario-dir", type=Path, default=SCENARIO_DIR)
+    p.add_argument("--recorded-dir", type=Path, default=RECORDED_DIR, help="recorded: annotations")
     return p
 
 
@@ -127,16 +137,15 @@ async def main(
     caller_llm: LLMFactory | None = None,
 ) -> int:
     args = _parser().parse_args(argv)
-    if args.mode == "recorded":
-        print("--mode recorded is not implemented yet.", file=sys.stderr)
-        return 2
-    if args.mode == "audio" and args.memory:
+    if args.mode != "text" and args.memory:
         print(
-            "Audio runs read the order the worker saved, so they need Postgres. "
-            "Drop --memory and run `make up`.",
+            f"{args.mode.capitalize()} runs read the order the worker saved, so they need "
+            "Postgres. Drop --memory and run `make up`.",
             file=sys.stderr,
         )
         return 2
+    if args.mode == "recorded":
+        return await _recorded(args, settings or get_settings())
 
     scenarios = load_scenarios(args.scenarios, directory=args.scenario_dir)
     if not scenarios:
@@ -210,6 +219,47 @@ async def main(
         reports_dir=args.reports_dir,
         out=out,
         concurrency=concurrency,
+    )
+    passed = sum(r.score.task_success for r in results)
+    print(f"task success {passed}/{len(results)}. Report: {out / 'summary.md'}")
+    return 0
+
+
+async def _recorded(args: argparse.Namespace, settings: Settings) -> int:
+    """Score annotated real calls. No LLM calls, so nothing to estimate or confirm."""
+    annotations = load_annotations(args.scenarios, directory=args.recorded_dir)
+    if not annotations:
+        print(
+            f"No annotated calls match {args.scenarios!r} in {args.recorded_dir}. "
+            "Start one with `make annotate SESSION=<id>`.",
+            file=sys.stderr,
+        )
+        return 2
+    menu = load_menu()
+    bad = {a.session_id: expectation_problems(a.expect, menu) for a in annotations}
+    if any(bad.values()):
+        for sid, found in bad.items():
+            for problem in found:
+                print(f"{sid}: {problem}", file=sys.stderr)
+        return 2
+    try:
+        pg = await PostgresOrderStore.connect(settings.database_url, connect_timeout=3)
+    except (PoolTimeout, psycopg.OperationalError):
+        print("Can't reach Postgres. Run `make up`.", file=sys.stderr)
+        return 2
+    started_at = datetime.now(UTC)
+    recordings = Path(settings.recordings_dir)
+    print(f"{len(annotations)} recorded calls")
+    try:
+        results = [
+            await score_recorded(a, store=pg, recordings_dir=recordings) for a in annotations
+        ]
+    finally:
+        await pg.close()
+    for r in results:
+        print(progress_line(r))
+    out = write_report(
+        results, mode="recorded", started_at=started_at, reports_dir=args.reports_dir
     )
     passed = sum(r.score.task_success for r in results)
     print(f"task success {passed}/{len(results)}. Report: {out / 'summary.md'}")

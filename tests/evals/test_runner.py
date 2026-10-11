@@ -99,9 +99,16 @@ async def test_concurrency_is_capped(menu: Menu) -> None:
 # --- failing fast, before any money is spent -----------------------------------------------
 
 
-async def test_unimplemented_mode(capsys: pytest.CaptureFixture[str]) -> None:
-    assert await main(["--mode", "recorded"]) == 2
-    assert "not implemented yet" in capsys.readouterr().err
+async def test_recorded_mode_needs_annotations(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert await main(["--mode", "recorded", "--recorded-dir", str(tmp_path)]) == 2
+    assert "make annotate" in capsys.readouterr().err
+
+
+async def test_recorded_mode_needs_postgres(capsys: pytest.CaptureFixture[str]) -> None:
+    assert await main(["--mode", "recorded", "--memory"]) == 2
+    assert "need Postgres" in capsys.readouterr().err
 
 
 async def test_audio_needs_postgres(capsys: pytest.CaptureFixture[str]) -> None:
