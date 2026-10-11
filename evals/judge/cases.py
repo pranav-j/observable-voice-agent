@@ -18,6 +18,7 @@ INTERNAL_ERRORS = frozenset(
     {
         "WAITING_FOR_CALLER",
         "READBACK_NOT_ANSWERED",
+        "ORDER_NOT_CONFIRMED",
         "READBACK_REQUIRED",
         "ORDER_INCOMPLETE",
         "INVALID_ARGUMENTS",

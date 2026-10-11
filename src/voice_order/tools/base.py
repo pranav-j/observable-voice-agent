@@ -49,6 +49,7 @@ class Session:
     caller_turns: int = 0
     readback_caller_turn: int | None = None  # caller_turns when the read-back was heard
     readback_text: str | None = None  # fetched by get_readback, not yet said in full
+    end_call_held: bool = False  # end_call was held once to remind the agent to confirm
     phone_digits: str = ""  # the start of a phone number the caller is giving in parts
 
     def caller_spoke(self) -> None:

@@ -221,3 +221,29 @@ def test_a_readback_said_with_small_slips_counts(ready: Session) -> None:
     ready.agent_said("Okay! " + text.replace("Let me read that back.", "Here's your order:"))
     ready.caller_spoke()
     assert call(ready, "confirm_order")["order"]["status"] == "confirmed"
+
+
+# --- ending the call right after the caller answered the read-back -------------------------
+
+
+def test_end_call_after_an_answered_readback_is_held_once(ready: Session) -> None:
+    read_back(ready)
+    ready.caller_spoke()  # "Yes, that's right." ... then "Goodbye." as its own turn
+    first = call(ready, "end_call", reason="caller said goodbye")
+    assert first["error"] == "ORDER_NOT_CONFIRMED"
+    assert (ready.order.status, ready.ending) == ("draft", None)
+    second = call(ready, "end_call", reason="caller wants to stop")
+    assert second["status"] == "abandoned"
+    assert ready.ending is not None
+
+
+def test_confirming_after_the_hold_works(ready: Session) -> None:
+    read_back(ready)
+    ready.caller_spoke()
+    call(ready, "end_call", reason="goodbye")
+    assert call(ready, "confirm_order")["order"]["status"] == "confirmed"
+
+
+def test_end_call_before_any_readback_is_not_held(ready: Session) -> None:
+    ready.caller_spoke()
+    assert call(ready, "end_call", reason="caller hung up")["status"] == "abandoned"
