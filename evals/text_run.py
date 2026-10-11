@@ -31,6 +31,7 @@ class TranscriptEntry(BaseModel):
 
 class RunResult(BaseModel):
     scenario_id: str
+    tags: list[str] = []
     run: int
     session_id: str
     mode: Literal["text"] = "text"
@@ -47,7 +48,7 @@ class RunResult(BaseModel):
     caller_model: str
     agent_prompt_version: str
     caller_prompt_version: str
-    transcript: list[TranscriptEntry]
+    transcript: list[TranscriptEntry] = []  # left out of results.jsonl; kept in raw/
 
 
 def _tool_record(event: ToolEvent) -> dict[str, Any]:
@@ -131,6 +132,7 @@ async def run_text_scenario(
     final = await store.get(session_id)  # scored from the store, like the real harness
     return RunResult(
         scenario_id=scenario.id,
+        tags=scenario.tags,
         run=run,
         session_id=session_id,
         end_reason=end_reason,
