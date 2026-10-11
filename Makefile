@@ -76,5 +76,8 @@ fmt: $(VENV)/bin/python ## Auto-format and apply safe lint fixes
 	$(UV) run --locked ruff format .
 	$(UV) run --locked ruff check --fix .
 
-eval: ## make eval MODE=text|audio|recorded SCENARIOS=<glob> RUNS=<n> (not implemented yet)
-	@echo "make eval: not implemented yet"; exit 1
+MODE ?= text
+SCENARIOS ?= *
+
+eval: $(VENV)/bin/python ## make eval MODE=text SCENARIOS=<glob> RUNS=<n> (ARGS=--memory ...)
+	$(UV) run --locked python -m evals.runner --mode $(MODE) --scenarios '$(SCENARIOS)' $(if $(RUNS),--runs $(RUNS)) $(ARGS)

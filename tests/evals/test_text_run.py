@@ -7,6 +7,7 @@ import pytest
 from evals.scenario import SCENARIO_DIR, Scenario, load_scenario
 from evals.text_run import RunResult, run_text_scenario
 
+from tests.evals.scripts import HAPPY_AGENT, HAPPY_CALLER
 from tests.textmode.fakes import ScriptedLLM, call, reply
 from voice_order.menu.models import Menu
 from voice_order.store.base import InMemoryOrderStore
@@ -32,31 +33,6 @@ async def play(
         caller_llm=ScriptedLLM(*caller),
     )
     return result, store
-
-
-HAPPY_AGENT = [
-    reply(
-        "",
-        call(
-            "add_item",
-            item_id="cold_coffee",
-            quantity=1,
-            size_id="large",
-            modifier_ids=["oat_milk"],
-        ),
-    ),
-    reply("Got it. Your name and number?", tokens=(100, 10)),
-    reply("", call("set_customer", name="Priya", phone="9000000002"), call("get_readback")),
-    reply("Let me read that back. Is that correct?"),
-    reply("", call("confirm_order")),
-    reply("It'll be ready for pickup. Goodbye!"),
-]
-HAPPY_CALLER = [
-    reply("One large cold coffee with oat milk, please.", tokens=(40, 9)),
-    reply("Priya, 9000000002."),
-    reply("Yes, that's right."),
-    reply("Thanks, bye! [END]"),
-]
 
 
 async def test_happy_path_is_scored_as_a_success(menu: Menu) -> None:
