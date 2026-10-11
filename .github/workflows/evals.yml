@@ -1,0 +1,118 @@
+name: evals
+
+# The text suite gates pull requests when the API key secret is set. The audio suite
+# runs only by hand: it needs a LiveKit server and a worker, and it costs real money.
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      scenarios:
+        description: Scenario glob for the audio suite
+        default: "*"
+      runs:
+        description: Runs per scenario (blank for each scenario's own)
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  text:
+    name: text suite and gate
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version-file: .python-version
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      # Pull requests from forks get no secrets; skip rather than fail.
+      - name: no API key, skipping
+        if: env.OPENAI_API_KEY == ''
+        run: echo "OPENAI_API_KEY isn't set for this run, so the text suite is skipped."
+
+      - if: env.OPENAI_API_KEY != ''
+        run: make setup
+      - if: env.OPENAI_API_KEY != ''
+        run: make eval MODE=text ARGS="--memory --reports-dir ci-reports"
+      - if: env.OPENAI_API_KEY != ''
+        run: make gate REPORT="$(ls -d ci-reports/*)"
+      - if: always() && env.OPENAI_API_KEY != ''
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: text-report
+          path: ci-reports/
+          if-no-files-found: ignore
+
+  audio:
+    name: audio suite and gate
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version-file: .python-version
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: require the API key
+        run: test -n "$OPENAI_API_KEY" || { echo "Set the OPENAI_API_KEY secret first."; exit 1; }
+      - run: make setup
+      - run: make up
+
+      # The worker runs in the background for the whole suite; its log is uploaded below.
+      - name: start the worker
+        run: |
+          nohup make worker > worker.log 2>&1 &
+          for _ in $(seq 1 120); do grep -q "registered worker" worker.log && exit 0; sleep 1; done
+          cat worker.log; exit 1
+
+      # Inputs go through the environment, never pasted into the script itself.
+      - name: audio suite
+        env:
+          SCENARIOS: ${{ inputs.scenarios }}
+          RUNS: ${{ inputs.runs }}
+        run: make eval MODE=audio SCENARIOS="$SCENARIOS" RUNS="$RUNS" ARGS="--yes --reports-dir ci-reports"
+      - run: make gate REPORT="$(ls -d ci-reports/*)"
+
+      - if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: audio-report
+          path: |
+            ci-reports/
+            !ci-reports/**/raw/audio/**
+            worker.log
+          if-no-files-found: ignore
