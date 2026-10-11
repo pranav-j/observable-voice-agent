@@ -169,6 +169,14 @@ On the two samosa scenarios, ten runs each: before was 10 of 20 ([report](../rep
 
 I wouldn't lean too hard on those numbers. Twenty runs a side is small, and part of that jump could be chance. The better evidence is what's left. None of the remaining failures is a search miss anymore: queries like "plate of veg samosas" now find the item every time. Most of the leftover failures come from plates versus pieces. The agent recorded 2 and 4 where 1 and 2 plates were meant, and the simulated caller hung up three times after hearing "Two Veg Samosa" read back. So fixing the pack size in the read-back moves up the list.
 
+## Fix 3: the read-back says the pack size
+
+The read-back used to drop bracket notes, so "Veg Samosa (2 pcs)" came out as "Two Veg Samosa". It now speaks the note: "Two Veg Samosa, two pieces each", or "One Gulab Jamun, two pieces" for a single one. The order summary the agent sees uses the same wording, so the agent gets the same cue as the caller. Bracket notes in any other form are still dropped, so nothing odd gets read aloud.
+
+Same two samosa scenarios, ten runs each. The "before" is the search fix's run, so the only difference is this change. It went from 15 of 20 to 19 of 20 ([report](../reports/20261011-092437-text/summary.md)). The plural scenario passed all ten. The failures it was aimed at, the agent recording 2 or 4 where 1 or 2 plates were meant, didn't happen at all. Caller hang-ups mid-order went from 3 to 1, and that one was the simulated caller leaving after a correct read-back.
+
+Across the two fixes, these two scenarios went from 10 to 15 to 19 out of 20. The read-back change came from a decision I made early on, "don't speak brackets", which seemed tidy at the time and turned out to hide information people need.
+
 ## The simulated caller can be the thing that fails
 
 Two failures in one batch came from my side of the test, not the agent. In one, I'd told the caller to say "two plates of veg samosas" exactly like that. It took that so literally that it refused a correct read-back three times and gave up. I reworded the goal so it uses the phrase when ordering without being rigid about it.

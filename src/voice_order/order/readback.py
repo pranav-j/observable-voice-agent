@@ -64,12 +64,33 @@ def describe_line(line: PricedLine) -> str:
     text = " ".join(words)
     if line.modifier_names:
         text += " with " + join_words([m.lower() for m in line.modifier_names])
+    note = pack_note(line.name, line.quantity)
+    if note:
+        # Without this, "Two Veg Samosa" sounds like two samosas, not two plates of two.
+        text += f", {note}"
     return text
 
 
 def spoken_name(name: str) -> str:
     """Drop notes in brackets: 'Veg Samosa (2 pcs)' -> 'Veg Samosa'."""
     return re.sub(r"\s*\([^)]*\)", "", name).strip()
+
+
+_PACK = re.compile(r"\((\d+)\s*pcs?\)", re.IGNORECASE)
+
+
+def pack_note(name: str, quantity: int) -> str | None:
+    """'(2 pcs)' in a name -> 'two pieces', or 'two pieces each' for more than one.
+
+    Other bracket notes return None and stay unspoken.
+    """
+    match = _PACK.search(name)
+    if match is None:
+        return None
+    count = int(match.group(1))
+    word = NUMBER_WORDS[count] if count < len(NUMBER_WORDS) else str(count)
+    pieces = f"{word} {'piece' if count == 1 else 'pieces'}"
+    return f"{pieces} each" if quantity > 1 else pieces
 
 
 def join_words(words: list[str]) -> str:

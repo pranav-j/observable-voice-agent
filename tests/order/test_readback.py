@@ -6,12 +6,14 @@ from voice_order.menu.models import Menu
 from voice_order.order import state
 from voice_order.order.errors import ErrorCode, OrderError
 from voice_order.order.models import MAX_QUANTITY, Order
-from voice_order.order.pricing import price_order
+from voice_order.order.pricing import PricedLine, price_order
 from voice_order.order.readback import (
     NUMBER_WORDS,
     build_readback,
+    describe_line,
     group_phone,
     join_words,
+    pack_note,
     spoken_inr,
     spoken_name,
 )
@@ -48,8 +50,38 @@ def test_full_readback(menu: Menu) -> None:
     )
 
 
-def test_bracketed_notes_are_not_spoken(menu: Menu) -> None:
-    assert "Four Veg Samosa." in readback_text(menu, ("veg_samosa", 4, None, []))
+def test_pack_size_is_spoken(menu: Menu) -> None:
+    assert "Four Veg Samosa, two pieces each." in readback_text(menu, ("veg_samosa", 4, None, []))
+    assert "One Gulab Jamun, two pieces." in readback_text(menu, ("gulab_jamun", 1, None, []))
+
+
+@pytest.mark.parametrize(
+    ("name", "quantity", "note"),
+    [
+        ("Veg Samosa (2 pcs)", 1, "two pieces"),
+        ("Veg Samosa (2 pcs)", 3, "two pieces each"),
+        ("Momo (1 pc)", 2, "one piece each"),
+        ("Party Platter (24 pcs)", 1, "24 pieces"),
+        ("Chef Special (spicy)", 1, None),
+        ("Masala Dosa", 1, None),
+    ],
+)
+def test_pack_note(name: str, quantity: int, note: str | None) -> None:
+    assert pack_note(name, quantity) == note
+
+
+def test_other_bracket_notes_stay_unspoken() -> None:
+    line = PricedLine(
+        line_id=1,
+        item_id="special",
+        name="Chef Special (spicy)",
+        size_name=None,
+        modifier_names=[],
+        quantity=1,
+        unit_price_paise=100,
+        line_total_paise=100,
+    )
+    assert describe_line(line) == "One Chef Special"
 
 
 def test_three_modifiers(menu: Menu) -> None:
