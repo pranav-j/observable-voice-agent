@@ -9,8 +9,9 @@ from voice_order.tools.base import Session, dispatch
 from voice_order.tools.catalog import TOOLS
 
 
-def call(session: Session, name: str, **arguments: Any) -> dict[str, Any]:
-    return dispatch(session, TOOLS, name, arguments)
+def call(session: Session, tool: str, /, **arguments: Any) -> dict[str, Any]:
+    # Positional-only, so a tool argument called "name" goes into **arguments.
+    return dispatch(session, TOOLS, tool, arguments)
 
 
 # --- search_menu -------------------------------------------------------------------

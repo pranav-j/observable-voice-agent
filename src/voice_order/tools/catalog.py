@@ -6,8 +6,10 @@ from pydantic import Field, field_validator
 
 from voice_order.menu.models import MenuItem
 from voice_order.menu.search import search
+from voice_order.order import state
+from voice_order.order.models import Order
 from voice_order.order.pricing import price_order
-from voice_order.order.readback import describe_line, spoken_inr
+from voice_order.order.readback import describe_line, group_phone, spoken_inr
 from voice_order.tools.base import NoArgs, Result, Session, Tool, ToolArgs, ok
 
 # Measured on the seed menu: real matches score 93+, items not on the menu stay under 75.
@@ -121,6 +123,79 @@ def get_order_summary(session: Session, args: NoArgs) -> Result:
     )
 
 
+# --- order changes -----------------------------------------------------------------------
+
+
+def _changed(session: Session, new: Order, **extra: Any) -> Result:
+    """Install the new order and return its view, warning if a read-back just went stale."""
+    old = session.order
+    session.order = new
+    payload: dict[str, Any] = {"order": order_view(session), **extra}
+    if old.readback_seq is not None and old.readback_is_current and not new.readback_is_current:
+        payload["note"] = (
+            "The order changed after the read-back. Call get_readback again before confirming."
+        )
+    return ok(**payload)
+
+
+class AddItemArgs(ToolArgs):
+    item_id: str = Field(description="Item id from search_menu, e.g. 'masala_dosa'.")
+    quantity: int = Field(description="How many, from 1 to 20.")
+    size_id: str | None = Field(
+        default=None,
+        description="Size id from search_menu. Required when the item has sizes; omit otherwise.",
+    )
+    modifier_ids: list[str] = Field(
+        default_factory=list,
+        description="Modifier ids from search_menu, e.g. ['oat_milk']. Empty for none.",
+    )
+
+
+def add_item(session: Session, args: AddItemArgs) -> Result:
+    new = state.add_line(
+        session.order, session.menu, args.item_id, args.quantity, args.size_id, args.modifier_ids
+    )
+    return _changed(session, new)
+
+
+class UpdateItemArgs(ToolArgs):
+    line_id: int = Field(description="Line id from the order, as shown in get_order_summary.")
+    quantity: int | None = Field(default=None, description="New quantity, 1 to 20. Omit to keep.")
+    size_id: str | None = Field(default=None, description="New size id. Omit to keep.")
+    modifier_ids: list[str] | None = Field(
+        default=None,
+        description="Replaces all modifiers on the line. [] removes them. Omit to keep.",
+    )
+
+
+def update_item(session: Session, args: UpdateItemArgs) -> Result:
+    new = state.update_line(
+        session.order, session.menu, args.line_id, args.quantity, args.size_id, args.modifier_ids
+    )
+    return _changed(session, new)
+
+
+class RemoveItemArgs(ToolArgs):
+    line_id: int = Field(description="Line id from the order, as shown in get_order_summary.")
+
+
+def remove_item(session: Session, args: RemoveItemArgs) -> Result:
+    return _changed(session, state.remove_line(session.order, args.line_id))
+
+
+class SetCustomerArgs(ToolArgs):
+    name: str = Field(description="The name for the order, as the caller gave it.")
+    phone: str = Field(
+        description="The caller's 10-digit phone number as heard. Spaces and +91 are fine."
+    )
+
+
+def set_customer(session: Session, args: SetCustomerArgs) -> Result:
+    new = state.set_customer(session.order, args.name, args.phone)
+    phone = group_phone(new.customer.phone) if new.customer else None
+    return _changed(session, new, read_phone_back_as=phone)
+
+
 # --- registry --------------------------------------------------------------------------
 
 # Annotated: Tool is invariant in its args type, so mypy would infer list[object].
@@ -145,6 +220,40 @@ ALL_TOOLS: list[Tool[Any]] = [
         ),
         args_model=NoArgs,
         handler=get_order_summary,
+    ),
+    Tool(
+        name="add_item",
+        description=(
+            "Add an item to the order, using item_id, size_id and modifier_ids exactly as "
+            "search_menu returned them. Adding an identical item again raises its quantity. "
+            "Returns the updated order."
+        ),
+        args_model=AddItemArgs,
+        handler=add_item,
+    ),
+    Tool(
+        name="update_item",
+        description=(
+            "Change the quantity, size or modifiers of a line in the order. Arguments you leave "
+            "out stay the same; modifier_ids replaces the whole list. Returns the updated order."
+        ),
+        args_model=UpdateItemArgs,
+        handler=update_item,
+    ),
+    Tool(
+        name="remove_item",
+        description="Remove a line from the order by its line id. Returns the updated order.",
+        args_model=RemoveItemArgs,
+        handler=remove_item,
+    ),
+    Tool(
+        name="set_customer",
+        description=(
+            "Save the caller's name and 10-digit phone number for the order. Then read the "
+            "number back to the caller in the grouped form this returns."
+        ),
+        args_model=SetCustomerArgs,
+        handler=set_customer,
     ),
 ]
 
