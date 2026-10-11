@@ -377,3 +377,15 @@ The other was the same root cause as the read-backs flagged interrupted. When th
 The third was the agent. Every time the caller corrected a misheard name (Garev, then Garov, then Garav), the agent also read the phone number back again, which cost a turn each time, and the call hit the five-minute limit. The number is only read back now when it actually changed. A name correction also tells the agent to ask for a spelling if it's still wrong. And calls that hit the time limit now say so, instead of being labelled as running out of turns.
 
 I stopped the run again for these. A baseline that blames the agent for harness bugs would be worse than no baseline. From here the suite runs to the end unless the harness itself breaks.
+
+## The fourth restart: the agent's own counting, and "that's all"
+
+The next attempt turned up two real agent bugs and the caller bug I'd been putting off.
+
+The agent saves the name with a blank number before it asks for the number. That used to come back as an invalid phone number. The prompt tells it to hand over to a person after three failed tries at the same step, so in one call it counted those blank saves and transferred the caller before they'd said a single digit. A missing number now has its own result, which says plainly that it isn't a failed attempt.
+
+In another call, the agent asked "Anything else?", the caller said "No, that's all, thank you", and the agent ended the call with nothing saved but the biryani. The hold I'd added for `end_call` only covered the moment after a read-back. Now it covers any unplaced order that has items: the first `end_call` gets held once, with a hint about which situation it probably is. A caller who really wants to leave still can.
+
+The caller bug was the simulated caller disowning its own scripted lines: "add a gulab jamun too", then later "I didn't ask for gulab jamun". I'd held this fix until after the fault runs, so they'd compare against the same caller. But it was hurting the baseline itself, and fixing it before the baseline keeps that comparison fair anyway. Caller prompt v4 lists the scripted lines it has already said and tells it they're part of what it wants now.
+
+After the fixes, the four scenarios that had failed each passed a check run, and the full suite is running again. The text suite is running alongside it with the new caller, so both reports use the same one.
