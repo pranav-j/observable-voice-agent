@@ -89,5 +89,5 @@ fmt: $(VENV)/bin/python ## Auto-format and apply safe lint fixes
 MODE ?= text
 SCENARIOS ?= *
 
-eval: $(VENV)/bin/python ## make eval MODE=text SCENARIOS=<glob> RUNS=<n> (ARGS=--memory ...)
+eval: $(VENV)/bin/python ## make eval MODE=text|audio SCENARIOS=<glob> RUNS=<n> (ARGS=--memory, --yes ...)
 	$(UV) run --locked python -m evals.runner --mode $(MODE) --scenarios '$(SCENARIOS)' $(if $(RUNS),--runs $(RUNS)) $(ARGS)

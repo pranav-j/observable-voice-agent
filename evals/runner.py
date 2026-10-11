@@ -3,14 +3,18 @@
 import argparse
 import asyncio
 import sys
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
 from pathlib import Path
 
 import psycopg
+from openai import AsyncOpenAI
 from psycopg_pool import PoolTimeout
 
-from evals.report import write_report
+from evals.audio.caller import Hearing
+from evals.audio.cost import estimate, past_call_costs
+from evals.audio_run import run_audio_scenario
+from evals.report import report_dir, write_report
 from evals.scenario import SCENARIO_DIR, Scenario, load_scenarios, menu_problems
 from evals.text_run import RunResult, run_text_scenario
 from voice_order.config import Settings, get_settings
@@ -22,6 +26,10 @@ from voice_order.textmode.llm import LLMClient
 from voice_order.textmode.openai_client import OpenAIClient
 
 LLMFactory = Callable[[], LLMClient]
+Play = Callable[[Scenario, int], Awaitable[RunResult]]
+
+# Audio calls run in real time against one local worker, so fewer at once.
+DEFAULT_CONCURRENCY = {"text": 4, "audio": 2}
 
 
 def progress_line(r: RunResult) -> str:
@@ -38,10 +46,7 @@ async def run_suite(
     *,
     runs: int | None,
     concurrency: int,
-    menu: Menu,
-    store: OrderStore,
-    agent_llm: LLMFactory,
-    caller_llm: LLMFactory,
+    play: Play,
     on_result: Callable[[RunResult], None] = lambda r: None,
 ) -> list[RunResult]:
     """Every (scenario, run) pair, at most `concurrency` calls at a time."""
@@ -50,18 +55,49 @@ async def run_suite(
 
     async def one(scenario: Scenario, run: int) -> RunResult:
         async with semaphore:
-            result = await run_text_scenario(
-                scenario,
-                run,
-                menu=menu,
-                store=store,
-                agent_llm=agent_llm(),
-                caller_llm=caller_llm(),
-            )
+            result = await play(scenario, run)
         on_result(result)
         return result
 
     return list(await asyncio.gather(*(one(s, i) for s, i in jobs)))
+
+
+def text_player(
+    *, menu: Menu, store: OrderStore, agent_llm: LLMFactory, caller_llm: LLMFactory
+) -> Play:
+    def play(scenario: Scenario, run: int) -> Awaitable[RunResult]:
+        return run_text_scenario(
+            scenario, run, menu=menu, store=store, agent_llm=agent_llm(), caller_llm=caller_llm()
+        )
+
+    return play
+
+
+def audio_player(
+    *,
+    settings: Settings,
+    menu: Menu,
+    store: OrderStore,
+    caller_llm: LLMFactory,
+    hearing: Hearing,
+    raw_dir: Path,
+) -> Play:
+    client = AsyncOpenAI(api_key=settings.openai_api_key.get_secret_value())
+
+    def play(scenario: Scenario, run: int) -> Awaitable[RunResult]:
+        return run_audio_scenario(
+            scenario,
+            run,
+            settings=settings,
+            menu=menu,
+            store=store,
+            caller_llm=caller_llm(),
+            client=client,
+            hearing=hearing,
+            raw_dir=raw_dir,
+        )
+
+    return play
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -69,8 +105,15 @@ def _parser() -> argparse.ArgumentParser:
     p.add_argument("--mode", choices=["text", "audio", "recorded"], default="text")
     p.add_argument("--scenarios", default="*", help="glob over scenario file names")
     p.add_argument("--runs", type=int, help="runs per scenario (default: each scenario's own)")
-    p.add_argument("--concurrency", type=int, default=4)
+    p.add_argument("--concurrency", type=int, help="calls at once (default: 4 text, 2 audio)")
     p.add_argument("--memory", action="store_true", help="in-memory store instead of Postgres")
+    p.add_argument(
+        "--hearing",
+        choices=["transcript", "stt"],
+        default="transcript",
+        help="audio: how the caller understands the agent (timing always comes from audio)",
+    )
+    p.add_argument("--yes", action="store_true", help="audio: run even if the estimate is high")
     p.add_argument("--reports-dir", type=Path, default=Path("reports"))
     p.add_argument("--scenario-dir", type=Path, default=SCENARIO_DIR)
     return p
@@ -84,8 +127,15 @@ async def main(
     caller_llm: LLMFactory | None = None,
 ) -> int:
     args = _parser().parse_args(argv)
-    if args.mode != "text":
-        print(f"--mode {args.mode} is not implemented yet.", file=sys.stderr)
+    if args.mode == "recorded":
+        print("--mode recorded is not implemented yet.", file=sys.stderr)
+        return 2
+    if args.mode == "audio" and args.memory:
+        print(
+            "Audio runs read the order the worker saved, so they need Postgres. "
+            "Drop --memory and run `make up`.",
+            file=sys.stderr,
+        )
         return 2
 
     scenarios = load_scenarios(args.scenarios, directory=args.scenario_dir)
@@ -101,6 +151,9 @@ async def main(
         return 2
 
     settings = settings or get_settings()
+    total = sum(args.runs or s.runs for s in scenarios)
+    if args.mode == "audio" and not _audio_go_ahead(settings, total, yes=args.yes):
+        return 2
     if agent_llm is None or caller_llm is None:
         if not settings.has_openai_key:
             print("OPENAI_API_KEY is not set. Add it to .env.", file=sys.stderr)
@@ -122,27 +175,52 @@ async def main(
             return 2
 
     started_at = datetime.now(UTC)
-    total = sum(args.runs or s.runs for s in scenarios)
-    print(f"{len(scenarios)} scenarios, {total} runs, concurrency {args.concurrency}")
+    concurrency = args.concurrency or DEFAULT_CONCURRENCY[args.mode]
+    out: Path | None = None
+    play: Play
+    if args.mode == "audio":
+        out = report_dir(args.reports_dir, mode="audio", started_at=started_at)
+        play = audio_player(
+            settings=settings,
+            menu=menu,
+            store=store,
+            caller_llm=caller_llm,
+            hearing=args.hearing,
+            raw_dir=out / "raw" / "audio",
+        )
+    else:
+        play = text_player(menu=menu, store=store, agent_llm=agent_llm, caller_llm=caller_llm)
+    print(f"{len(scenarios)} scenarios, {total} runs, concurrency {concurrency}")
     try:
         results = await run_suite(
             scenarios,
             runs=args.runs,
-            concurrency=args.concurrency,
-            menu=menu,
-            store=store,
-            agent_llm=agent_llm,
-            caller_llm=caller_llm,
+            concurrency=concurrency,
+            play=play,
             on_result=lambda r: print(progress_line(r), flush=True),
         )
     finally:
         if pg is not None:
             await pg.close()
 
-    out = write_report(results, mode="text", started_at=started_at, reports_dir=args.reports_dir)
+    out = write_report(
+        results, mode=args.mode, started_at=started_at, reports_dir=args.reports_dir, out=out
+    )
     passed = sum(r.score.task_success for r in results)
     print(f"task success {passed}/{len(results)}. Report: {out / 'summary.md'}")
     return 0
+
+
+def _audio_go_ahead(settings: Settings, runs: int, *, yes: bool) -> bool:
+    """Print what an audio run is likely to cost; stop unless it's small or --yes."""
+    guess = estimate(runs, past_call_costs(Path(settings.recordings_dir)))
+    amount = "unknown" if guess.usd is None else f"about ${guess.usd:.2f}"
+    print(f"Audio run: {runs} real calls, agent cost {amount} ({guess.basis}).")
+    print("The worker must be running: `make worker` in another terminal.")
+    if guess.needs_yes(runs) and not yes:
+        print("Re-run with --yes to go ahead (make eval ... ARGS=--yes).", file=sys.stderr)
+        return False
+    return True
 
 
 if __name__ == "__main__":

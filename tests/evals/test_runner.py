@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from evals.runner import main, run_suite
+from evals.runner import main, run_suite, text_player
 from evals.scenario import load_scenarios
 
 from tests.evals.scripts import HAPPY_AGENT, HAPPY_CALLER
@@ -60,15 +60,10 @@ async def test_cli_runs_scenarios_and_writes_a_report(
 async def test_each_scenario_uses_its_own_runs_by_default(menu: Menu) -> None:
     scenarios = load_scenarios("happy_path_single_coffee")
     assert scenarios[0].runs == 3
-    results = await run_suite(
-        scenarios,
-        runs=None,
-        concurrency=2,
-        menu=menu,
-        store=InMemoryOrderStore(),
-        agent_llm=happy_agent,
-        caller_llm=happy_caller,
+    play = text_player(
+        menu=menu, store=InMemoryOrderStore(), agent_llm=happy_agent, caller_llm=happy_caller
     )
+    results = await run_suite(scenarios, runs=None, concurrency=2, play=play)
     assert sorted(r.run for r in results) == [1, 2, 3]
 
 
@@ -91,14 +86,11 @@ class ProbeLLM:
 
 async def test_concurrency_is_capped(menu: Menu) -> None:
     ProbeLLM.active = ProbeLLM.peak = 0
+    play = text_player(
+        menu=menu, store=InMemoryOrderStore(), agent_llm=ScriptedLLM, caller_llm=ProbeLLM
+    )
     results = await run_suite(
-        load_scenarios("happy_path_single_coffee"),
-        runs=6,
-        concurrency=2,
-        menu=menu,
-        store=InMemoryOrderStore(),
-        agent_llm=ScriptedLLM,
-        caller_llm=ProbeLLM,
+        load_scenarios("happy_path_single_coffee"), runs=6, concurrency=2, play=play
     )
     assert len(results) == 6
     assert ProbeLLM.peak == 2
@@ -108,8 +100,33 @@ async def test_concurrency_is_capped(menu: Menu) -> None:
 
 
 async def test_unimplemented_mode(capsys: pytest.CaptureFixture[str]) -> None:
-    assert await main(["--mode", "audio"]) == 2
+    assert await main(["--mode", "recorded"]) == 2
     assert "not implemented yet" in capsys.readouterr().err
+
+
+async def test_audio_needs_postgres(capsys: pytest.CaptureFixture[str]) -> None:
+    assert await main(["--mode", "audio", *HAPPY_ARGS]) == 2
+    assert "need Postgres" in capsys.readouterr().err
+
+
+def _past_audio_calls(recordings: Path, cost: float, count: int) -> None:
+    """Sync on purpose, like read_report."""
+    for i in range(count):
+        folder = recordings / f"audio-x-r{i}"
+        folder.mkdir(parents=True)
+        (folder / "usage.json").write_text(json.dumps({"total_cost_usd": cost}))
+
+
+async def test_expensive_audio_runs_need_yes(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _past_audio_calls(tmp_path, cost=0.50, count=3)
+    settings = Settings(_env_file=None, recordings_dir=str(tmp_path))
+    args = ["--mode", "audio", "--scenarios", "happy_path_single_coffee", "--runs", "3"]
+    assert await main(args, settings=settings) == 2
+    captured = capsys.readouterr()
+    assert "Audio run: 3 real calls, agent cost about $1.50" in captured.out
+    assert "--yes" in captured.err
 
 
 async def test_no_matching_scenarios(capsys: pytest.CaptureFixture[str]) -> None:
