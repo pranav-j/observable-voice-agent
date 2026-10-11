@@ -265,3 +265,35 @@ In the baseline, the caller had its own way of failing. A couple of times it end
 ## The agent sometimes skips end_call
 
 After saying goodbye, the agent doesn't always call `end_call`. In text mode it doesn't matter, but in a voice call the line would stay open. Every eval run records how the call ended, so I can see how often this happens before touching the prompt.
+
+## Testing over real audio
+
+Text mode can't tell me anything about timing, noise or speech recognition, so the audio harness puts a simulated caller into the LiveKit room as a real participant. The same LLM caller decides what to say. A second layer turns it into speech with a persona's voice, mixes in cafe or street noise at the scenario's signal-to-noise ratio, sends it over a WebRTC track, and listens to whatever comes back.
+
+All timing is measured from the caller's side, from the audio it actually receives. The agent already reports its own timings to Phoenix, but a harness that trusts those only confirms what the agent believes about itself. Agent speech is found with a plain energy threshold. The agent's audio is clean synthesized speech, so a level threshold is enough, and it gives the same answer every time I re-run it on saved audio. The settings are written into every report.
+
+Two things broke before a single call finished. First, text-to-speech read the fake phone number 9000000002 as one big number instead of digits. The caller now spells long digit runs out in groups of five, the way a person reads a number. Second, the caller sometimes sat waiting until the agent's idle timeout fired. Single loud frames in the agent's silence kept resetting its "agent is still talking" clock. The live tracker now uses the same rule as the offline detector: speech only counts after a short unbroken run of it.
+
+## Repeated tool calls, and the bug wasn't in my code
+
+In one audio call, the agent searched the menu twice for the same thing, then added the same coffee three times. LiveKit hit its tool-step limit and the agent told the caller it was "having trouble processing the quantity". Text mode never did this with the same model, prompt and tools.
+
+The tool log showed the calls were sequential, one per LLM step, so the model was acting as if it hadn't seen its last result. The spans in Phoenix showed what each step sent: after the first step, only the new tool call and its output, chained to the previous response with `previous_response_id`. Those responses are stored on OpenAI's side, so I fetched the exact input the server used for each one. Every tool call was in there twice, once from the previous response's own output and once more because LiveKit's plugin sends it again, followed by a single output. The model sees two calls and one answer, and sometimes makes the "unanswered" call again.
+
+A small script driving the plugin directly with the same history sent the same doubled items, but the model coped there. So this is intermittent, which is exactly why it showed up only once. The fix is one setting: `store=False`, so every step sends the whole conversation instead of chaining. That's what my text loop already does, and nothing about the call is kept by the provider. After the change, the calls I ran made each tool call once.
+
+Earlier I'd suspected preemptive generation for some doubled sentences in the transcripts. With this fix in and preemptive generation on, I haven't seen it again. I'll watch for it in the suite runs before deciding anything about that setting.
+
+## The caller hung up in the middle of the read-back
+
+The next call failed differently. After "Yes" to the phone number, the agent started the read-back, and the simulated caller hung up halfway through it. The caller treated a little over a second of silence as the end of the agent's turn. In a long reply there's a gap between sentences while the next one is synthesized, and that gap can be longer. The agent's transcript only arrives once the whole utterance has been spoken, so the caller found nothing to reply to and ended the call.
+
+Now the caller waits for silence and for the agent's transcript stream to close. If a stream never closes, a longer silence still ends the wait. This was a harness bug that would have been scored as an agent failure, which is the worst kind, because nothing in the agent needed fixing.
+
+## Phone numbers said in two halves
+
+With the harness fixed, a real agent weakness showed up. The caller says the number in two groups of five with a pause in between, like people do. The turn detector ended the caller's turn at the pause, so `set_customer` got "nine zero zero zero zero", rejected it, then got "zero zero zero zero two" and rejected that too. After a few rounds the agent handed the call to a person.
+
+Joining the parts is counting, and counting belongs in code. `set_customer` now holds a partial number and joins it with the next part. If the parts add up to a valid number, it's used. A whole number on its own replaces whatever was held, and too many digits drops the held part. While a number is incomplete, the tool says how many digits it has and tells the agent to say something short like "okay, go on". The agent still reads the full number back, so a wrong join gets caught on the call.
+
+The calls are also slow. The caller-side latency on these runs is far beyond what a phone call can feel natural with. Speech-to-text, end-of-turn detection, a separate LLM round for each tool and text-to-speech all add up. I'll write numbers down once they come from a proper report. That's the next big piece of work after the harness.
