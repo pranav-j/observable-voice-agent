@@ -81,6 +81,7 @@ def summarize(results: list[RunResult], *, mode: str, started_at: datetime) -> d
         ),
         "errors": sum(r.end_reason == "error" for r in results),
         "tool_limit_hits": sum(r.tool_limit_hits for r in results),
+        "confirmed_before_reply_runs": sum(r.confirmed_before_reply > 0 for r in results),
         "skipped_audio_behaviors": sum(len(r.skipped_behaviors) for r in results),
         "turns_p50": percentile(turns, 50),
         "turns_p95": percentile(turns, 95),
@@ -115,6 +116,16 @@ def summarize(results: list[RunResult], *, mode: str, started_at: datetime) -> d
         for r in sorted(results, key=lambda r: (r.scenario_id, r.run))
         if not r.score.task_success
     ]
+    violations = [
+        {
+            "scenario_id": r.scenario_id,
+            "run": r.run,
+            "session_id": r.session_id,
+            "confirmed_before_reply": r.confirmed_before_reply,
+        }
+        for r in sorted(results, key=lambda r: (r.scenario_id, r.run))
+        if r.confirmed_before_reply
+    ]
     return {
         "mode": mode,
         "started_at": started_at.isoformat(timespec="seconds"),
@@ -126,6 +137,7 @@ def summarize(results: list[RunResult], *, mode: str, started_at: datetime) -> d
         "by_tag": tags,
         "scenarios": scenarios,
         "failures": failures,
+        "rule_violations": violations,
     }
 
 
@@ -166,6 +178,7 @@ def render_markdown(summary: dict[str, Any]) -> str:
         f"({o['escalations']} escalated, {o['expected_escalations']} expected) |",
         f"| Errors | {o['errors']} |",
         f"| Tool-round limit hits | {o['tool_limit_hits']} |",
+        f"| Confirmed before the caller replied | {o['confirmed_before_reply_runs']} runs |",
         f"| Turns p50 / p95 | {_num(o['turns_p50'], 0)} / {_num(o['turns_p95'], 0)} |",
         f"| Run duration p50 / p95 (s) | {_num(o['duration_s_p50'], 1)} / "
         f"{_num(o['duration_s_p95'], 1)} |",
@@ -200,6 +213,14 @@ def render_markdown(summary: dict[str, Any]) -> str:
     for f in summary["failures"]:
         detail = f["error"] or "; ".join(f["mismatches"]) or "no mismatches recorded"
         lines.append(f"- **{f['scenario_id']}** run {f['run']} ({f['end_reason']}): {detail}")
+    lines += ["", "## Rule violations", ""]
+    if not summary["rule_violations"]:
+        lines.append("None.")
+    for v in summary["rule_violations"]:
+        lines.append(
+            f"- **{v['scenario_id']}** run {v['run']}: confirmed in the same turn as the "
+            f"read-back, before the caller replied (x{v['confirmed_before_reply']})"
+        )
     return "\n".join(lines) + "\n"
 
 

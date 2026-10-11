@@ -43,6 +43,9 @@ class RunResult(BaseModel):
     agent_usage: Usage
     caller_usage: Usage  # tracked separately: not part of the agent's cost
     tool_limit_hits: int
+    # Turns where the agent called confirm_order after get_readback without the caller
+    # getting a chance to reply. Defaults to 0 so older results files still load.
+    confirmed_before_reply: int = 0
     skipped_behaviors: list[str]
     agent_model: str
     caller_model: str
@@ -60,6 +63,17 @@ def _tool_record(event: ToolEvent) -> dict[str, Any]:
     if not record["ok"]:
         record["error"] = event.result.get("error")
     return record
+
+
+def _confirmed_before_reply(events: tuple[ToolEvent, ...]) -> bool:
+    """A confirm attempt after a read-back in the same agent turn, i.e. before any reply."""
+    readback = False
+    for e in events:
+        if e.name == "get_readback" and e.result.get("ok"):
+            readback = True
+        elif e.name == "confirm_order" and readback:
+            return True
+    return False
 
 
 def _readback_given(events: tuple[ToolEvent, ...]) -> bool:
@@ -86,6 +100,7 @@ async def run_text_scenario(
     transcript: list[TranscriptEntry] = []
     turns = 0
     tool_limit_hits = 0
+    confirmed_before_reply = 0
     end_reason: EndReason = "max_turns"
     error: str | None = None
     started = time.perf_counter()
@@ -110,6 +125,7 @@ async def run_text_scenario(
             turn = await agent.respond(said.text)
             turns += 1
             tool_limit_hits += turn.hit_tool_limit
+            confirmed_before_reply += _confirmed_before_reply(turn.tool_events)
             transcript.append(
                 TranscriptEntry(
                     speaker="agent",
@@ -143,6 +159,7 @@ async def run_text_scenario(
         agent_usage=agent.usage,
         caller_usage=caller.usage,
         tool_limit_hits=tool_limit_hits,
+        confirmed_before_reply=confirmed_before_reply,
         skipped_behaviors=[b.action for b in caller.skipped_behaviors],
         agent_model=agent_llm.model,
         caller_model=caller_llm.model,

@@ -57,7 +57,9 @@ While checking new scenarios, I read the transcripts even for runs that passed. 
 
 That's two problems. The agent skipped the rule about waiting for a yes, and my scoring couldn't see it. The code rule only checks that a read-back happened after the last change, not that the caller replied to it.
 
-The plan is to measure first. I'll add a metric that counts these, record the baseline, then add a code guard and re-run. The guard: `confirm_order` only works if the caller has spoken since the read-back. That way the reports show before and after. Code can't decide whether the reply was actually a yes, which stays with the model, but it can make sure the caller got the chance to answer.
+The plan is to measure first, and the measuring part is done. Every report now lists runs where the agent confirmed in the same turn as the read-back, under "Rule violations". I kept it separate from task success on purpose. If I changed what task success means halfway through, the before and after reports couldn't be compared.
+
+Next I'll record the baseline, then add a code guard and re-run. The guard: `confirm_order` only works if the caller has spoken since the read-back. Code can't decide whether the reply was actually a yes, which stays with the model, but it can make sure the caller got the chance to answer.
 
 ## Plurals and filler words weaken search
 

@@ -54,6 +54,7 @@ async def test_happy_path_is_scored_as_a_success(menu: Menu) -> None:
     assert result.agent_usage.input_tokens > result.caller_usage.input_tokens > 0
     assert (result.agent_model, result.caller_model) == ("scripted", "scripted")
     assert result.session_id.startswith("eval-happy_path_single_coffee-r1-")
+    assert result.confirmed_before_reply == 0
 
 
 async def test_barge_in_during_readback_changes_the_order(menu: Menu) -> None:
@@ -147,3 +148,30 @@ async def test_errors_are_recorded_and_the_order_still_closed(menu: Menu) -> Non
 async def test_results_serialize_to_json(menu: Menu) -> None:
     result, _ = await play(menu, HAPPY, HAPPY_AGENT, HAPPY_CALLER)
     assert RunResult.model_validate_json(result.model_dump_json()) == result
+
+
+async def test_confirming_in_the_readback_turn_is_counted(menu: Menu) -> None:
+    agent = [
+        reply(
+            "",
+            call(
+                "add_item",
+                item_id="cold_coffee",
+                quantity=1,
+                size_id="large",
+                modifier_ids=["oat_milk"],
+            ),
+            call("set_customer", name="Priya", phone="9000000002"),
+            call("get_readback"),
+            call("confirm_order"),
+        ),
+        reply("Let me read that back. ... Is that correct? Your order is placed."),
+    ]
+    caller = [
+        reply("One large cold coffee with oat milk. Priya, 9000000002."),
+        reply("[END]"),
+    ]
+    result, _ = await play(menu, HAPPY, agent, caller)
+    assert result.confirmed_before_reply == 1
+    # The order itself is right, which is exactly why scoring alone missed this.
+    assert result.score.task_success

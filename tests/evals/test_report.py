@@ -30,6 +30,7 @@ def result(
     turns: int = 5,
     duration_s: float = 10.0,
     mismatches: tuple[str, ...] = (),
+    confirmed_before_reply: int = 0,
 ) -> RunResult:
     fields: dict[str, Any] = {
         "scenario_id": scenario_id,
@@ -53,6 +54,7 @@ def result(
         "agent_usage": Usage(1000, 50),
         "caller_usage": Usage(300, 20),
         "tool_limit_hits": 0,
+        "confirmed_before_reply": confirmed_before_reply,
         "skipped_behaviors": [],
         "agent_model": "gpt-6-luna",
         "caller_model": "gpt-6-luna",
@@ -196,3 +198,24 @@ def test_report_dirs_are_never_overwritten(results: list[RunResult], tmp_path: P
     write_report(results, mode="text", started_at=STARTED, reports_dir=tmp_path)
     with pytest.raises(FileExistsError):
         write_report(results, mode="text", started_at=STARTED, reports_dir=tmp_path)
+
+
+def test_rule_violations_are_counted_and_listed() -> None:
+    results = [result("a", 1, confirmed_before_reply=2), result("a", 2), result("b", 1)]
+    summary = summarize(results, mode="text", started_at=STARTED)
+    assert summary["overall"]["confirmed_before_reply_runs"] == 1
+    assert [(v["scenario_id"], v["run"]) for v in summary["rule_violations"]] == [("a", 1)]
+    md = render_markdown(summary)
+    assert "| Confirmed before the caller replied | 1 runs |" in md
+    assert "- **a** run 1: confirmed in the same turn as the read-back" in md
+
+
+def test_no_rule_violations() -> None:
+    md = render_markdown(summarize([result("a", 1)], mode="text", started_at=STARTED))
+    assert md.endswith("## Rule violations\n\nNone.\n")
+
+
+def test_old_results_without_the_field_still_load() -> None:
+    row = json.loads(result("a", 1).model_dump_json(exclude={"transcript"}))
+    del row["confirmed_before_reply"]
+    assert RunResult.model_validate(row).confirmed_before_reply == 0
