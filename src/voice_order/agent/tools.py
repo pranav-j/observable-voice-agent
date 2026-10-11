@@ -15,6 +15,7 @@ from typing import Any
 from livekit.agents import RunContext, ToolResult, function_tool
 from livekit.agents.llm import ChatChunk, RawFunctionTool
 
+from voice_order.agent.faults import without_modifiers
 from voice_order.store.base import OrderStore
 from voice_order.tools.base import Result, Session, Tool, dispatch, to_json
 from voice_order.tools.catalog import TOOLS
@@ -56,10 +57,13 @@ def make_tool(
     tools: dict[str, Tool[Any]],
     on_result: ToolListener,
     step: StepText | None = None,
+    drop_modifiers: bool = False,
 ) -> LiveKitTool:
     async def call(
         raw_arguments: dict[str, object], context: RunContext[Any] | None = None
     ) -> ToolResult:
+        if drop_modifiers:  # FAULT=drop_modifiers
+            raw_arguments = without_modifiers(raw_arguments)
         asked = step is not None and step.asked_caller
         before = session.order
         if asked and tool.name in WAIT_FOR_ANSWER:
@@ -87,6 +91,9 @@ def livekit_tools(
     on_result: ToolListener = _ignore,
     step: StepText | None = None,
     tools: dict[str, Tool[Any]] = TOOLS,
+    drop_modifiers: bool = False,
 ) -> list[LiveKitTool]:
     """One LiveKit tool per core tool, all acting on the same call session."""
-    return [make_tool(t, session, store, tools, on_result, step) for t in tools.values()]
+    return [
+        make_tool(t, session, store, tools, on_result, step, drop_modifiers) for t in tools.values()
+    ]

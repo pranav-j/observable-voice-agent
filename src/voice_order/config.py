@@ -1,10 +1,14 @@
 """Settings from environment variables, falling back to .env. Defaults suit local development."""
 
 from functools import lru_cache
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Harness validation only (see voice_order/agent/faults.py).
+Fault = Literal["none", "no_barge_in", "drop_modifiers", "aggressive_eou", "slow_llm"]
+AGGRESSIVE_EOU_MS = 150
 
 
 class Settings(BaseSettings):
@@ -34,6 +38,7 @@ class Settings(BaseSettings):
     filler_after_ms: int = Field(default=1200, ge=0)  # tool calls slower than this get a filler
     max_call_seconds: int = Field(default=300, gt=0)
     idle_timeout_seconds: int = Field(default=30, gt=0)  # caller silent this long: end the call
+    fault: Fault = "none"  # breaks the voice worker on purpose, to test the eval harness
 
     # Observability and output
     phoenix_collector_endpoint: str = "http://localhost:6006"
@@ -43,6 +48,10 @@ class Settings(BaseSettings):
     def has_openai_key(self) -> bool:
         return bool(self.openai_api_key.get_secret_value().strip())
 
+    @property
+    def effective_eou_silence_ms(self) -> int:
+        return AGGRESSIVE_EOU_MS if self.fault == "aggressive_eou" else self.eou_silence_ms
+
     def voice_config(self) -> dict[str, Any]:
         """The settings that shape a voice call, saved with each one so runs can be compared."""
         return {
@@ -50,9 +59,10 @@ class Settings(BaseSettings):
             "stt_model": self.stt_model,
             "tts_model": self.tts_model,
             "tts_voice": self.tts_voice,
-            "eou_silence_ms": self.eou_silence_ms,
+            "eou_silence_ms": self.effective_eou_silence_ms,
             "preemptive_generation": self.enable_preemptive_generation,
             "filler_phrases": self.enable_filler_phrases,
+            "fault": self.fault,
         }
 
 

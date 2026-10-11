@@ -29,6 +29,7 @@ from livekit.plugins import openai as lk_openai
 from livekit.plugins import silero
 from openai.types import Reasoning
 
+from voice_order.agent.faults import SLOW_LLM_DELAY_S, delay_first
 from voice_order.agent.tools import StepText, livekit_tools
 from voice_order.config import Settings, get_settings
 from voice_order.menu.loader import load_menu
@@ -54,15 +55,17 @@ AWAY = "I haven't heard from you in a while, so I'll end the call. Please call b
 class OrderAgent(Agent):
     """Records the text of each LLM step, so the tools can tell when it asked the caller."""
 
-    def __init__(self, *, step: StepText, **kwargs: Any) -> None:
+    def __init__(self, *, step: StepText, first_token_delay: float = 0.0, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.step = step
+        self.first_token_delay = first_token_delay  # only set by FAULT=slow_llm
 
     async def llm_node(
         self, chat_ctx: llm.ChatContext, tools: list[llm.Tool], model_settings: ModelSettings
     ) -> AsyncIterable[Any]:
         self.step.reset()
-        async for chunk in Agent.default.llm_node(self, chat_ctx, tools, model_settings):
+        chunks = Agent.default.llm_node(self, chat_ctx, tools, model_settings)
+        async for chunk in delay_first(chunks, self.first_token_delay):
             self.step.add(chunk)
             yield chunk
 
@@ -91,8 +94,8 @@ def build_session(settings: Settings, vad: Any) -> AgentSession[None]:
         turn_handling={
             # Local models only: the defaults in dev mode would call LiveKit's cloud.
             "turn_detection": inference.TurnDetector(version="v1-mini"),
-            "endpointing": {"min_delay": settings.eou_silence_ms / 1000},
-            "interruption": {"enabled": True, "mode": "vad"},
+            "endpointing": {"min_delay": settings.effective_eou_silence_ms / 1000},
+            "interruption": {"enabled": settings.fault != "no_barge_in", "mode": "vad"},
             "preemptive_generation": {"enabled": settings.enable_preemptive_generation},
         },
         user_away_timeout=settings.idle_timeout_seconds,
@@ -170,11 +173,16 @@ async def entrypoint(ctx: JobContext) -> None:
             ctx.room, ORDER_TOPIC, {"session_id": call.order.session_id, **order_view(call)}
         )
 
+    if settings.fault != "none":
+        log.warning("FAULT=%s: this worker is broken on purpose", settings.fault)
     step = StepText()
     agent = OrderAgent(
         step=step,
+        first_token_delay=SLOW_LLM_DELAY_S if settings.fault == "slow_llm" else 0.0,
         instructions=agent_system_prompt(menu.restaurant).text,
-        tools=livekit_tools(call, store, on_tool_result, step),
+        tools=livekit_tools(
+            call, store, on_tool_result, step, drop_modifiers=settings.fault == "drop_modifiers"
+        ),
     )
     session = build_session(settings, ctx.proc.userdata["vad"])
     background: set[asyncio.Task[None]] = set()
