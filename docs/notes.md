@@ -365,3 +365,15 @@ Most of today's fixes came from voice calls, but they live in the shared core, s
 The early-confirm count went up. That's how many runs had the model saying the read-back and calling `confirm_order` in the same step. The turn rule holds every one of those back, so no order was confirmed early. The count is about the model trying, and I'll keep an eye on it.
 
 Two of the three failures weren't really the agent's fault. In one, the model returned an empty reply right after fetching the read-back, which happens rarely. In the other, the simulated caller contradicted its own scripted line: it said "make that a cappuccino instead", then later insisted it wanted the latte. The fix for the caller is to keep scripted changes in its instructions, not just its history. I'm holding that until the seeded-fault runs are done, since those compare against the audio suite running now, and changing the caller in between would muddy the comparison.
+
+## The third restart: two more harness bugs, and a call that ran out of time
+
+The next attempt at the full run looked bad early: seven of the first sixteen calls failed, and three of those were the simulated caller hanging up mid-order. That pattern usually means the harness, so I read those calls before letting the suite go on.
+
+Two were the harness. In one, the caller's "Pooja." went out as 0.3 seconds of audio and the agent never heard it, the same failure as the clipped goodbye. My clipped-speech check allowed 0.2 seconds per word, and a one-word line passes that. Normal output, even for "Yes.", is over a second long with its silences, so lines now need at least 0.6 seconds.
+
+The other was the same root cause as the read-backs flagged interrupted. When the agent asks something and the turn rule holds back a tool call in the same step, LiveKit keeps that speech open until the caller talks. The agent's transcript stream stays open too. So the caller waited, gave up on the stream, found no finished transcript, decided the agent had said nothing, and hung up. The caller now reads the stream as it arrives and uses the text so far if the stream never closes. Each line is also timed from when the agent started it, so a stream that closes late doesn't leak into the next reply.
+
+The third was the agent. Every time the caller corrected a misheard name (Garev, then Garov, then Garav), the agent also read the phone number back again, which cost a turn each time, and the call hit the five-minute limit. The number is only read back now when it actually changed. A name correction also tells the agent to ask for a spelling if it's still wrong. And calls that hit the time limit now say so, instead of being labelled as running out of turns.
+
+I stopped the run again for these. A baseline that blames the agent for harness bugs would be worse than no baseline. From here the suite runs to the end unless the harness itself breaks.
