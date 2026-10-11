@@ -243,10 +243,10 @@ def set_customer(session: Session, args: SetCustomerArgs) -> Result:
         held = session.phone_digits
         return error(
             ErrorCode.PHONE_INCOMPLETE,
-            f"Got {len(held)} digits so far ({' '.join(held)}), not the full 10. The caller "
-            "is probably still saying it: say something short like 'okay, go on', and when "
-            "they say the rest, call set_customer with just the new digits. If they say "
-            "that was all, ask for the whole number again.",
+            f"Got {len(held)} of the 10 digits so far: {' '.join(held)}. Read those back "
+            "and ask for the rest, for example 'I have nine zero zero zero zero, and the "
+            "rest?'. If the caller goes on, call set_customer with just the new digits. If "
+            "they say the whole number again, pass all of it.",
             digits_so_far=len(held),
         )
     new = state.set_customer(session.order, args.name, phone)
