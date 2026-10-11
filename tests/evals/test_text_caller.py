@@ -92,6 +92,17 @@ async def test_readback_interrupt_fires_once() -> None:
     assert AssistantMessage(say) in llm.requests[0]
 
 
+async def test_scripted_lines_stay_in_the_callers_instructions() -> None:
+    say = "Actually, make that a cappuccino instead of the latte."
+    caller = TextCaller(
+        ScriptedLLM(), scenario(behaviors=[interrupt({"phase": "readback"}, say)]), RESTAURANT
+    )
+    assert "Lines you already said" not in caller.current_instructions()
+    await caller.respond("Let me read that back...", phase="readback")
+    assert f'- "{say}"' in caller.current_instructions()
+    assert caller.current_instructions().startswith(caller.instructions)
+
+
 async def test_turn_trigger_fires_on_that_turn() -> None:
     llm = ScriptedLLM(reply("A cold coffee."), reply("Two dosas too."))
     caller = TextCaller(

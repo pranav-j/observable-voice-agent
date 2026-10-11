@@ -13,7 +13,7 @@ from typing import Literal
 from evals.scenario import Behavior, Scenario
 from voice_order.textmode.llm import AssistantMessage, LLMClient, Message, Usage, UserMessage
 
-CALLER_PROMPT_VERSION = "v3"
+CALLER_PROMPT_VERSION = "v4"
 END = "[END]"
 GIVE_UP = "[GIVE UP]"
 _MARKERS = re.compile(r"\[(END|GIVE UP)\]", re.IGNORECASE)
@@ -81,6 +81,7 @@ class TextCaller:
         self.turn = 0
         self.usage = Usage()
         self._fired: set[int] = set()
+        self.said_scripted: list[str] = []  # scripted lines already spoken, kept in the prompt
 
     async def respond(self, agent_text: str, phase: Phase = None) -> CallerTurn:
         self.turn += 1
@@ -88,14 +89,26 @@ class TextCaller:
         line = self._scripted_line(phase)
         if line is not None:
             self.history.append(AssistantMessage(line))
+            self.said_scripted.append(line)
             return CallerTurn(line, ended=False, gave_up=False, scripted=True, usage=Usage())
 
-        reply = await self.llm.complete(self.instructions, self.history, [])
+        reply = await self.llm.complete(self.current_instructions(), self.history, [])
         self.usage += reply.usage
         text, ended, gave_up = parse_markers(reply.text)
         if text:
             self.history.append(AssistantMessage(text))
         return CallerTurn(text, ended=ended, gave_up=gave_up, scripted=False, usage=reply.usage)
+
+    def current_instructions(self) -> str:
+        """The prompt, plus any scripted lines already said.
+
+        A line in the history alone wasn't enough: the caller said "make that a
+        cappuccino instead", then later insisted on the latte from its goal.
+        """
+        if not self.said_scripted:
+            return self.instructions
+        lines = "\n".join(f'- "{line}"' for line in self.said_scripted)
+        return f"{self.instructions}\n\n## Lines you already said in this call\n\n{lines}"
 
     def _scripted_line(self, phase: Phase) -> str | None:
         for i, behavior in enumerate(self.interrupts):
