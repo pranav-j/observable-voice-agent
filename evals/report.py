@@ -279,7 +279,7 @@ def render_markdown(summary: dict[str, Any]) -> str:
             f"| {sid} | {', '.join(s['tags'])} | {s['successes']}/{s['runs']} | "
             f"{_num(s['mean_field_accuracy'])} | {reasons} |"
         )
-    lines += _audio_markdown(summary.get("audio"))
+    lines += _audio_markdown(summary.get("audio"), summary["mode"])
     lines += ["", "## Failures", ""]
     if not summary["failures"]:
         lines.append("None.")
@@ -301,7 +301,7 @@ def _settings_text(settings: dict[str, Any] | None) -> str:
     return ", ".join(f"{k} {v}" for k, v in sorted(settings.items())) if settings else "unknown"
 
 
-def _audio_markdown(a: dict[str, Any] | None) -> list[str]:
+def _audio_markdown(a: dict[str, Any] | None, mode: str) -> list[str]:
     if a is None:
         return []
     cost = "n/a"
@@ -315,7 +315,9 @@ def _audio_markdown(a: dict[str, Any] | None) -> list[str]:
         "",
         "## Audio",
         "",
-        "Measured from the caller's side, from the audio it received.",
+        "Measured from the worker's two-channel recording, at the agent's end of the line."
+        if mode == "recorded"
+        else "Measured from the caller's side, from the audio it received.",
         "",
         "| Metric | Value |",
         "|---|---|",

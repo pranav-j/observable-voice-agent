@@ -25,6 +25,7 @@ EndReason = Literal[
     "caller_gave_up",
     "max_turns",
     "error",
+    "recorded_call",  # recorded mode: a real call, ended however it ended
 ]
 
 
@@ -40,7 +41,7 @@ class RunResult(BaseModel):
     tags: list[str] = []
     run: int
     session_id: str
-    mode: Literal["text", "audio"] = "text"
+    mode: Literal["text", "audio", "recorded"] = "text"
     end_reason: EndReason
     error: str | None = None
     turns: int
@@ -58,7 +59,7 @@ class RunResult(BaseModel):
     agent_prompt_version: str
     caller_prompt_version: str
     transcript: list[TranscriptEntry] = []  # left out of results.jsonl; kept in raw/
-    # Audio mode only: caller-side timing metrics, noise, hearing mode, cost. None in text mode.
+    # Audio and recorded modes: timing metrics, noise, hearing mode, cost. None in text mode.
     audio: dict[str, Any] | None = None
 
 
