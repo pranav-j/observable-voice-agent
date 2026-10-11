@@ -80,9 +80,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("after", type=Path)
     p.add_argument("--scenarios", help="compare only these scenarios (comma-separated globs)")
     args = p.parse_args(argv)
-    before, after = (
-        json.loads((r / "summary.json").read_text()) for r in (args.before, args.after)
-    )
+    before, after = (load_summary(r, args.scenarios) for r in (args.before, args.after))
     if before["mode"] != after["mode"]:
         print(f"Different modes: {before['mode']} vs {after['mode']}.", file=sys.stderr)
         return 2

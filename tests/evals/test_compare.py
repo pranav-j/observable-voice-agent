@@ -36,11 +36,15 @@ def test_cli_refuses_mixed_modes(tmp_path: Path, capsys: pytest.CaptureFixture[s
     assert "Different modes" in capsys.readouterr().err
 
 
-def test_scenario_filter_rebuilds_both_summaries(tmp_path: Path) -> None:
+def test_scenario_filter_rebuilds_both_summaries(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     started = datetime(2026, 10, 11, tzinfo=UTC)
     runs = [result("barge_in_x", 1), result("happy_y", 1, success=False)]
     a = write_report(runs, mode="text", started_at=started, reports_dir=tmp_path / "a")
     b = write_report(runs, mode="text", started_at=started, reports_dir=tmp_path / "b")
     assert main([str(a), str(b), "--scenarios", "barge_in_*"]) == 0
+    printed = capsys.readouterr().out
+    assert "| runs | 1.000 | 1.000 |" in printed  # main applies the filter to both reports
     assert load_summary(a, "barge_in_*")["overall"]["runs"] == 1
     assert load_summary(a, None)["overall"]["runs"] == 2
