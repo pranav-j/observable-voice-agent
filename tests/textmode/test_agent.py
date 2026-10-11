@@ -257,3 +257,29 @@ async def test_text_without_a_question_lets_the_loop_continue(
     turn = await agent.respond("Dosa?")
     assert len(llm.requests) == 2
     assert turn.text == "Let me check that. We have masala dosa and mysore masala dosa."
+
+
+async def test_confirm_in_the_readback_turn_waits_even_without_a_question_mark(
+    menu: Menu, store: CountingStore
+) -> None:
+    llm = ScriptedLLM(
+        reply(
+            "",
+            call("add_item", item_id="affogato", quantity=1),
+            call("set_customer", name="Anil", phone="9000000001"),
+            call("get_readback"),
+            call("confirm_order"),  # no question in the text, so only the guard can stop this
+        ),
+        reply("Let me read that back. One Affogato. Please confirm."),
+        reply("", call("confirm_order")),
+        reply("Your order is placed. Goodbye!"),
+    )
+    agent = await make_agent(menu, store, llm)
+    first = await agent.respond("One affogato, Anil, 9000000001")
+    assert first.tool_events[-1].result["error"] == "READBACK_NOT_ANSWERED"
+    assert agent.session.order.status == "draft"
+    second = await agent.respond("Yes, that's right")
+    assert second.tool_events[-1].result["ok"] is True
+    # mypy narrowed status to "draft" above and can't see respond() change it.
+    status: str = agent.session.order.status
+    assert status == "confirmed"

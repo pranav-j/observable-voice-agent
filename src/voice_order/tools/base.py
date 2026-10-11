@@ -36,11 +36,25 @@ class Session:
 
     `ending` is set by end_call or transfer_to_human. Whatever runs the conversation
     (text loop or voice worker) checks it and wraps up after the agent's last words.
+
+    Whatever runs the conversation also calls `caller_spoke()` on every caller utterance,
+    so tools can tell whether the caller has replied since the read-back.
     """
 
     menu: Menu
     order: Order
     ending: CallEnd | None = None
+    caller_turns: int = 0
+    readback_caller_turn: int | None = None  # caller_turns when the read-back was given
+
+    def caller_spoke(self) -> None:
+        self.caller_turns += 1
+
+    @property
+    def readback_answered(self) -> bool:
+        return (
+            self.readback_caller_turn is not None and self.caller_turns > self.readback_caller_turn
+        )
 
     @classmethod
     def start(cls, menu: Menu, session_id: str) -> "Session":

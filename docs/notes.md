@@ -67,6 +67,8 @@ The plan is to measure first, and the measuring part is done. Every report now l
 
 Next I'll record the baseline, then add a code guard and re-run. The guard: `confirm_order` only works if the caller has spoken since the read-back. Code can't decide whether the reply was actually a yes, which stays with the model, but it can make sure the caller got the chance to answer.
 
+In the end, fix 1 (ending the turn on a question) already stopped every premature confirm in the runs after it. So the guard went in as a second layer, with no eval run, since there was nothing left to measure. The session counts caller turns, `get_readback` notes the count, and `confirm_order` refuses with `READBACK_NOT_ANSWERED` if the caller hasn't spoken since. It catches the case fix 1 can't: a read-back worded without a question mark. A stale read-back still gets the more useful "the order changed" error, and a fresh read-back needs a fresh reply. The guard lives in the core, so the voice worker gets it by calling `caller_spoke()` on each turn, the same way the text loop does.
+
 ## Plurals and filler words weaken search
 
 "one plate of veg samosas" didn't find Veg Samosa on the first search. The agent needed a second one. Plurals and extra words pull the score down.

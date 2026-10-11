@@ -74,6 +74,7 @@ def test_happy_path_through_dispatch_only(session: Session) -> None:
     call(session, "add_item", item_id="cold_coffee", quantity=1, size_id="large")
     call(session, "set_customer", name="Anil", phone="90000 00001")
     call(session, "get_readback")
+    session.caller_spoke()  # "yes, that's right"
     result = call(session, "confirm_order")
     assert result["ok"] is True
     assert result["order"]["status"] == "confirmed"
@@ -85,11 +86,13 @@ def test_change_after_readback_needs_a_new_readback(ready: Session) -> None:
     call(ready, "add_item", item_id="affogato", quantity=1)
     assert call(ready, "confirm_order")["error"] == "READBACK_REQUIRED"
     assert "Affogato" in call(ready, "get_readback")["readback"]
+    ready.caller_spoke()
     assert call(ready, "confirm_order")["order"]["status"] == "confirmed"
 
 
 def test_readback_after_confirmation_is_refused(ready: Session) -> None:
     call(ready, "get_readback")
+    ready.caller_spoke()
     call(ready, "confirm_order")
     assert call(ready, "get_readback")["error"] == "ORDER_CLOSED"
     assert call(ready, "confirm_order")["error"] == "ORDER_CLOSED"
@@ -112,6 +115,7 @@ def test_end_call_abandons_an_unconfirmed_order(ready: Session) -> None:
 
 def test_end_call_keeps_a_confirmed_order(ready: Session) -> None:
     call(ready, "get_readback")
+    ready.caller_spoke()
     call(ready, "confirm_order")
     assert call(ready, "end_call", reason="done")["status"] == "confirmed"
     assert call(ready, "transfer_to_human", reason="question")["status"] == "confirmed"
@@ -138,3 +142,33 @@ def test_reason_is_required(ready: Session, tool: str, arguments: dict[str, Any]
 def test_a_fresh_session_has_no_ending(session: Session) -> None:
     assert session.ending is None
     assert state.new_order("x").status == "draft"
+
+
+# --- the caller must reply to the read-back --------------------------------------------------
+
+
+def test_confirm_right_after_the_readback_is_refused(ready: Session) -> None:
+    call(ready, "get_readback")
+    result = call(ready, "confirm_order")
+    assert result["error"] == "READBACK_NOT_ANSWERED"
+    assert ready.order.status == "draft"
+
+
+def test_confirm_works_once_the_caller_has_replied(ready: Session) -> None:
+    call(ready, "get_readback")
+    ready.caller_spoke()
+    assert call(ready, "confirm_order")["order"]["status"] == "confirmed"
+
+
+def test_a_new_readback_needs_a_new_reply(ready: Session) -> None:
+    call(ready, "get_readback")
+    ready.caller_spoke()
+    call(ready, "get_readback")  # read it back again, e.g. after a question
+    assert call(ready, "confirm_order")["error"] == "READBACK_NOT_ANSWERED"
+
+
+def test_a_stale_readback_still_says_the_order_changed(ready: Session) -> None:
+    call(ready, "get_readback")
+    call(ready, "add_item", item_id="affogato", quantity=1)
+    ready.caller_spoke()
+    assert call(ready, "confirm_order")["error"] == "READBACK_REQUIRED"

@@ -172,9 +172,16 @@ async def test_confirming_in_the_readback_turn_is_counted(menu: Menu) -> None:
         reply("[END]"),
     ]
     result, _ = await play(menu, HAPPY, agent, caller)
+    # Still counted: the metric measures the attempt...
     assert result.confirmed_before_reply == 1
-    # The order itself is right, which is exactly why scoring alone missed this.
-    assert result.score.task_success
+    # ...but the code guard stops it, so the order isn't placed without the caller's yes.
+    confirm = result.transcript[2].tool_calls[-1]
+    assert (confirm["name"], confirm["ok"], confirm.get("error")) == (
+        "confirm_order",
+        False,
+        "READBACK_NOT_ANSWERED",
+    )
+    assert not result.score.task_success
 
 
 # --- the caller's last words, and hanging up early --------------------------------------------

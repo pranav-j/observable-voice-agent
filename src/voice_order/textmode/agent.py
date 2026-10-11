@@ -91,6 +91,7 @@ class TextAgent:
     async def respond(self, user_text: str) -> Turn:
         if self.session.ending is not None:
             raise CallEndedError(f"call ended: {self.session.ending.kind}")
+        self.session.caller_spoke()
         self.history.append(UserMessage(user_text))
         spoken: list[str] = []
         events: list[ToolEvent] = []
