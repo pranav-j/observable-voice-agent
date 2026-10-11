@@ -357,3 +357,11 @@ The same calls showed the agent setting "Nick Hill" as the name three times in a
 Unit tests can't catch a change that makes the agent worse at its job. So there's now a gate: a reviewed report becomes the baseline, and a later report fails if any key metric is worse by more than its margin. Pass rates use an absolute drop, latency a relative rise, and error rates an absolute rise. If one side didn't measure a metric, the gate says it skipped it rather than quietly passing. The margins are set loosely for now, because the same build gives different numbers from run to run, and a gate that fails at random gets ignored. They'll come down once repeat runs show how big that spread is.
 
 Pull requests run the text suite and the gate when the API key secret is set. The audio suite runs only by hand, since it needs a LiveKit server and a worker and costs real money. `make compare` puts two reports side by side. That's what the before and after tables for experiments and seeded faults will come from.
+
+## Text mode after the voice fixes
+
+Most of today's fixes came from voice calls, but they live in the shared core, so I re-ran the text suite to check they didn't break anything there. Task success went from 87 of 93 in the previous reference to 90 of 93 (reports `20261011-103854-text` and `20261011-152337-text`). One run is noise at this size, but three in the right direction, with no new failure types, is what I wanted to see.
+
+The early-confirm count went up. That's how many runs had the model saying the read-back and calling `confirm_order` in the same step. The turn rule holds every one of those back, so no order was confirmed early. The count is about the model trying, and I'll keep an eye on it.
+
+Two of the three failures weren't really the agent's fault. In one, the model returned an empty reply right after fetching the read-back, which happens rarely. In the other, the simulated caller contradicted its own scripted line: it said "make that a cappuccino instead", then later insisted it wanted the latte. The fix for the caller is to keep scripted changes in its instructions, not just its history. I'm holding that until the seeded-fault runs are done, since those compare against the audio suite running now, and changing the caller in between would muddy the comparison.
