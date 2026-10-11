@@ -332,3 +332,37 @@ def test_escalate_and_abandon_close_a_draft(ready: Order) -> None:
 def test_escalate_and_abandon_keep_a_confirmed_order(confirmed: Order) -> None:
     assert state.escalate(confirmed).status == "confirmed"
     assert state.abandon(confirmed).status == "confirmed"
+
+
+# --- spoken phone numbers ------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("raw", "digits"),
+    [
+        ("nine zero zero zero zero, zero zero zero two three", "9000000023"),
+        ("Nine-zero-zero-zero-zero zero-zero-zero-two-three", "9000000023"),
+        ("nine oh oh oh oh, oh oh oh two three", "9000000023"),
+        ("nine double zero double zero, zero zero zero two three", "9000000023"),
+        ("nine triple zero zero, zero zero zero two three", "9000000023"),
+        ("plus nine one, nine zero zero zero zero, zero zero zero two five", "9000000025"),
+        ("90000 zero zero zero two three", "9000000023"),
+        ("my number is 90000 00023", "9000000023"),
+    ],
+)
+def test_spoken_digits_are_parsed(raw: str, digits: str) -> None:
+    assert state.normalize_phone(raw) == digits
+
+
+@pytest.mark.parametrize(
+    "raw",
+    [
+        "0000000000",  # a placeholder no caller would give
+        "0123456789",
+        "zero one two three four five six seven eight nine",
+        "nine zero zero zero zero zero zero two three",  # nine digits: one zero short
+        "double",  # a multiplier with nothing to repeat
+    ],
+)
+def test_impossible_numbers_are_rejected(raw: str) -> None:
+    assert state.normalize_phone(raw) is None

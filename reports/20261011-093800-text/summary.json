@@ -1,0 +1,136 @@
+{
+  "mode": "text",
+  "started_at": "2026-10-11T09:38:00+00:00",
+  "agent_models": [
+    "gpt-6-luna"
+  ],
+  "caller_models": [
+    "gpt-6-luna"
+  ],
+  "agent_prompt_versions": [
+    "v1"
+  ],
+  "caller_prompt_versions": [
+    "v1"
+  ],
+  "overall": {
+    "runs": 20,
+    "scenarios": 2,
+    "task_successes": 18,
+    "task_success_rate": 0.9,
+    "scenarios_passing_all_runs": 1,
+    "scenarios_passing_all_runs_rate": 0.5,
+    "order_exact_match_runs": 20,
+    "order_exact_match_rate": 1.0,
+    "mean_field_accuracy": 1.0,
+    "escalations": 0,
+    "expected_escalations": 0,
+    "escalation_agreement_rate": 1.0,
+    "errors": 0,
+    "caller_hung_up_early": 0,
+    "tool_limit_hits": 0,
+    "confirmed_before_reply_runs": 3,
+    "skipped_audio_behaviors": 0,
+    "turns_p50": 5.0,
+    "turns_p95": 11.0,
+    "duration_s_p50": 32.996,
+    "duration_s_p95": 61.93,
+    "agent_tokens": {
+      "input": 772974,
+      "output": 7229
+    },
+    "caller_tokens": {
+      "input": 69458,
+      "output": 1728
+    }
+  },
+  "by_tag": {
+    "phone": {
+      "runs": 20,
+      "successes": 18,
+      "pass_rate": 0.9
+    },
+    "phone_name": {
+      "runs": 20,
+      "successes": 18,
+      "pass_rate": 0.9
+    }
+  },
+  "scenarios": {
+    "phone_name_plus91": {
+      "tags": [
+        "phone_name",
+        "phone"
+      ],
+      "runs": 10,
+      "successes": 8,
+      "pass_rate": 0.8,
+      "passed_all": false,
+      "errors": 0,
+      "mean_field_accuracy": 1.0,
+      "end_reasons": {
+        "agent_ended": 6,
+        "caller_ended": 2,
+        "caller_gave_up": 2
+      }
+    },
+    "phone_name_spoken_digits": {
+      "tags": [
+        "phone_name",
+        "phone"
+      ],
+      "runs": 10,
+      "successes": 10,
+      "pass_rate": 1.0,
+      "passed_all": true,
+      "errors": 0,
+      "mean_field_accuracy": 1.0,
+      "end_reasons": {
+        "agent_ended": 3,
+        "caller_ended": 7
+      }
+    }
+  },
+  "failures": [
+    {
+      "scenario_id": "phone_name_plus91",
+      "run": 3,
+      "session_id": "eval-phone_name_plus91-r3-8c8ee3",
+      "end_reason": "caller_gave_up",
+      "error": null,
+      "mismatches": [
+        "status: expected confirmed, got abandoned"
+      ]
+    },
+    {
+      "scenario_id": "phone_name_plus91",
+      "run": 5,
+      "session_id": "eval-phone_name_plus91-r5-5df16d",
+      "end_reason": "caller_gave_up",
+      "error": null,
+      "mismatches": [
+        "status: expected confirmed, got abandoned"
+      ]
+    }
+  ],
+  "rule_violations": [
+    {
+      "scenario_id": "phone_name_plus91",
+      "run": 2,
+      "session_id": "eval-phone_name_plus91-r2-9a73a9",
+      "confirmed_before_reply": 1
+    },
+    {
+      "scenario_id": "phone_name_plus91",
+      "run": 6,
+      "session_id": "eval-phone_name_plus91-r6-adb8d1",
+      "confirmed_before_reply": 2
+    },
+    {
+      "scenario_id": "phone_name_plus91",
+      "run": 10,
+      "session_id": "eval-phone_name_plus91-r10-0be2e6",
+      "confirmed_before_reply": 1
+    }
+  ]
+}

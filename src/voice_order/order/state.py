@@ -109,14 +109,45 @@ def set_customer(order: Order, name: str, phone: str) -> Order:
     return _mutate(order, customer=customer)
 
 
+DIGIT_WORDS = {
+    "zero": "0", "oh": "0", "o": "0", "one": "1", "two": "2", "three": "3", "four": "4",
+    "five": "5", "six": "6", "seven": "7", "eight": "8", "nine": "9",
+}  # fmt: skip
+REPEAT_WORDS = {"double": 2, "triple": 3}
+
+
 def normalize_phone(raw: str) -> str | None:
-    """Keep digits only. Accept a +91 or leading-0 prefix if what remains is 10 digits."""
-    digits = re.sub(r"\D", "", raw)
+    """Ten digits from what the caller said, or None.
+
+    Takes digits or spoken words ("nine double zero ..."). Accepts a +91 or leading-0
+    prefix if ten digits remain, and rejects numbers that still start with 0, since no
+    Indian number does once the prefix is gone.
+    """
+    digits = spoken_digits(raw)
     if len(digits) == 12 and digits.startswith("91"):
         digits = digits[2:]
     elif len(digits) == 11 and digits.startswith("0"):
         digits = digits[1:]
-    return digits if len(digits) == 10 else None
+    return digits if len(digits) == 10 and digits[0] != "0" else None
+
+
+def spoken_digits(raw: str) -> str:
+    """'nine double zero, 12' -> '900012'. Other words ("my number is") are ignored.
+
+    Counting repeated words is easy in code and error-prone for a language model,
+    so the model passes the caller's words through and this does the counting.
+    """
+    out: list[str] = []
+    repeat = 1
+    for token in re.findall(r"[a-z]+|\d+", raw.lower()):
+        if token in REPEAT_WORDS:
+            repeat = REPEAT_WORDS[token]
+            continue
+        digit = token if token.isdigit() else DIGIT_WORDS.get(token)
+        if digit is not None:
+            out.append(digit[0] * repeat + digit[1:])
+        repeat = 1
+    return "".join(out)
 
 
 def mark_readback(order: Order) -> Order:

@@ -186,7 +186,10 @@ def remove_item(session: Session, args: RemoveItemArgs) -> Result:
 class SetCustomerArgs(ToolArgs):
     name: str = Field(description="The name for the order, as the caller gave it.")
     phone: str = Field(
-        description="The caller's 10-digit phone number as heard. Spaces and +91 are fine."
+        description=(
+            "The caller's phone number exactly as they said it, in digits or words. "
+            "Spaces, +91 and spoken forms like 'nine double zero' are fine."
+        )
     )
 
 

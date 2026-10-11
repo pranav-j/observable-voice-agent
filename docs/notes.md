@@ -177,6 +177,14 @@ Same two samosa scenarios, ten runs each. The "before" is the search fix's run, 
 
 Across the two fixes, these two scenarios went from 10 to 15 to 19 out of 20. The read-back change came from a decision I made early on, "don't speak brackets", which seemed tidy at the time and turned out to hide information people need.
 
+## Fix 4: spoken phone numbers are parsed in code
+
+In the reference run, the model turned "nine zero zero zero zero, zero zero zero two three" into a nine-digit number and the call ended in a transfer. In an earlier run it invented "0000000000", and that got through validation because it's ten digits. So the phone parser now understands spoken digits: "zero" or "oh" through "nine", the Indian-English "double nine" and "triple zero", and "plus nine one" for the country code. Other words like "my number is" are ignored. A number that still starts with 0 once the prefix is gone is rejected. The tool description now tells the model it can pass the caller's words through as they are, so the counting happens in code.
+
+This is the first fix the eval couldn't show. The before run passed 20 of 20 ([report](../reports/20261011-093445-text/summary.md)). The model usually converts the digits correctly; the failures I'd seen are rare. With no failures to remove, there was no room to show an improvement. The case for this change is the unit tests: code can't drop a zero, and the placeholder can't get through anymore.
+
+The after run was a regression check ([report](../reports/20261011-093800-text/summary.md)). It passed 18 of 20, and the model now passes spoken words straight through in about half its `set_customer` calls, so the parser is doing real work. Both failures were the simulated caller. The agent read back "90000 00025", which was correct, and the caller kept saying "no, it should be 9000000025", which is the same number without the space, until it gave up. That has now happened more than once, so the caller prompt needs to say that numbers are read back in groups. I'll treat that as a measurement fix, with its own run, not mix it into this one.
+
 ## The simulated caller can be the thing that fails
 
 Two failures in one batch came from my side of the test, not the agent. In one, I'd told the caller to say "two plates of veg samosas" exactly like that. It took that so literally that it refused a correct read-back three times and gave up. I reworded the goal so it uses the phrase when ordering without being rigid about it.
