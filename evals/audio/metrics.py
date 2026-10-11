@@ -7,6 +7,7 @@ over the audio the caller received. See docs/adr/0005-audio-eval-measurement.md.
 
 import re
 from dataclasses import dataclass, field
+from itertools import pairwise
 from typing import Any
 
 import numpy as np
@@ -178,3 +179,17 @@ def recording_metrics(caller: list[Segment], agent: list[Segment]) -> dict[str, 
         "wer_errors": 0,  # needs a script of what the caller said
         "wer_words": 0,
     }
+
+
+def doubled_replies(agent_messages: list[str]) -> int:
+    """Agent messages that say the same sentence twice in a row.
+
+    Seen with preemptive generation on: "May I have your name?May I have your name?".
+    Counted from the agent's own record of what it said.
+    """
+    count = 0
+    for text in agent_messages:
+        sentences = [s.strip().lower() for s in re.findall(r"[^.?!]+[.?!]?", text) if s.strip()]
+        if any(a == b and len(a) > 3 for a, b in pairwise(sentences)):
+            count += 1
+    return count

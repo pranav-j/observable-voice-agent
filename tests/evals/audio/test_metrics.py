@@ -8,6 +8,7 @@ from evals.audio.metrics import (
     Timeline,
     audio_metrics,
     barge_in_stop_times,
+    doubled_replies,
     false_cutoffs,
     normalize_words,
     recording_metrics,
@@ -133,3 +134,17 @@ def test_recording_barge_in_stop() -> None:
 def test_recording_dead_air() -> None:
     m = recording_metrics([Segment(0.0, 1.0)], [Segment(3.5, 4.0)])
     assert (m["response_latencies_ms"], m["dead_air_turns"]) == ([2500], 1)
+
+
+def test_doubled_replies() -> None:
+    assert (
+        doubled_replies(
+            [
+                "May I have your name for the order?May I have your name for the order?",
+                "Thanks. Thanks for calling.",
+                "Got it. Got it.",
+                "One coffee. What name?",
+            ]
+        )
+        == 2
+    )

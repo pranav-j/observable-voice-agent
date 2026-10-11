@@ -20,7 +20,7 @@ from openai import AsyncOpenAI
 from evals.audio.caller import VOICE_POOL, AudioCaller, Hearing
 from evals.audio.detector import DETECTOR_SETTINGS
 from evals.audio.detector import SAMPLE_RATE as LISTEN_RATE
-from evals.audio.metrics import audio_metrics
+from evals.audio.metrics import audio_metrics, doubled_replies
 from evals.caller.text_caller import CALLER_PROMPT_VERSION, Phase, TextCaller
 from evals.scenario import Behavior, Scenario
 from evals.scoring.order import score_order
@@ -212,6 +212,12 @@ async def run_audio_scenario(
     usage = await _read_usage(folder)
     config_file = folder / "config.json"  # written by the worker just before usage.json
     agent_config = json.loads(config_file.read_text()) if config_file.exists() else None
+    said_file = folder / "transcript.json"
+    agent_said = (
+        [r["text"] for r in json.loads(said_file.read_text()) if r["role"] == "assistant"]
+        if said_file.exists()
+        else []
+    )
     final = await store.get(session_id)
     timeline = caller.timeline()
     if raw_dir is not None:
@@ -249,6 +255,7 @@ async def run_audio_scenario(
             ),
             "call_seconds": usage.get("duration_seconds") if usage else round(duration, 1),
             "agent_config": agent_config,
+            "doubled_replies": doubled_replies(agent_said),
             "detector": DETECTOR_SETTINGS,
         },
     )

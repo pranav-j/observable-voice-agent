@@ -81,6 +81,7 @@ def _audio_summary(results: list[RunResult]) -> dict[str, Any] | None:
         "cost_per_minute_usd": cost / minutes if minutes else None,
         "cost_includes_estimates": any(a.get("agent_cost_is_estimate") for a in priced),
         "hearing": sorted({str(a.get("hearing")) for a in audio}),
+        "doubled_replies": sum(a.get("doubled_replies", 0) for a in audio),
         # Timing depends on these; runs scored with different settings can't be compared.
         "detector": [json.loads(d) for d in sorted(detectors)],
         # What the worker reported for each call. More than one means mixed settings.
@@ -390,6 +391,7 @@ def _audio_markdown(a: dict[str, Any] | None, mode: str) -> list[str]:
             for level, w in a["wer_by_noise"].items()
         ),
         f"| Agent cost per minute | {cost} |",
+        f"| Replies with a sentence said twice | {a.get('doubled_replies', 0)} |",
         f"| Caller hearing | {', '.join(a['hearing'])} |",
         "",
         "Detector: " + "; ".join(_settings_text(d) for d in a["detector"]) + ".",
