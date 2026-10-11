@@ -59,7 +59,7 @@
       "modifiers": [
         {"id": "oat_milk", "name": "Oat milk", "price_paise": 4000},
         {"id": "extra_shot", "name": "Extra shot", "price_paise": 5000},
-        {"id": "ice_cream_scoop", "name": "Scoop of ice cream", "price_paise": 6000}
+        {"id": "ice_cream_scoop", "name": "Ice cream", "price_paise": 6000}
       ]
     },
     {
@@ -178,7 +178,7 @@
       "category": "Starters",
       "base_price_paise": 28000,
       "modifiers": [
-        {"id": "less_spicy", "name": "Less spicy", "price_paise": 0}
+        {"id": "less_spicy", "name": "Less spice", "price_paise": 0}
       ]
     },
     {
@@ -187,7 +187,7 @@
       "category": "Rolls & Sandwiches",
       "base_price_paise": 22000,
       "modifiers": [
-        {"id": "less_spicy", "name": "Less spicy", "price_paise": 0},
+        {"id": "less_spicy", "name": "Less spice", "price_paise": 0},
         {"id": "extra_cheese", "name": "Extra cheese", "price_paise": 3000}
       ]
     },
@@ -197,8 +197,8 @@
       "category": "Rolls & Sandwiches",
       "base_price_paise": 24000,
       "modifiers": [
-        {"id": "less_spicy", "name": "Less spicy", "price_paise": 0},
-        {"id": "add_egg", "name": "Add egg", "price_paise": 2000}
+        {"id": "less_spicy", "name": "Less spice", "price_paise": 0},
+        {"id": "add_egg", "name": "Egg", "price_paise": 2000}
       ]
     },
     {
@@ -219,7 +219,7 @@
       "category": "Mains",
       "base_price_paise": 34000,
       "modifiers": [
-        {"id": "less_spicy", "name": "Less spicy", "price_paise": 0}
+        {"id": "less_spicy", "name": "Less spice", "price_paise": 0}
       ]
     },
     {
@@ -246,7 +246,7 @@
       ],
       "modifiers": [
         {"id": "extra_raita", "name": "Extra raita", "price_paise": 3000},
-        {"id": "less_spicy", "name": "Less spicy", "price_paise": 0}
+        {"id": "less_spicy", "name": "Less spice", "price_paise": 0}
       ]
     },
     {
@@ -261,7 +261,7 @@
       ],
       "modifiers": [
         {"id": "extra_raita", "name": "Extra raita", "price_paise": 3000},
-        {"id": "less_spicy", "name": "Less spicy", "price_paise": 0}
+        {"id": "less_spicy", "name": "Less spice", "price_paise": 0}
       ]
     },
     {
@@ -288,7 +288,7 @@
       "category": "Desserts",
       "base_price_paise": 15000,
       "modifiers": [
-        {"id": "ice_cream_scoop", "name": "Scoop of ice cream", "price_paise": 6000}
+        {"id": "ice_cream_scoop", "name": "Ice cream", "price_paise": 6000}
       ]
     },
     {

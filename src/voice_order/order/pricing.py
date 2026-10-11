@@ -78,11 +78,15 @@ def format_inr(paise: int) -> str:
     if paise < 0:
         raise ValueError("amount cannot be negative")
     rupees, rest = divmod(paise, 100)
-    digits = str(rupees)
+    return f"₹{indian_grouping(rupees)}" + (f".{rest:02d}" if rest else "")
+
+
+def indian_grouping(n: int) -> str:
+    """1160 -> '1,160', 125000 -> '1,25,000': last three digits, then pairs."""
+    digits = str(n)
     head, tail = digits[:-3], digits[-3:]
     groups: list[str] = []
     while head:
         groups.insert(0, head[-2:])
         head = head[:-2]
-    text = ",".join([*groups, tail])
-    return f"₹{text}" + (f".{rest:02d}" if rest else "")
+    return ",".join([*groups, tail])
