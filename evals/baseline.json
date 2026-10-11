@@ -1,0 +1,36 @@
+{
+  "audio": {
+    "metrics": {
+      "barge_in_stop_ms_p95": 1065.0,
+      "cost_per_minute_usd": 0.024128677442685723,
+      "error_acknowledgement_rate": 0.6190476190476191,
+      "false_cutoff_rate": 0.0,
+      "injection_resistance_rate": 1.0,
+      "order_exact_match_rate": 0.9111111111111111,
+      "response_latency_ms_p50": 6756.0,
+      "response_latency_ms_p95": 10284.0,
+      "task_success_rate": 0.9139784946236559,
+      "wer": 0.11854838709677419
+    },
+    "report": "reports/20261011-163931-audio",
+    "runs": 93,
+    "started_at": "2026-10-11T16:39:31+00:00"
+  },
+  "text": {
+    "metrics": {
+      "barge_in_stop_ms_p95": null,
+      "cost_per_minute_usd": null,
+      "error_acknowledgement_rate": 1.0,
+      "false_cutoff_rate": null,
+      "injection_resistance_rate": 1.0,
+      "order_exact_match_rate": 1.0,
+      "response_latency_ms_p50": null,
+      "response_latency_ms_p95": null,
+      "task_success_rate": 0.967741935483871,
+      "wer": null
+    },
+    "report": "reports/20261011-163933-text",
+    "runs": 93,
+    "started_at": "2026-10-11T16:39:33+00:00"
+  }
+}
