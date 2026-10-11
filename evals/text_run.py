@@ -1,0 +1,150 @@
+"""Play one scenario in text mode: the agent against the simulated caller, then score it."""
+
+import json
+import secrets
+import time
+from typing import Any, Literal
+
+from pydantic import BaseModel
+
+from evals.caller.text_caller import CALLER_PROMPT_VERSION, Phase, TextCaller
+from evals.scenario import Scenario
+from evals.scoring.order import OrderScore, score_order
+from voice_order.menu.models import Menu
+from voice_order.prompts.loader import AGENT_SYSTEM_VERSION, agent_system_prompt, greeting_prompt
+from voice_order.store.base import OrderStore
+from voice_order.textmode.agent import TextAgent, ToolEvent
+from voice_order.textmode.llm import LLMClient, Usage
+from voice_order.tools.base import Session
+
+EndReason = Literal[
+    "caller_ended", "agent_ended", "transferred", "caller_gave_up", "max_turns", "error"
+]
+
+
+class TranscriptEntry(BaseModel):
+    speaker: Literal["agent", "caller"]
+    text: str
+    tool_calls: list[dict[str, Any]] = []
+    scripted: bool = False
+
+
+class RunResult(BaseModel):
+    scenario_id: str
+    run: int
+    session_id: str
+    mode: Literal["text"] = "text"
+    end_reason: EndReason
+    error: str | None = None
+    turns: int
+    duration_s: float
+    score: OrderScore
+    agent_usage: Usage
+    caller_usage: Usage  # tracked separately: not part of the agent's cost
+    tool_limit_hits: int
+    skipped_behaviors: list[str]
+    agent_model: str
+    caller_model: str
+    agent_prompt_version: str
+    caller_prompt_version: str
+    transcript: list[TranscriptEntry]
+
+
+def _tool_record(event: ToolEvent) -> dict[str, Any]:
+    try:
+        arguments: Any = json.loads(event.arguments or "{}")
+    except json.JSONDecodeError:
+        arguments = event.arguments
+    record = {"name": event.name, "arguments": arguments, "ok": bool(event.result.get("ok"))}
+    if not record["ok"]:
+        record["error"] = event.result.get("error")
+    return record
+
+
+def _readback_given(events: tuple[ToolEvent, ...]) -> bool:
+    return any(e.name == "get_readback" and e.result.get("ok") for e in events)
+
+
+async def run_text_scenario(
+    scenario: Scenario,
+    run: int,
+    *,
+    menu: Menu,
+    store: OrderStore,
+    agent_llm: LLMClient,
+    caller_llm: LLMClient,
+) -> RunResult:
+    session_id = f"eval-{scenario.id}-r{run}-{secrets.token_hex(3)}"
+    agent = TextAgent(
+        llm=agent_llm,
+        session=Session.start(menu, session_id),
+        store=store,
+        instructions=agent_system_prompt(menu.restaurant).text,
+    )
+    caller = TextCaller(caller_llm, scenario, menu.restaurant)
+    transcript: list[TranscriptEntry] = []
+    turns = 0
+    tool_limit_hits = 0
+    end_reason: EndReason = "max_turns"
+    error: str | None = None
+    started = time.perf_counter()
+
+    try:
+        agent_text = await agent.start(greeting_prompt(menu.restaurant).text)
+        transcript.append(TranscriptEntry(speaker="agent", text=agent_text))
+        phase: Phase = None
+        while turns < scenario.max_turns:
+            said = await caller.respond(agent_text, phase)
+            if said.text:
+                transcript.append(
+                    TranscriptEntry(speaker="caller", text=said.text, scripted=said.scripted)
+                )
+            if said.gave_up:
+                end_reason = "caller_gave_up"
+                break
+            if said.ended or not said.text:
+                end_reason = "caller_ended"
+                break
+
+            turn = await agent.respond(said.text)
+            turns += 1
+            tool_limit_hits += turn.hit_tool_limit
+            transcript.append(
+                TranscriptEntry(
+                    speaker="agent",
+                    text=turn.text,
+                    tool_calls=[_tool_record(e) for e in turn.tool_events],
+                )
+            )
+            agent_text = turn.text
+            phase = "readback" if _readback_given(turn.tool_events) else None
+            if turn.ending is not None:
+                end_reason = "transferred" if turn.ending.kind == "transfer" else "agent_ended"
+                break
+    except Exception as exc:  # one failed run (e.g. an API error) must not stop the suite
+        end_reason = "error"
+        error = f"{type(exc).__name__}: {exc}"
+    finally:
+        # Every run ends with a final, saved status, even after an error.
+        await agent.hang_up(f"eval ended: {end_reason}")
+
+    final = await store.get(session_id)  # scored from the store, like the real harness
+    return RunResult(
+        scenario_id=scenario.id,
+        run=run,
+        session_id=session_id,
+        end_reason=end_reason,
+        error=error,
+        turns=turns,
+        duration_s=round(time.perf_counter() - started, 3),
+        score=score_order(final, scenario.expect),
+        agent_usage=agent.usage,
+        caller_usage=caller.usage,
+        tool_limit_hits=tool_limit_hits,
+        skipped_behaviors=[b.action for b in caller.skipped_behaviors],
+        agent_model=agent_llm.model,
+        caller_model=caller_llm.model,
+        agent_prompt_version=AGENT_SYSTEM_VERSION,
+        caller_prompt_version=CALLER_PROMPT_VERSION,
+        transcript=transcript,
+    )
