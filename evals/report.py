@@ -31,6 +31,60 @@ def _mean(values: list[float]) -> float | None:
     return fmean(values) if values else None
 
 
+def _noise_level(audio: dict[str, Any]) -> str:
+    noise = audio.get("noise")
+    return "clean" if not noise else f"SNR {noise['snr_db']:g} dB"
+
+
+def _audio_summary(results: list[RunResult]) -> dict[str, Any] | None:
+    """Caller-side timing, recognition and cost over the runs that went through audio."""
+    audio = [r.audio for r in results if r.audio is not None]
+    if not audio:
+        return None
+    latencies = [float(x) for a in audio for x in a.get("response_latencies_ms", [])]
+    stops = [float(x) for a in audio for x in a.get("barge_in_stop_ms", [])]
+    dead_air = sum(a.get("dead_air_turns", 0) for a in audio)
+    cutoffs = sum(a.get("false_cutoffs", 0) for a in audio)
+    pauses = sum(a.get("scripted_pauses", 0) for a in audio)
+    wer: dict[str, list[int]] = defaultdict(lambda: [0, 0])
+    for a in audio:
+        for key in ("all", _noise_level(a)):
+            wer[key][0] += a.get("wer_errors", 0)
+            wer[key][1] += a.get("wer_words", 0)
+    priced = [a for a in audio if a.get("agent_cost_usd") is not None and a.get("call_seconds")]
+    cost = sum(float(a["agent_cost_usd"]) for a in priced)
+    minutes = sum(float(a["call_seconds"]) for a in priced) / 60
+    detectors = {json.dumps(a.get("detector"), sort_keys=True) for a in audio}
+    errors, words = wer.pop("all")
+    return {
+        "runs": len(audio),
+        "measured_turns": len(latencies),
+        "response_latency_ms_p50": percentile(latencies, 50),
+        "response_latency_ms_p95": percentile(latencies, 95),
+        "dead_air_turns": dead_air,
+        "dead_air_rate": _rate(dead_air, len(latencies)),
+        "barge_ins": len(stops),
+        "barge_in_stop_ms_p50": percentile(stops, 50),
+        "barge_in_stop_ms_p95": percentile(stops, 95),
+        "scripted_pauses": pauses,
+        "false_cutoffs": cutoffs,
+        "false_cutoff_rate": _rate(cutoffs, pauses),
+        "wer": _rate(errors, words),
+        "wer_words": words,
+        "wer_by_noise": {
+            level: {"wer": _rate(e, n), "words": n} for level, (e, n) in sorted(wer.items())
+        },
+        "priced_runs": len(priced),
+        "agent_cost_usd": round(cost, 4),
+        "priced_minutes": round(minutes, 2),
+        "cost_per_minute_usd": cost / minutes if minutes else None,
+        "cost_includes_estimates": any(a.get("agent_cost_is_estimate") for a in priced),
+        "hearing": sorted({str(a.get("hearing")) for a in audio}),
+        # Timing depends on these; runs scored with different settings can't be compared.
+        "detector": [json.loads(d) for d in sorted(detectors)],
+    }
+
+
 def summarize(results: list[RunResult], *, mode: str, started_at: datetime) -> dict[str, Any]:
     by_scenario: dict[str, list[RunResult]] = defaultdict(list)
     by_tag: dict[str, list[RunResult]] = defaultdict(list)
@@ -139,6 +193,7 @@ def summarize(results: list[RunResult], *, mode: str, started_at: datetime) -> d
         "scenarios": scenarios,
         "failures": failures,
         "rule_violations": violations,
+        "audio": _audio_summary(results),
     }
 
 
@@ -209,6 +264,7 @@ def render_markdown(summary: dict[str, Any]) -> str:
             f"| {sid} | {', '.join(s['tags'])} | {s['successes']}/{s['runs']} | "
             f"{_num(s['mean_field_accuracy'])} | {reasons} |"
         )
+    lines += _audio_markdown(summary.get("audio"))
     lines += ["", "## Failures", ""]
     if not summary["failures"]:
         lines.append("None.")
@@ -226,19 +282,75 @@ def render_markdown(summary: dict[str, Any]) -> str:
     return "\n".join(lines) + "\n"
 
 
+def _audio_markdown(a: dict[str, Any] | None) -> list[str]:
+    if a is None:
+        return []
+    cost = "n/a"
+    if a["cost_per_minute_usd"] is not None:
+        cost = (
+            f"${a['cost_per_minute_usd']:.3f} (${a['agent_cost_usd']:.3f} over "
+            f"{a['priced_minutes']:.1f} min, {a['priced_runs']} runs"
+            f"{'; includes estimates' if a['cost_includes_estimates'] else ''})"
+        )
+    lines = [
+        "",
+        "## Audio",
+        "",
+        "Measured from the caller's side, from the audio it received.",
+        "",
+        "| Metric | Value |",
+        "|---|---|",
+        f"| Response latency p50 / p95 (ms) | {_num(a['response_latency_ms_p50'], 0)} / "
+        f"{_num(a['response_latency_ms_p95'], 0)} ({a['measured_turns']} turns) |",
+        f"| Dead air (over 2 s) | {a['dead_air_turns']} turns ({_pct(a['dead_air_rate'])}) |",
+        f"| Barge-in stop p50 / p95 (ms) | {_num(a['barge_in_stop_ms_p50'], 0)} / "
+        f"{_num(a['barge_in_stop_ms_p95'], 0)} ({a['barge_ins']} barge-ins) |",
+        f"| False cut-offs | {a['false_cutoffs']}/{a['scripted_pauses']} scripted pauses "
+        f"({_pct(a['false_cutoff_rate'])}) |",
+        f"| WER | {_pct(a['wer'])} ({a['wer_words']} words) |",
+        *(
+            f"| WER, {level} | {_pct(w['wer'])} ({w['words']} words) |"
+            for level, w in a["wer_by_noise"].items()
+        ),
+        f"| Agent cost per minute | {cost} |",
+        f"| Caller hearing | {', '.join(a['hearing'])} |",
+        "",
+        "Detector: "
+        + "; ".join(
+            ", ".join(f"{k} {v}" for k, v in sorted(d.items())) if d else "unknown"
+            for d in a["detector"]
+        )
+        + ".",
+    ]
+    return lines
+
+
 # --- files -------------------------------------------------------------------------------
 
 
+def report_dir(reports_dir: Path, *, mode: str, started_at: datetime) -> Path:
+    """Create a new report directory, never reusing one."""
+    out = reports_dir / f"{started_at:%Y%m%d-%H%M%S}-{mode}"
+    (out / "raw").mkdir(parents=True, exist_ok=False)
+    return out
+
+
 def write_report(
-    results: list[RunResult], *, mode: str, started_at: datetime, reports_dir: Path
+    results: list[RunResult],
+    *,
+    mode: str,
+    started_at: datetime,
+    reports_dir: Path,
+    out: Path | None = None,
 ) -> Path:
     """Write the report directory and return its path.
 
     results.jsonl and the summaries are small and meant to be committed. Full transcripts
-    go under raw/, which is gitignored.
+    go under raw/, which is gitignored. Pass `out` when the directory was created up
+    front, as audio runs do so they can save audio into raw/ as they go.
     """
-    out = reports_dir / f"{started_at:%Y%m%d-%H%M%S}-{mode}"
-    (out / "raw").mkdir(parents=True, exist_ok=False)
+    if out is None:
+        out = report_dir(reports_dir, mode=mode, started_at=started_at)
     ordered = sorted(results, key=lambda r: (r.scenario_id, r.run))
     with (out / "results.jsonl").open("w", encoding="utf-8") as f:
         for r in ordered:

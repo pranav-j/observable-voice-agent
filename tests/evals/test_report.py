@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from evals.report import percentile, render_markdown, summarize, write_report
+from evals.report import percentile, render_markdown, report_dir, summarize, write_report
 from evals.scoring.order import OrderScore
 from evals.text_run import RunResult, TranscriptEntry
 
@@ -226,3 +226,96 @@ def test_early_hang_ups_are_counted() -> None:
     summary = summarize(results, mode="text", started_at=STARTED)
     assert summary["overall"]["caller_hung_up_early"] == 1
     assert "| Caller hung up mid-order | 1 runs |" in render_markdown(summary)
+
+
+DETECTOR = {"threshold_dbfs": -45, "frame_ms": 10}
+
+
+def audio_result(run: int, *, noise: dict[str, Any] | None, **audio: Any) -> RunResult:
+    r = result("happy_path_single_coffee", run)
+    metrics = {
+        "response_latencies_ms": [],
+        "dead_air_turns": 0,
+        "barge_in_stop_ms": [],
+        "false_cutoffs": 0,
+        "scripted_pauses": 0,
+        "wer_errors": 0,
+        "wer_words": 0,
+        "hearing": "transcript",
+        "noise": noise,
+        "agent_cost_usd": None,
+        "agent_cost_is_estimate": False,
+        "call_seconds": 60.0,
+        "detector": DETECTOR,
+    }
+    return r.model_copy(update={"mode": "audio", "audio": metrics | audio})
+
+
+def test_text_reports_have_no_audio_section(results: list[RunResult]) -> None:
+    summary = summarize(results, mode="text", started_at=STARTED)
+    assert summary["audio"] is None
+    assert "## Audio" not in render_markdown(summary)
+
+
+def test_audio_aggregates() -> None:
+    cafe = {"clip": "cafe", "snr_db": 10}
+    runs = [
+        audio_result(
+            1,
+            noise=None,
+            response_latencies_ms=[800, 1200, 2500],
+            dead_air_turns=1,
+            wer_errors=1,
+            wer_words=20,
+            agent_cost_usd=0.06,
+            call_seconds=90.0,
+        ),
+        audio_result(
+            2,
+            noise=cafe,
+            response_latencies_ms=[900],
+            barge_in_stop_ms=[300, 500],
+            false_cutoffs=1,
+            scripted_pauses=2,
+            wer_errors=3,
+            wer_words=10,
+            agent_cost_usd=0.04,
+            agent_cost_is_estimate=True,
+            call_seconds=30.0,
+        ),
+        audio_result(3, noise=cafe),  # no usage file: left out of cost
+    ]
+    a = summarize(runs, mode="audio", started_at=STARTED)["audio"]
+    assert a["runs"] == 3
+    assert (a["response_latency_ms_p50"], a["response_latency_ms_p95"]) == (900, 2500)
+    assert (a["dead_air_turns"], a["dead_air_rate"]) == (1, 0.25)
+    assert (a["barge_in_stop_ms_p50"], a["barge_in_stop_ms_p95"]) == (300, 500)
+    assert a["false_cutoff_rate"] == 0.5
+    assert a["wer"] == 4 / 30
+    assert a["wer_by_noise"] == {
+        "SNR 10 dB": {"wer": 0.3, "words": 10},
+        "clean": {"wer": 0.05, "words": 20},
+    }
+    assert a["priced_runs"] == 2
+    assert a["cost_per_minute_usd"] == pytest.approx(0.05)
+    assert a["cost_includes_estimates"] is True
+    assert a["detector"] == [DETECTOR]
+
+
+def test_audio_markdown_shows_metrics_and_detector() -> None:
+    runs = [audio_result(1, noise=None, response_latencies_ms=[1000], wer_words=5)]
+    md = render_markdown(summarize(runs, mode="audio", started_at=STARTED))
+    assert "## Audio" in md
+    assert "| Response latency p50 / p95 (ms) | 1000 / 1000 (1 turns) |" in md
+    assert "| Agent cost per minute | n/a |" in md
+    assert "Detector: frame_ms 10, threshold_dbfs -45." in md
+
+
+def test_audio_report_dir_can_be_created_first(tmp_path: Path) -> None:
+    out = report_dir(tmp_path, mode="audio", started_at=STARTED)
+    (out / "raw" / "audio").mkdir()
+    runs = [audio_result(1, noise=None)]
+    written = write_report(runs, mode="audio", started_at=STARTED, reports_dir=tmp_path, out=out)
+    assert written == out
+    assert (out / "summary.md").exists()
+    assert (out / "raw" / "audio").is_dir()
