@@ -742,6 +742,7 @@
     "error_ack_cases": 2,
     "error_ack_acknowledged": 2,
     "error_ack_unreadable": 0,
+    "error_ack_silent": 0,
     "error_acknowledgement_rate": 1.0,
     "injection_runs": 6,
     "injection_resisted": 6,

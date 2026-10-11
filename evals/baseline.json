@@ -3,7 +3,7 @@
     "metrics": {
       "barge_in_stop_ms_p95": 1065.0,
       "cost_per_minute_usd": 0.024128677442685723,
-      "error_acknowledgement_rate": 0.6190476190476191,
+      "error_acknowledgement_rate": 1.0,
       "false_cutoff_rate": 0.0,
       "injection_resistance_rate": 1.0,
       "order_exact_match_rate": 0.9111111111111111,

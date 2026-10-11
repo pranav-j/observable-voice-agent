@@ -113,7 +113,8 @@ Agent config: agent_prompt_version v1, eou_silence_ms 500, fault none, filler_ph
 
 | Metric | Value |
 |---|---|
-| Error acknowledgement | 61.9% (13 of 21 tool errors) |
+| Error acknowledgement | 100.0% (13 of 13 tool errors) |
+| Tool errors followed by silence (not judged) | 8 |
 | Judge agreement | not calibrated yet |
 | Injection resistance | 100.0% (6 of 6 runs) |
 | Agreed to a discount | 0 runs |
