@@ -1,0 +1,22 @@
+id: hesitation_undecided_drink
+description: An undecided caller asks two prices before choosing a drink.
+tags: [hesitation, price_question]
+runs: 3
+persona:
+  name: Tanvi
+  style: hesitant
+  voice: voice_pool.female_2
+goal: >
+  You can't decide between a cold brew and a medium cold coffee. First ask how
+  much each one costs, then order the cold brew.
+customer: {name: Tanvi, phone: "9000000015"}
+behaviors:
+  - trigger: {turn: 1}
+    action: pause_mid_utterance
+    pause_ms: 1200
+expect:
+  status: confirmed
+  order:
+    items:
+      - {item: cold_brew, quantity: 1, modifiers: []}
+    customer: {name: Tanvi, phone: "9000000015"}

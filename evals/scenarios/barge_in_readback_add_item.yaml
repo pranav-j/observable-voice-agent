@@ -1,0 +1,24 @@
+id: barge_in_readback_add_item
+description: Caller interrupts the read-back to add one more item.
+tags: [barge_in, readback]
+runs: 3
+persona:
+  name: Neha
+  style: brisk
+  voice: voice_pool.female_2
+goal: >
+  Order one masala dosa and one regular sweet lassi for pickup.
+customer: {name: Neha, phone: "9000000010"}
+behaviors:
+  - trigger: {phase: readback}
+    action: interrupt
+    after_ms: 1500
+    say: "Oh wait, add a gulab jamun too."
+expect:
+  status: confirmed
+  order:
+    items:
+      - {item: masala_dosa, quantity: 1, modifiers: []}
+      - {item: sweet_lassi, size: regular, quantity: 1, modifiers: []}
+      - {item: gulab_jamun, quantity: 1, modifiers: []}
+    customer: {name: Neha, phone: "9000000010"}

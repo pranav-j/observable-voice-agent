@@ -1,0 +1,23 @@
+id: hesitation_pause_mid_order
+description: A hesitant caller pauses in the middle of saying the order.
+tags: [hesitation]
+runs: 3
+persona:
+  name: Deepak
+  style: hesitant
+  voice: voice_pool.male_1
+goal: >
+  Order one mysore masala dosa with extra butter and one regular masala chai
+  with less sugar for pickup.
+customer: {name: Deepak, phone: "9000000013"}
+behaviors:
+  - trigger: {turn: 1}
+    action: pause_mid_utterance
+    pause_ms: 1500
+expect:
+  status: confirmed
+  order:
+    items:
+      - {item: mysore_masala_dosa, quantity: 1, modifiers: [extra_butter]}
+      - {item: masala_chai, size: regular, quantity: 1, modifiers: [less_sugar]}
+    customer: {name: Deepak, phone: "9000000013"}

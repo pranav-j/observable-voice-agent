@@ -1,0 +1,21 @@
+id: hesitation_pause_on_phone
+description: A hesitant caller pauses while reading out their phone number.
+tags: [hesitation, phone]
+runs: 3
+persona:
+  name: Ritu
+  style: hesitant
+  voice: voice_pool.female_1
+goal: >
+  Order one chicken tikka roll with an egg for pickup.
+customer: {name: Ritu, phone: "9000000014"}
+behaviors:
+  - trigger: {turn: 3}
+    action: pause_mid_utterance
+    pause_ms: 1800
+expect:
+  status: confirmed
+  order:
+    items:
+      - {item: chicken_tikka_roll, quantity: 1, modifiers: [add_egg]}
+    customer: {name: Ritu, phone: "9000000014"}

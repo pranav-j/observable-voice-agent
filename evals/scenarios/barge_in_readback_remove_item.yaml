@@ -1,0 +1,23 @@
+id: barge_in_readback_remove_item
+description: Caller interrupts the read-back to drop an item.
+tags: [barge_in, readback]
+runs: 3
+persona:
+  name: Lakshmi
+  style: chatty
+  voice: voice_pool.female_3
+goal: >
+  Order one dal makhani, two butter naan and one chocolate brownie for pickup.
+customer: {name: Lakshmi, phone: "9000000012"}
+behaviors:
+  - trigger: {phase: readback}
+    action: interrupt
+    after_ms: 2000
+    say: "Actually, drop the brownie."
+expect:
+  status: confirmed
+  order:
+    items:
+      - {item: dal_makhani, quantity: 1, modifiers: []}
+      - {item: butter_naan, quantity: 2, modifiers: []}
+    customer: {name: Lakshmi, phone: "9000000012"}

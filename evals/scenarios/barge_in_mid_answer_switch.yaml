@@ -1,0 +1,22 @@
+id: barge_in_mid_answer_switch
+description: Caller cuts in while the agent is answering to swap one drink for another.
+tags: [barge_in, mid_answer]
+runs: 3
+persona:
+  name: Farhan
+  style: brisk
+  voice: voice_pool.male_3
+goal: >
+  Order one small cafe latte for pickup.
+customer: {name: Farhan, phone: "9000000011"}
+behaviors:
+  - trigger: {turn: 2}
+    action: interrupt
+    after_ms: 800
+    say: "Actually, make that a cappuccino instead of the latte. Same size."
+expect:
+  status: confirmed
+  order:
+    items:
+      - {item: cappuccino, size: small, quantity: 1, modifiers: []}
+    customer: {name: Farhan, phone: "9000000011"}

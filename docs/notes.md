@@ -51,6 +51,12 @@ To score how close a wrong order was, expected lines have to be paired with actu
 
 Before committing new scenarios, I run each one once on the real model. The point is to catch mistakes in the scenario itself, like an ambiguous goal or a wrong expected order. I only change a scenario if the scenario is wrong. Rewording it until the agent passes would quietly bias the baseline toward success.
 
+## A scenario passed without testing anything
+
+One barge-in scenario had the caller interrupt the read-back with "drop the samosa", and expected an order without it. It passed. When I read the transcript, the samosa had never been added in the first place. That was the plural bug below. So there was nothing to remove, and the final order matched anyway. The scenario couldn't tell "removed" from "never added".
+
+I changed the item being dropped to a brownie, which doesn't hit the search problem, and checked that the agent now calls `remove_item` and gives a fresh read-back. The plural bug gets its own scenario instead of being caught by accident. Since then I check each new scenario's transcript to confirm the behavior it's named after actually happened, not just that it passed.
+
 ## The agent confirmed before the caller answered
 
 While checking new scenarios, I read the transcripts even for runs that passed. In one, the agent read the order back, asked "Is that correct?", and called `confirm_order` in the same turn, before the caller could say anything. The order happened to be right, so the run scored as a success.
@@ -63,7 +69,9 @@ Next I'll record the baseline, then add a code guard and re-run. The guard: `con
 
 ## Plurals and filler words weaken search
 
-"one plate of veg samosas" didn't find Veg Samosa on the first search. The agent needed a second one. Plurals and extra words pull the score down. The fix I have in mind is to singularize query words before scoring. Same plan as above: baseline first, then fix and compare.
+"one plate of veg samosas" didn't find Veg Samosa on the first search. The agent needed a second one. Plurals and extra words pull the score down.
+
+A later run was worse. The agent searched for "one plate of veg samosas", got only weak matches, and told the caller that veg samosas "aren't available on the menu". They are on the menu, and in stock. So this bug can lose a sale, not just cost an extra search. The fix I have in mind is to singularize query words before scoring. Same plan as above: baseline first, then fix and compare. A dedicated scenario will catch it on purpose.
 
 ## The agent sometimes skips end_call
 
