@@ -195,9 +195,18 @@ def test_a_readback_that_was_never_said_does_not_count(ready: Session) -> None:
 
 def test_an_interrupted_readback_does_not_count(ready: Session) -> None:
     text = call(ready, "get_readback")["readback"]
-    ready.agent_said(text[: len(text) // 3], complete=False)
+    ready.agent_said(text[: len(text) * 9 // 10], interrupted=True)  # cut off near the end
     ready.caller_spoke()
     assert call(ready, "confirm_order")["error"] == "READBACK_NOT_ANSWERED"
+
+
+def test_a_late_interrupted_flag_on_a_finished_readback_still_counts(ready: Session) -> None:
+    # LiveKit can flag the speech as interrupted after it finished playing, when the
+    # caller speaks while a held-back tool call kept it open. The text shows it all played.
+    text = call(ready, "get_readback")["readback"]
+    ready.agent_said(text, interrupted=True)
+    ready.caller_spoke()
+    assert call(ready, "confirm_order")["order"]["status"] == "confirmed"
 
 
 def test_other_words_before_the_readback_do_not_count(ready: Session) -> None:

@@ -199,8 +199,9 @@ async def entrypoint(ctx: JobContext) -> None:
                 call.caller_spoke()  # lets confirm_order check the caller replied to the read-back
             elif ev.item.role == "assistant":
                 # An interrupted message holds only what was played, so a read-back the
-                # caller cut off doesn't count as heard.
-                call.agent_said(ev.item.text_content or "", complete=not ev.item.interrupted)
+                # caller cut off doesn't count as heard. The flag alone isn't enough: it can
+                # be set after playout ended, when a held-back tool call kept the speech open.
+                call.agent_said(ev.item.text_content or "", interrupted=ev.item.interrupted)
 
     @session.on("agent_state_changed")
     def _on_agent_state(ev: AgentStateChangedEvent) -> None:

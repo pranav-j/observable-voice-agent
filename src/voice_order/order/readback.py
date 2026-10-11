@@ -117,13 +117,23 @@ def spoken_inr(paise: int) -> str:
 
 # Most of the read-back's words, in order. Leaves room for a small slip, not for a summary.
 SAID_IN_FULL = 0.8
+READBACK_ENDING = 3  # an interrupted read-back counts only if its last words were played
 
 
-def said_in_full(spoken: str, readback: str) -> bool:
-    """Did the agent say (nearly) the whole read-back? Compares words, ignoring case."""
-    want = re.findall(r"[a-z0-9]+", readback.lower())
-    got = re.findall(r"[a-z0-9]+", spoken.lower())
+def _words(text: str) -> list[str]:
+    return re.findall(r"[a-z0-9]+", text.lower())
+
+
+def said_in_full(spoken: str, readback: str, *, cut_off: bool = False) -> bool:
+    """Did the agent say (nearly) the whole read-back? Compares words, ignoring case.
+
+    With cut_off, the speech was flagged as interrupted. That flag can come late, after
+    playout already finished, so the read-back still counts if what was played reached
+    its last words.
+    """
+    want, got = _words(readback), _words(spoken)
     if not want:
         return True
     blocks = SequenceMatcher(a=want, b=got, autojunk=False).get_matching_blocks()
-    return sum(b.size for b in blocks) / len(want) >= SAID_IN_FULL
+    enough = sum(b.size for b in blocks) / len(want) >= SAID_IN_FULL
+    return enough and (not cut_off or got[-READBACK_ENDING:] == want[-READBACK_ENDING:])

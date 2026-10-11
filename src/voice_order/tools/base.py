@@ -54,13 +54,14 @@ class Session:
     def caller_spoke(self) -> None:
         self.caller_turns += 1
 
-    def agent_said(self, text: str, *, complete: bool = True) -> None:
-        """The agent finished saying `text`; complete=False if the caller cut it off.
+    def agent_said(self, text: str, *, interrupted: bool = False) -> None:
+        """The agent finished saying `text`: what was actually played, if interrupted.
 
         Fetching the read-back isn't the same as saying it. In a voice call the caller can
         cut in before a word of it is spoken, so it only counts once it was said in full.
         """
-        if self.readback_text is not None and complete and said_in_full(text, self.readback_text):
+        readback = self.readback_text
+        if readback is not None and said_in_full(text, readback, cut_off=interrupted):
             self.readback_caller_turn = self.caller_turns
             self.readback_text = None
 
