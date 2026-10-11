@@ -67,3 +67,29 @@ def speech_segments(samples: np.ndarray[Any, Any], sample_rate: int = SAMPLE_RAT
         segments.append(Segment(start * seconds, (last_speech + 1) * seconds))
         i = last_speech + 1 + min_silence
     return segments
+
+
+class LiveSpeech:
+    """The onset rule above, applied to audio as it streams in, for turn-taking.
+
+    Only a run of at least MIN_SPEECH_MS above threshold counts as speech, so stray loud
+    frames (codec comfort noise, clicks) don't look like the agent still talking. Chunks
+    can be any length; partial frames carry over to the next call.
+    """
+
+    def __init__(self, sample_rate: int = SAMPLE_RATE) -> None:
+        self.frame = sample_rate * FRAME_MS // 1000
+        self.min_run = MIN_SPEECH_MS // FRAME_MS
+        self.run = 0
+        self.carry = np.zeros(0, dtype=np.int16)
+
+    def feed(self, samples: np.ndarray[Any, Any]) -> bool:
+        """True if this chunk contains confirmed speech."""
+        data = np.concatenate([self.carry, samples])
+        usable = len(data) - len(data) % self.frame
+        self.carry = data[usable:]
+        confirmed = False
+        for loud in frame_levels(data[:usable], self.frame * 1000 // FRAME_MS) > THRESHOLD_DBFS:
+            self.run = self.run + 1 if loud else 0
+            confirmed = confirmed or self.run >= self.min_run
+        return confirmed

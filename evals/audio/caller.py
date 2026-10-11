@@ -11,6 +11,7 @@ import asyncio
 import contextlib
 import io
 import json
+import re
 import time
 import wave
 from dataclasses import dataclass, field
@@ -21,7 +22,7 @@ from livekit import rtc
 from openai import AsyncOpenAI
 
 from evals.audio.detector import SAMPLE_RATE as LISTEN_RATE
-from evals.audio.detector import THRESHOLD_DBFS, speech_segments
+from evals.audio.detector import LiveSpeech, speech_segments
 from evals.audio.metrics import CallerUtterance, Timeline
 from evals.audio.noise import SAMPLE_RATE as SPEAK_RATE
 from evals.audio.noise import noise_bed, speech_at_level, to_pcm16
@@ -47,6 +48,22 @@ STYLE_INSTRUCTIONS = {
     "confused": "a little unsure and confused",
     "adversarial": "pushy and impatient",
 }
+
+
+def speakable(text: str) -> str:
+    """Write long digit runs the way people read out a phone number.
+
+    Text-to-speech reads "9000000002" as a number ("nine billion..."), which no caller
+    would say. Runs of 5+ digits become single digits, grouped in fives: "9 0 0 0 0, 0 0 0 0 2".
+    """
+
+    def spell(match: re.Match[str]) -> str:
+        digits = match.group()
+        groups = [" ".join(digits[i : i + 5]) for i in range(0, len(digits), 5)]
+        return ", ".join(groups)
+
+    text = re.sub(r"\+\s?91[\s-]*", "plus nine one, ", text)
+    return re.sub(r"\d{5,}", spell, re.sub(r"(?<=\d)[ -](?=\d)", "", text))
 
 
 def tts_instructions(style: str) -> str:
@@ -132,6 +149,7 @@ class AudioCaller:
 
     async def _listen(self, track: rtc.Track) -> None:
         quiet_since = self.now()
+        speech = LiveSpeech()  # same onset rule as the offline detector
         stream = rtc.AudioStream(track, sample_rate=LISTEN_RATE, num_channels=1)
         async for event in stream:
             t = self.now()
@@ -139,12 +157,7 @@ class AudioCaller:
             if self._agent_audio_start is None:
                 self._agent_audio_start = t - len(samples) / LISTEN_RATE
             self._agent_frames.append(samples.copy())
-            rms = (
-                float(np.sqrt(np.mean((samples.astype(np.float64) / 32768) ** 2)))
-                if samples.size
-                else 0
-            )
-            if 20 * np.log10(max(rms, 1e-10)) > THRESHOLD_DBFS:
+            if speech.feed(samples):
                 if t - self.agent.last_loud > 0.3:
                     self.agent.onset = t
                     self._changed.set()
@@ -232,7 +245,7 @@ class AudioCaller:
         response = await self.client.audio.speech.create(
             model="gpt-4o-mini-tts",
             voice=self.voice,
-            input=text,
+            input=speakable(text),
             instructions=self.instructions,
             response_format="pcm",
         )

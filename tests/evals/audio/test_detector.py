@@ -2,7 +2,7 @@
 
 import numpy as np
 import pytest
-from evals.audio.detector import SAMPLE_RATE, Segment, frame_levels, speech_segments
+from evals.audio.detector import SAMPLE_RATE, LiveSpeech, Segment, frame_levels, speech_segments
 
 
 def silence(seconds: float) -> np.ndarray:
@@ -60,3 +60,20 @@ def test_speech_running_to_the_end_is_closed() -> None:
 
 def test_empty_audio() -> None:
     assert speech_segments(np.zeros(0, dtype=np.int16)) == []
+
+
+def test_live_tracker_ignores_stray_loud_frames() -> None:
+    live = LiveSpeech()
+    chunk = np.concatenate([silence(0.2), tone(0.01), silence(0.2), tone(0.02), silence(0.2)])
+    assert not live.feed(chunk)
+
+
+def test_live_tracker_confirms_a_30ms_run() -> None:
+    assert LiveSpeech().feed(np.concatenate([silence(0.1), tone(0.04), silence(0.1)]))
+
+
+def test_live_tracker_joins_runs_across_chunk_boundaries() -> None:
+    live = LiveSpeech()
+    a, b = tone(0.015), tone(0.025)  # neither chunk alone holds 30 ms of speech
+    assert not live.feed(np.concatenate([silence(0.1), a]))
+    assert live.feed(b)
