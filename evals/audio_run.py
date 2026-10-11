@@ -21,6 +21,7 @@ from evals.audio.caller import VOICE_POOL, AudioCaller, Hearing
 from evals.audio.detector import DETECTOR_SETTINGS
 from evals.audio.detector import SAMPLE_RATE as LISTEN_RATE
 from evals.audio.metrics import audio_metrics, doubled_replies
+from evals.audio.noise import SAMPLE_RATE as SPEAK_RATE
 from evals.caller.text_caller import CALLER_PROMPT_VERSION, Phase, TextCaller
 from evals.scenario import Behavior, Scenario
 from evals.scoring.order import score_order
@@ -81,6 +82,14 @@ def _save_raw(out: Path, caller: AudioCaller, transcript: list[TranscriptEntry])
         w.setsampwidth(2)
         w.setframerate(LISTEN_RATE)
         w.writeframes(audio.tobytes())
+    lines = out / "caller_lines"  # what the caller sent, to check a line the agent missed
+    lines.mkdir(exist_ok=True)
+    for i, pcm in enumerate(caller.sent_lines):
+        with wave.open(str(lines / f"{i:02d}.wav"), "wb") as w:
+            w.setnchannels(1)
+            w.setsampwidth(2)
+            w.setframerate(SPEAK_RATE)
+            w.writeframes(pcm.tobytes())
     timeline = {
         "agent_audio_start": start,
         "detector": DETECTOR_SETTINGS,

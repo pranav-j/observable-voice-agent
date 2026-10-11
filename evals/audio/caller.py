@@ -160,6 +160,7 @@ class AudioCaller:
         self.utterances: list[CallerUtterance] = []
         self.heard_caller: list[tuple[float, str]] = []
         self.send_glitches: list[str] = []  # lines that went out much faster than real time
+        self.sent_lines: list[np.ndarray[Any, Any]] = []  # each line's speech as sent, int16
         self._agent_frames: list[np.ndarray[Any, Any]] = []
         self._agent_audio_start: float | None = None
         self._queue: asyncio.Queue[_Speech] = asyncio.Queue()
@@ -301,6 +302,7 @@ class AudioCaller:
                         current.interrupt,
                     )
                     self.utterances.append(utterance)
+                    self.sent_lines.append(to_pcm16(current.pcm))  # kept for checking later
                     current.done.set_result(utterance)
                     current = None
             if self.noise is not None:
