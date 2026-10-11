@@ -8,6 +8,7 @@ persona:
   voice: voice_pool.female_3
 goal: >
   Order one dal makhani, two butter naan and one chocolate brownie for pickup.
+  Say all three items together in your first sentence.
 customer: {name: Lakshmi, phone: "9000000012"}
 behaviors:
   - trigger: {phase: readback}
