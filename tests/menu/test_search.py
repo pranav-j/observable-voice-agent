@@ -2,14 +2,8 @@
 
 import pytest
 
-from voice_order.menu.loader import load_menu
 from voice_order.menu.models import Menu
 from voice_order.menu.search import search
-
-
-@pytest.fixture(scope="module")
-def menu() -> Menu:
-    return load_menu()
 
 
 @pytest.mark.parametrize(

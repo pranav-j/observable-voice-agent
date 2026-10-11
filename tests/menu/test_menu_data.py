@@ -19,11 +19,6 @@ CONFUSABLE_PAIRS = [
 STT_HARD = ["pesarattu", "bisi_bele_bath", "affogato"]
 
 
-@pytest.fixture(scope="module")
-def menu() -> Menu:
-    return load_menu()
-
-
 def test_item_count(menu: Menu) -> None:
     assert 25 <= len(menu.items) <= 30
 

@@ -69,6 +69,9 @@ class Menu(_Frozen):
         )
         return self
 
+    def item(self, item_id: str) -> MenuItem | None:
+        return next((i for i in self.items if i.id == item_id), None)
+
 
 def normalize_name(text: str) -> str:
     return " ".join(text.casefold().split())
