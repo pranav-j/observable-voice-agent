@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     tts_model: str = "gpt-4o-mini-tts"
     tts_voice: str = "coral"
     eou_silence_ms: int = Field(default=500, ge=0)  # silence before a turn may end
-    enable_preemptive_generation: bool = True
+    enable_preemptive_generation: bool = False  # on, it sometimes said a sentence twice
     enable_filler_phrases: bool = False
     filler_after_ms: int = Field(default=1200, ge=0)  # tool calls slower than this get a filler
     max_call_seconds: int = Field(default=300, gt=0)
