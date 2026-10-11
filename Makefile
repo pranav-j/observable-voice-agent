@@ -21,7 +21,7 @@ NVM_USE := if [ "$$(node --version 2>/dev/null)" != "v$$(cat .nvmrc)" ]; then \
 	if [ -s "$$NVM_DIR/nvm.sh" ]; then . "$$NVM_DIR/nvm.sh" && nvm use >/dev/null || exit 1; fi; \
 	fi;
 
-.PHONY: help setup up down dev worker voice-smoke chat test test-integration lint fmt eval
+.PHONY: help setup up down dev worker voice-smoke chat test test-integration lint fmt eval annotate
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*## "} /^[a-zA-Z_-]+:.*## / {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -89,5 +89,9 @@ fmt: $(VENV)/bin/python ## Auto-format and apply safe lint fixes
 MODE ?= text
 SCENARIOS ?= *
 
-eval: $(VENV)/bin/python ## make eval MODE=text|audio SCENARIOS=<glob> RUNS=<n> (ARGS=--memory, --yes ...)
+eval: $(VENV)/bin/python ## make eval MODE=text|audio|recorded SCENARIOS=<glob> RUNS=<n> (ARGS=--memory, --yes ...)
 	$(UV) run --locked python -m evals.runner --mode $(MODE) --scenarios '$(SCENARIOS)' $(if $(RUNS),--runs $(RUNS)) $(ARGS)
+
+annotate: $(VENV)/bin/python ## make annotate SESSION=<id>: start the expected order for a real call
+	@test -n "$(SESSION)" || { echo "Usage: make annotate SESSION=<session id from recordings/>"; exit 2; }
+	$(UV) run --locked python -m evals.annotate '$(SESSION)' $(ARGS)
