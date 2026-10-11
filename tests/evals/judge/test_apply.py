@@ -143,6 +143,13 @@ def test_sample_is_fixed_and_capped() -> None:
     assert sample_cases(cases[:5], 20) == cases[:5]
 
 
+def test_sample_spreads_across_error_types() -> None:
+    phones = [case(i).model_copy(update={"error": "INVALID_PHONE"}) for i in range(30)]
+    sizes = [case(100 + i).model_copy(update={"error": "INVALID_SIZE"}) for i in range(3)]
+    chosen = sample_cases(phones + sizes, 10)
+    assert sum(c.error == "INVALID_SIZE" for c in chosen) == 3
+
+
 def test_labels_round_trip_and_skip_unlabeled(tmp_path: Path) -> None:
     path = tmp_path / "labels.yaml"
     path.write_text(labels_document([case(0), case(1)]))

@@ -96,9 +96,9 @@ judge: $(VENV)/bin/python ## make judge REPORT=<dir>: run the LLM judges over a 
 	@test -n "$(REPORT)" || { echo "Usage: make judge REPORT=reports/<run>"; exit 2; }
 	$(UV) run --locked python -m evals.judge apply '$(REPORT)'
 
-judge-sample: $(VENV)/bin/python ## make judge-sample REPORT=<dir>: 20 error cases to label by hand
+judge-sample: $(VENV)/bin/python ## make judge-sample REPORT="<dir> ...": 20 error cases to label by hand
 	@test -n "$(REPORT)" || { echo "Usage: make judge-sample REPORT=reports/<run>"; exit 2; }
-	$(UV) run --locked python -m evals.judge sample '$(REPORT)' $(ARGS)
+	$(UV) run --locked python -m evals.judge sample $(REPORT) $(ARGS)
 
 judge-calibrate: $(VENV)/bin/python ## Compare the judge with the hand labels
 	$(UV) run --locked python -m evals.judge calibrate

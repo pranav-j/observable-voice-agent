@@ -1,7 +1,7 @@
 """`python -m evals.judge apply|sample|calibrate` (or the make judge targets).
 
 apply <report>      run the judges over a finished report and rewrite its summary
-sample <report>     write 20 of its error cases to calibration/labels.yaml for hand labels
+sample <report>...  write 20 error cases, spread across error types, for hand labels
 calibrate           compare the judge with the hand labels and record the agreement
 """
 
@@ -58,15 +58,17 @@ async def _apply(report: Path, settings: Settings, model: str | None) -> int:
     return 0
 
 
-def _sample(report: Path, settings: Settings, n: int, force: bool) -> int:
+def _sample(reports: list[Path], settings: Settings, n: int, force: bool) -> int:
     out = CALIBRATION_DIR / "labels.yaml"
     if out.exists() and not force:
         print(f"{out} exists. Pass --force to replace it (labels would be lost).", file=sys.stderr)
         return 2
     recordings = Path(settings.recordings_dir)
-    cases = [c for r in load_results(report) for c in error_cases(r, recordings)]
+    cases = [
+        c for report in reports for r in load_results(report) for c in error_cases(r, recordings)
+    ]
     if not cases:
-        print("That report has no tool errors to sample.", file=sys.stderr)
+        print("Those reports have no tool errors to sample.", file=sys.stderr)
         return 2
     chosen = sample_cases(cases, n)
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -93,7 +95,7 @@ async def main(argv: list[str] | None = None) -> int:
     sub = p.add_subparsers(dest="command", required=True)
     sub.add_parser("apply").add_argument("report", type=Path)
     sample = sub.add_parser("sample")
-    sample.add_argument("report", type=Path)
+    sample.add_argument("reports", type=Path, nargs="+")
     sample.add_argument("--n", type=int, default=20)
     sample.add_argument("--force", action="store_true")
     sub.add_parser("calibrate")
@@ -105,7 +107,7 @@ async def main(argv: list[str] | None = None) -> int:
     if args.command == "apply":
         return await _apply(args.report, settings, args.judge_model)
     if args.command == "sample":
-        return _sample(args.report, settings, args.n, args.force)
+        return _sample(args.reports, settings, args.n, args.force)
     return await _calibrate(settings, args.judge_model)
 
 

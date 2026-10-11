@@ -8,6 +8,7 @@ agreement, but only for the judge prompt version it was measured on.
 
 import json
 import random
+from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
@@ -27,10 +28,23 @@ LABELS_HEADER = """\
 
 
 def sample_cases(cases: list[ErrorCase], n: int, seed: int = 7) -> list[ErrorCase]:
-    """A fixed-seed sample, so the same report always gives the same cases."""
-    if len(cases) <= n:
-        return list(cases)
-    return sorted(random.Random(seed).sample(cases, n), key=lambda c: c.case_id)
+    """A fixed-seed sample spread across error types, taking from each in turn.
+
+    One kind of error can dominate a run (a phone number heard wrong, say), and a sample
+    of nearly identical cases would say little about the judge.
+    """
+    rng = random.Random(seed)
+    groups: dict[str, list[ErrorCase]] = defaultdict(list)
+    for case in sorted(cases, key=lambda c: c.case_id):
+        groups[case.error].append(case)
+    for group in groups.values():
+        rng.shuffle(group)
+    chosen: list[ErrorCase] = []
+    while len(chosen) < n and any(groups.values()):
+        for error in sorted(groups):
+            if groups[error] and len(chosen) < n:
+                chosen.append(groups[error].pop())
+    return sorted(chosen, key=lambda c: c.case_id)
 
 
 def labels_document(cases: list[ErrorCase]) -> str:
