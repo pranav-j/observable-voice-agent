@@ -49,3 +49,18 @@ def test_yes_needed_above_the_threshold() -> None:
 def test_yes_needed_for_many_runs_without_history() -> None:
     assert not Estimate(None, "").needs_yes(YES_ABOVE_RUNS_UNKNOWN)
     assert Estimate(None, "").needs_yes(YES_ABOVE_RUNS_UNKNOWN + 1)
+
+
+def test_only_calls_with_the_same_speech_providers_count(tmp_path: Path) -> None:
+    _usage(tmp_path, "audio-hosted-r1", 0.08)  # no config.json: from before it was saved
+    _usage(tmp_path, "audio-local-r1", 0.002)
+    (tmp_path / "audio-local-r1" / "config.json").write_text(
+        json.dumps({"stt_provider": "whisper", "tts_provider": "kokoro"})
+    )
+    assert past_call_costs(tmp_path) == [0.08]
+    assert past_call_costs(tmp_path, ("whisper", "kokoro")) == [0.002]
+
+
+def test_basis_mentions_caller_speech_only_when_paid() -> None:
+    assert "speech" in estimate(1, [0.1]).basis
+    assert "speech" not in estimate(1, [0.1], caller_speech_paid=False).basis

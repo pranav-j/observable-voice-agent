@@ -26,25 +26,39 @@ class Estimate:
         return self.usd > YES_ABOVE_USD
 
 
-def past_call_costs(recordings_dir: Path) -> list[float]:
-    """Agent cost in USD of each earlier audio eval call that has a priced usage file."""
+def past_call_costs(
+    recordings_dir: Path, providers: tuple[str, str] = ("openai", "openai")
+) -> list[float]:
+    """Agent cost in USD of earlier audio eval calls with the same speech providers.
+
+    Local speech costs next to nothing, so mixing calls made with hosted and local speech
+    would make the estimate meaningless. Calls saved before the settings were recorded
+    all used hosted speech.
+    """
     costs = []
     for path in sorted(recordings_dir.glob("audio-*/usage.json")):
         try:
             cost = json.loads(path.read_text()).get("total_cost_usd")
+            config_file = path.parent / "config.json"
+            config = json.loads(config_file.read_text()) if config_file.exists() else {}
         except (OSError, ValueError):
             continue
-        if isinstance(cost, int | float) and cost > 0:
+        used = (config.get("stt_provider", "openai"), config.get("tts_provider", "openai"))
+        if used == providers and isinstance(cost, int | float) and cost > 0:
             costs.append(float(cost))
     return costs
 
 
-def estimate(runs: int, past: list[float]) -> Estimate:
+def estimate(runs: int, past: list[float], caller_speech_paid: bool = True) -> Estimate:
     if not past:
         return Estimate(None, "no earlier audio calls to estimate from")
     per_call = median(past)
     return Estimate(
         runs * per_call,
-        f"median agent cost of {len(past)} earlier audio calls, ${per_call:.3f} each; "
-        "the simulated caller's speech and LLM calls cost extra",
+        f"median agent cost of {len(past)} earlier audio calls like these, ${per_call:.3f} each; "
+        + (
+            "the simulated caller's speech and LLM calls cost extra"
+            if caller_speech_paid
+            else "the simulated caller's LLM calls cost extra"
+        ),
     )

@@ -182,7 +182,9 @@ async def main(
 
     settings = settings or get_settings()
     total = sum(args.runs or s.runs for s in scenarios)
-    if args.mode == "audio" and not _audio_go_ahead(settings, total, yes=args.yes):
+    if args.mode == "audio" and not _audio_go_ahead(
+        settings, total, yes=args.yes, caller_voice=args.caller_voice
+    ):
         return 2
     if agent_llm is None or caller_llm is None:
         if not settings.has_openai_key:
@@ -302,9 +304,11 @@ async def _recorded(args: argparse.Namespace, settings: Settings) -> int:
     return 0
 
 
-def _audio_go_ahead(settings: Settings, runs: int, *, yes: bool) -> bool:
+def _audio_go_ahead(settings: Settings, runs: int, *, yes: bool, caller_voice: str) -> bool:
     """Print what an audio run is likely to cost; stop unless it's small or --yes."""
-    guess = estimate(runs, past_call_costs(Path(settings.recordings_dir)))
+    providers = (settings.stt_provider, settings.tts_provider)
+    past = past_call_costs(Path(settings.recordings_dir), providers)
+    guess = estimate(runs, past, caller_speech_paid=caller_voice == "openai")
     amount = "unknown" if guess.usd is None else f"about ${guess.usd:.2f}"
     print(f"Audio run: {runs} real calls, agent cost {amount} ({guess.basis}).")
     print("The worker must be running: `make worker` in another terminal.")
