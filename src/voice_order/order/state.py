@@ -97,6 +97,13 @@ def set_customer(order: Order, name: str, phone: str) -> Order:
     clean_name = spelled_name(name) or " ".join(name.split())
     if not clean_name:
         raise OrderError(ErrorCode.INVALID_NAME, "The customer name is empty.")
+    if _SPELLING_NOTE.search(clean_name):
+        # "Puja with two Os" went on an order as the name itself.
+        raise OrderError(
+            ErrorCode.INVALID_NAME,
+            f"{clean_name!r} describes the spelling. Pass just the name, spelled the way "
+            "the caller described (e.g. 'Pooja' for 'Puja with two Os').",
+        )
     digits = normalize_phone(phone)
     if digits is None:
         raise OrderError(
@@ -129,6 +136,9 @@ def normalize_phone(raw: str) -> str | None:
     elif len(digits) == 11 and digits.startswith("0"):
         digits = digits[1:]
     return digits if len(digits) == 10 and digits[0] != "0" else None
+
+
+_SPELLING_NOTE = re.compile(r"\b(with|spelled|spelt)\b", re.IGNORECASE)
 
 
 def spelled_name(raw: str) -> str | None:

@@ -247,6 +247,11 @@ def test_spelled_names_are_joined(empty: Order, raw: str, name: str) -> None:
     assert customer.name == name
 
 
+@pytest.mark.parametrize("raw", ["Puja with two Os", "Mira with two Es", "Kavya spelled K A V Y A"])
+def test_a_spelling_description_is_not_a_name(empty: Order, raw: str) -> None:
+    expect_error(ErrorCode.INVALID_NAME, lambda: state.set_customer(empty, raw, PHONE))
+
+
 def test_blank_name(empty: Order) -> None:
     expect_error(ErrorCode.INVALID_NAME, lambda: state.set_customer(empty, "   ", PHONE))
 

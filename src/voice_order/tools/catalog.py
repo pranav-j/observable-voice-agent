@@ -209,7 +209,8 @@ class SetCustomerArgs(ToolArgs):
     name: str = Field(
         description=(
             "The name for the order, as the caller gave it. If they spell it out, pass the "
-            "letters as spelled, e.g. 'K A V Y A'."
+            "letters as spelled, e.g. 'K A V Y A'. If they describe the spelling ('Puja with "
+            "two Os'), pass the name spelled that way ('Pooja'), not the description."
         )
     )
     phone: str = Field(
