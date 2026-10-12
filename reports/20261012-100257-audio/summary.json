@@ -198,6 +198,9 @@
     "scripted_pauses": 6,
     "false_cutoffs": 1,
     "false_cutoff_rate": 0.16666666666666666,
+    "turn_ends_in_pauses": 4,
+    "turn_end_in_pause_rate": 0.6666666666666666,
+    "turn_end_pauses_measured": 6,
     "wer": 0.1656516443361754,
     "wer_words": 821,
     "wer_by_noise": {

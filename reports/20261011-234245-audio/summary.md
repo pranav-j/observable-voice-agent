@@ -45,11 +45,14 @@ Measured from the caller's side, from the audio it received.
 | Dead air (over 2 s) | 51 turns (100.0%) |
 | Barge-in stop p50 / p95 (ms) | n/a / n/a (0 barge-ins) |
 | False cut-offs | 0/0 scripted pauses (n/a) |
+| Turn ended during a scripted pause, agent's clock | 0/0 scripted pauses (n/a) |
 | WER | 9.0% (543 words) |
 | WER, clean | 9.0% (543 words) |
 | Agent cost per minute | $0.024 ($0.676 over 28.1 min, 8 runs; includes estimates) |
 | Replies with a sentence said twice | 0 |
 | Caller hearing | transcript |
+
+Agent-side p50 (s): end_of_turn_delay 0.58, llm_node_ttft 1.83, tts_node_ttfb 1.12, e2e_latency 7.55.
 
 Detector: frame_ms 10, min_silence_ms 300, min_speech_ms 30, sample_rate 16000, threshold_dbfs -45.0.
 

@@ -96,6 +96,7 @@ Measured from the caller's side, from the audio it received.
 | Dead air (over 2 s) | 605 turns (100.0%) |
 | Barge-in stop p50 / p95 (ms) | 912 / 1151 (12 barge-ins) |
 | False cut-offs | 0/9 scripted pauses (0.0%) |
+| Turn ended during a scripted pause, agent's clock | 6/9 scripted pauses (66.7%) |
 | WER | 11.9% (4960 words) |
 | WER, SNR 10 dB | 15.3% (150 words) |
 | WER, SNR 15 dB | 6.7% (164 words) |

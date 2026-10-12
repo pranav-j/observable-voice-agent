@@ -215,6 +215,9 @@
     "scripted_pauses": 0,
     "false_cutoffs": 0,
     "false_cutoff_rate": null,
+    "turn_ends_in_pauses": 0,
+    "turn_end_in_pause_rate": null,
+    "turn_end_pauses_measured": 0,
     "wer": 0.15753424657534246,
     "wer_words": 584,
     "wer_by_noise": {
@@ -245,6 +248,12 @@
         "threshold_dbfs": -45.0
       }
     ],
+    "agent_timing_p50_s": {
+      "end_of_turn_delay": 0.586237907409668,
+      "llm_node_ttft": 1.2422675000270829,
+      "tts_node_ttfb": 1.0644052090356126,
+      "e2e_latency": 5.434484958648682
+    },
     "agent_configs": [
       {
         "agent_prompt_version": "v1",
