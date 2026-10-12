@@ -452,3 +452,11 @@ Before blaming Whisper, I tested it offline, which costs nothing. Kokoro spoke n
 Then I ran Whisper on names spoken by OpenAI's voices, which I had saved from earlier runs. `base.en` got 16 of 21 and `small.en` got 19 of 21. The same recognizer got about twice as many names right. Kokoro reads Indian names through an American-English pronouncer and mangles them, so a lot of what looked like the agent mishearing was the simulated caller mispronouncing. It's the same lesson as before: check the harness before blaming the agent.
 
 So the fair local setup keeps the agent on local speech and gives the simulated caller OpenAI's voice. The caller's voice was only about a tenth of the cost, so a full run is about a dollar, and that run is now the local baseline. The Kokoro-caller report stays as a record of what an unrealistic caller does to the numbers.
+
+## Local speech, with a caller that sounds right
+
+With the agent on local speech and the simulated caller back on OpenAI's voice, the full suite passed 85 of 93 (`reports/20261012-072648-audio`). That's the same count as the hosted baseline. Replies started at 4.9 seconds at p50 instead of 6.8, the agent's speech cost nothing, and doubled replies fell from 7 to 3. It isn't a perfectly clean comparison: three agent fixes went in between the two runs. But it was enough to make local speech the default. OpenAI's speech is still one setting away.
+
+The stage timings show where the time moved. The voice starts 0.4 seconds sooner, and the end of the turn takes 0.3 seconds longer, because voice detection has to decide the caller has stopped before Whisper can start. So that silence setting is the next lever.
+
+Two of the eight failures were the agent saving "Puja with two Os" and "Mira with two Es" as names. A description of the spelling is now rejected as a name, and the tool says to pass the name spelled that way.
