@@ -434,3 +434,11 @@ Three fixes that had been waiting for a clean moment went in before the local ba
 - **Re-fetching the read-back no longer throws away the caller's yes** when nothing has changed. The agent used to re-fetch after "Yes, that's correct. Goodbye.", couldn't confirm, and the caller was gone.
 - **Clearer pack wording.** The read-back now says "One Gulab Jamun, which comes as two pieces" instead of "One Gulab Jamun, two pieces", which a caller heard as the wrong quantity.
 - **A simulated caller that hangs up on a read-back without a word is asked once more,** since that breaks its own instructions.
+
+## Two more harness bugs, both from going local
+
+The first try at the local baseline stopped early on a familiar-looking error: "text-to-speech kept returning clipped audio for 'Neha.'". It wasn't clipped. Kokoro returns just the speech, with none of the silence OpenAI's voice leaves around each line, and a one-word name came out shorter than the floor I'd set to catch clipped lines. The caller now leaves a little silence before and after each Kokoro line, the way a person does. The floor still catches audio that really is broken.
+
+The second try died differently: "BadZipFile: Overlapped entries: 'hm_omega.npy'". Both simulated callers in a run share one Kokoro model, and Kokoro reads its voices lazily out of a zip file. Two threads reading the same zip at once corrupted the read. Calls into each local model now take turns. I checked the fix with three threads hammering one shared Kokoro before restarting.
+
+The partial runs also showed the local pipeline's real weakness: names. "Nikhil" became "Nick Hill" every time, and "Pooja", "Neha" and "Imran" came out as "Pooj", "Nihal" and "Imrn". `base.en` is an English-only Whisper model listening to Indian names spoken by Kokoro voices, and that combination is hard. The full baseline will show how much it costs, and a multilingual model or a short context prompt for Whisper are the obvious things to try next.
