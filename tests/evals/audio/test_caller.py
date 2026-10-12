@@ -5,6 +5,7 @@ from typing import Any
 import numpy as np
 import pytest
 from evals.audio.caller import (
+    MIN_LINE_SECONDS,
     STUCK_QUIET_S,
     VOICE_POOL,
     AgentState,
@@ -160,7 +161,24 @@ async def test_caller_can_speak_with_kokoro() -> None:
         kokoro=kokoro,
     )
     pcm = await caller.synthesize("It's 9876523456.")
-    assert len(pcm) == 3 * 24_000
+    assert len(pcm) == 3 * 24_000 + 24_000 // 2  # the speech plus half a second of silence
     (call,) = kokoro.calls
     assert (call["voice"], call["speed"]) == ("hf_alpha", 0.9)
     assert call["text"] == speakable("It's 9876523456.")  # digits still read out one by one
+
+
+async def test_a_one_word_kokoro_line_passes_the_floor() -> None:
+    class Short(_FakeKokoro):
+        def create(self, text: str, **kwargs: Any) -> tuple[np.ndarray[Any, Any], int]:
+            return np.full(int(0.45 * 24_000), 0.2, dtype=np.float32), 24_000  # "Neha."
+
+    caller = AudioCaller(
+        client=None,  # type: ignore[arg-type]
+        voice="voice_pool.female_2",
+        style="brisk",
+        noise=None,
+        voice_provider="kokoro",
+        kokoro=Short(),
+    )
+    pcm = await caller.synthesize("Neha.")
+    assert len(pcm) / 24_000 >= MIN_LINE_SECONDS

@@ -357,7 +357,11 @@ class AudioCaller:
             )
             if rate != SPEAK_RATE:
                 raise RuntimeError(f"Kokoro returned {rate} Hz audio, expected {SPEAK_RATE}")
-            return to_pcm16(np.asarray(audio, dtype=np.float64))
+            # Kokoro returns just the speech; a person (and OpenAI's voice) leaves a little
+            # silence around it. Without it, a one-word answer like "Neha." was shorter than
+            # the clipped-speech floor and the line was rejected.
+            lead, tail = np.zeros(SPEAK_RATE // 5), np.zeros(SPEAK_RATE * 3 // 10)
+            return to_pcm16(np.concatenate([lead, np.asarray(audio, dtype=np.float64), tail]))
         response = await self.client.audio.speech.create(
             model="gpt-4o-mini-tts",
             voice=self.voice,
