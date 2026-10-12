@@ -1,8 +1,11 @@
-"""`python -m evals.tradeoff <out.svg> <report> [<report> ...]`: cut-offs against latency.
+"""`python -m evals.tradeoff <out.svg> <report> [<report> ...]`: split sentences against waiting.
 
-One point per report: caller-side response latency p50 across, false cut-off rate up. The
-label is the turn-detection setting the worker ran with, from the report's agent config.
-Every number on the chart comes from the reports' summary.json.
+One point per report. Up: the share of scripted mid-sentence pauses where the agent ended
+the caller's turn, splitting the sentence. Across: the agent's own end-of-turn delay, a dot
+at p50 and a line out to p95. The delay is what a turn-detection setting controls; the
+caller-side latency also moves with the LLM's speed from run to run. The label is the
+setting the worker ran with, from the report's agent config. Every number comes from the
+reports' summary.json.
 """
 
 import json
@@ -11,17 +14,19 @@ from html import escape
 from pathlib import Path
 from typing import Any
 
-W, H = 640, 360
-LEFT, RIGHT, TOP, BOTTOM = 70, 30, 50, 60  # plot margins, px
+W, H = 680, 380
+LEFT, RIGHT, TOP, BOTTOM = 70, 40, 50, 60  # plot margins, px
 
 
-def point(summary: dict[str, Any]) -> tuple[float, float, int, int]:
+def point(summary: dict[str, Any]) -> tuple[float, float, float, int, int]:
+    """(delay p50 s, delay p95 s, split rate, splits, pauses measured)."""
     a = summary["audio"]
     return (
-        a["response_latency_ms_p50"] / 1000,
-        a["false_cutoff_rate"],
-        a["false_cutoffs"],
-        a["scripted_pauses"],
+        a["agent_timing_p50_s"]["end_of_turn_delay"],
+        a["agent_timing_p95_s"]["end_of_turn_delay"],
+        a["turn_end_in_pause_rate"],
+        a["turn_ends_in_pauses"],
+        a["turn_end_pauses_measured"],
     )
 
 
@@ -33,52 +38,54 @@ def label(summary: dict[str, Any]) -> str:
 
 def render(rows: list[tuple[str, dict[str, Any]]]) -> str:
     points = [(name, *point(s)) for name, s in rows]
-    xs = [p[1] for p in points]
-    x0, x1 = min(xs) - 0.5, max(xs) + 0.5
-    y1 = max(0.5, max(p[2] for p in points) + 0.1)
+    x1 = max(2.0, max(p[2] for p in points) + 1.0)  # room for the label after the line
 
     def sx(x: float) -> float:
-        return LEFT + (x - x0) / (x1 - x0) * (W - LEFT - RIGHT)
+        return LEFT + x / x1 * (W - LEFT - RIGHT)
 
     def sy(y: float) -> float:
-        return H - BOTTOM - y / y1 * (H - TOP - BOTTOM)
+        return H - BOTTOM - y / 1.1 * (H - TOP - BOTTOM)
 
+    mid = (TOP + H - BOTTOM) / 2
     out = [
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" '
         f'viewBox="0 0 {W} {H}" font-family="Helvetica, Arial, sans-serif" font-size="12">',
         f'<rect width="{W}" height="{H}" fill="#ffffff"/>',
         '<text x="12" y="22" font-size="14" font-weight="bold" fill="#222">'
-        "Turn detection: cut-offs against reply speed</text>",
+        "Turn detection: split sentences against waiting</text>",
+        '<text x="12" y="38" fill="#555">Dot: end-of-turn delay p50. Line: out to p95.</text>',
         f'<line x1="{LEFT}" y1="{H - BOTTOM}" x2="{W - RIGHT}" y2="{H - BOTTOM}" stroke="#888"/>',
         f'<line x1="{LEFT}" y1="{TOP}" x2="{LEFT}" y2="{H - BOTTOM}" stroke="#888"/>',
         f'<text x="{(LEFT + W - RIGHT) / 2:.0f}" y="{H - 18}" text-anchor="middle" fill="#222">'
-        "Response latency p50, caller side (s)</text>",
-        f'<text x="18" y="{(TOP + H - BOTTOM) / 2:.0f}" text-anchor="middle" fill="#222" '
-        f'transform="rotate(-90 18 {(TOP + H - BOTTOM) / 2:.0f})">False cut-off rate</text>',
+        "Agent's end-of-turn delay (s)</text>",
+        f'<text x="18" y="{mid:.0f}" text-anchor="middle" fill="#222" '
+        f'transform="rotate(-90 18 {mid:.0f})">Pauses where the sentence was split</text>',
     ]
-    tick = 0.5
-    t = round(x0 / tick) * tick
-    while t <= x1:
-        if t >= x0:
-            out.append(
-                f'<text x="{sx(t):.1f}" y="{H - BOTTOM + 16}" text-anchor="middle" '
-                f'fill="#555">{t:.1f}</text>'
-            )
-        t += tick
+    t = 0.0
+    while t <= x1 + 1e-9:
+        out.append(
+            f'<text x="{sx(t):.1f}" y="{H - BOTTOM + 16}" text-anchor="middle" '
+            f'fill="#555">{t:.1f}</text>'
+        )
+        t += 0.5
     for frac in (0.0, 0.25, 0.5, 0.75, 1.0):
-        if frac <= y1:
-            out.append(
-                f'<text x="{LEFT - 8}" y="{sy(frac) + 4:.1f}" text-anchor="end" '
-                f'fill="#555">{frac:.2f}</text>'
-            )
+        out.append(
+            f'<text x="{LEFT - 8}" y="{sy(frac) + 4:.1f}" text-anchor="end" '
+            f'fill="#555">{frac:.0%}</text>'
+        )
     placed: list[tuple[float, float, float]] = []  # label boxes so far: x, y, width
-    for name, x, y, cut, pauses in sorted(points, key=lambda p: p[1]):
-        text = f"{name} ({cut}/{pauses})"
-        lx, ly, width = sx(x) + 8, sy(y) - 8, 7.0 * len(text)  # about 7 px per character
+    for name, p50, p95, rate, splits, pauses in sorted(points, key=lambda p: p[1]):
+        text = f"{name} ({splits}/{pauses})"
+        lx, ly, width = sx(p95) + 8, sy(rate) + 4, 7.0 * len(text)  # about 7 px per character
         while any(abs(ly - py) < 16 and lx < px + pw and px < lx + width for px, py, pw in placed):
-            ly -= 18  # stack upward until it clears the labels already drawn
+            ly += 18  # stack downward until it clears the labels already drawn
         placed.append((lx, ly, width))
-        out.append(f'<circle cx="{sx(x):.1f}" cy="{sy(y):.1f}" r="5" fill="#4c78a8"/>')
+        y = sy(rate)
+        out.append(
+            f'<line x1="{sx(p50):.1f}" y1="{y:.1f}" x2="{sx(p95):.1f}" y2="{y:.1f}" '
+            'stroke="#4c78a8" stroke-width="2"/>'
+        )
+        out.append(f'<circle cx="{sx(p50):.1f}" cy="{y:.1f}" r="5" fill="#4c78a8"/>')
         out.append(f'<text x="{lx:.1f}" y="{ly:.1f}" fill="#222">{escape(text)}</text>')
     out.append("</svg>")
     return "\n".join(out) + "\n"
