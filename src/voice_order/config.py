@@ -40,6 +40,9 @@ class Settings(BaseSettings):
     kokoro_voice: str = "af_heart"
     models_dir: str = "models"  # local model files, downloaded with make models
     eou_silence_ms: int = Field(default=500, ge=0)  # silence before a turn may end
+    # semantic: LiveKit's local turn model also judges whether the sentence sounds finished.
+    # vad: the turn ends on silence alone.
+    turn_detection: Literal["semantic", "vad"] = "semantic"
     # Silence that ends an utterance for voice detection. With local Whisper, recognition
     # only starts after it, so it sits directly in the end-of-turn delay.
     vad_min_silence_ms: int = Field(default=550, ge=100)
@@ -57,6 +60,10 @@ class Settings(BaseSettings):
     @property
     def has_openai_key(self) -> bool:
         return bool(self.openai_api_key.get_secret_value().strip())
+
+    @property
+    def effective_turn_detection(self) -> str:
+        return "vad" if self.fault == "aggressive_eou" else self.turn_detection
 
     @property
     def effective_eou_silence_ms(self) -> int:
@@ -85,6 +92,7 @@ class Settings(BaseSettings):
             "tts_voice": self.kokoro_voice if self.tts_provider == "kokoro" else self.tts_voice,
             "tts_format": self.tts_format,
             "eou_silence_ms": self.effective_eou_silence_ms,
+            "turn_detection": self.effective_turn_detection,
             "vad_min_silence_ms": self.vad_min_silence_ms,
             "preemptive_generation": self.enable_preemptive_generation,
             "filler_phrases": self.enable_filler_phrases,
