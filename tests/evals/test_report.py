@@ -350,3 +350,16 @@ def test_agent_stage_timings_are_summarized() -> None:
     summary = summarize([a, b], mode="audio", started_at=STARTED)
     assert summary["audio"]["agent_timing_p50_s"] == {"llm_node_ttft": 2.0}
     assert "Agent-side p50 (s): llm_node_ttft 2.00." in render_markdown(summary)
+
+
+def test_turn_ends_in_pauses_count_only_measured_runs() -> None:
+    old = audio_result(1, noise=None, scripted_pauses=1)
+    md = render_markdown(summarize([old], mode="audio", started_at=STARTED))
+    assert "| Turn ended during a scripted pause, agent's clock | not measured |" in md
+    early = audio_result(2, noise=None, scripted_pauses=1, turn_ends_in_pauses=1)
+    patient = audio_result(3, noise=None, scripted_pauses=1, turn_ends_in_pauses=0)
+    summary = summarize([old, early, patient], mode="audio", started_at=STARTED)
+    a = summary["audio"]
+    assert (a["turn_ends_in_pauses"], a["turn_end_pauses_measured"]) == (1, 2)
+    assert a["turn_end_in_pause_rate"] == 0.5
+    assert "| 1/2 scripted pauses (50.0%) |" in render_markdown(summary)

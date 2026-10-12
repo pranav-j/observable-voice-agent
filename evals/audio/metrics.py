@@ -108,6 +108,41 @@ def false_cutoffs(timeline: Timeline) -> tuple[int, int]:
     return cut, total
 
 
+def turn_ends_in_pauses(timeline: Timeline, turn_records: list[dict[str, Any]]) -> int | None:
+    """Scripted pauses during which the agent decided the caller's turn was over.
+
+    `false_cutoffs` only sees a premature end of turn once the agent's audio starts before
+    the caller finishes, and a slow reply never does. This counts the decision itself, from
+    the agent's own turn records: the caller stopped at `stopped_speaking_at`, and the turn
+    was committed `end_of_turn_delay` later. (Not `created_at`: with preemptive generation,
+    the message kept is the one made before the commit.) The agent logs wall-clock time and
+    the caller its own clock, so the two are lined up on the agent's first words, which both
+    sides recorded. None when either side is missing.
+    """
+    first = next(
+        (
+            r["started_speaking_at"]
+            for r in turn_records
+            if r.get("role") == "assistant" and isinstance(r.get("started_speaking_at"), float)
+        ),
+        None,
+    )
+    speech = timeline.agent_speech()
+    if first is None or not speech:
+        return None
+    offset = first - speech[0].start
+    commits = [
+        r["stopped_speaking_at"] + r["end_of_turn_delay"] - offset
+        for r in turn_records
+        if r.get("role") == "user"
+        and isinstance(r.get("stopped_speaking_at"), float)
+        and isinstance(r.get("end_of_turn_delay"), float)
+    ]
+    return sum(
+        any(start <= c < end for c in commits) for u in timeline.caller for start, end in u.pauses
+    )
+
+
 _DIGITS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"]
 
 

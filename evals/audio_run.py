@@ -20,7 +20,12 @@ from openai import AsyncOpenAI
 from evals.audio.caller import AudioCaller, CallerVoice, Hearing
 from evals.audio.detector import DETECTOR_SETTINGS
 from evals.audio.detector import SAMPLE_RATE as LISTEN_RATE
-from evals.audio.metrics import agent_timings, audio_metrics, doubled_replies
+from evals.audio.metrics import (
+    agent_timings,
+    audio_metrics,
+    doubled_replies,
+    turn_ends_in_pauses,
+)
 from evals.audio.noise import SAMPLE_RATE as SPEAK_RATE
 from evals.caller.text_caller import CALLER_PROMPT_VERSION, Phase, TextCaller
 from evals.scenario import Behavior, Scenario
@@ -283,6 +288,7 @@ async def run_audio_scenario(
             "agent_config": agent_config,
             "doubled_replies": doubled_replies(agent_said),
             "agent_timing": agent_timings(turn_records),
+            "turn_ends_in_pauses": turn_ends_in_pauses(timeline, turn_records),
             "detector": DETECTOR_SETTINGS,
         },
     )

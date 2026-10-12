@@ -17,6 +17,7 @@ from evals.audio.metrics import (
     recording_metrics,
     response_latencies,
     speech_runs,
+    turn_ends_in_pauses,
     utterance_wer,
     word_errors,
 )
@@ -180,3 +181,33 @@ def test_agent_timings_keep_only_logged_numbers() -> None:
         "tts_node_ttfb": [1.0],
         "e2e_latency": [4.2],
     }
+
+
+def test_turn_ended_in_a_pause_by_the_agents_clock() -> None:
+    # The caller clock starts 1000 s after the agent's: the greeting is at agent time
+    # 1001.0 and the caller hears it at 1.0.
+    timeline = Timeline(
+        caller=[CallerUtterance("one masala dosa and a chai", 5.0, 9.0, pauses=((6.0, 7.5),))],
+        agent_audio=agent_audio((1.0, 3.0), (12.0, 13.0)),
+    )
+    greeting = {"role": "assistant", "started_speaking_at": 1001.0}
+
+    def caller_turn(stopped: float, delay: float) -> dict[str, Any]:
+        return {"role": "user", "stopped_speaking_at": stopped, "end_of_turn_delay": delay}
+
+    early = [greeting, caller_turn(1006.0, 0.6), caller_turn(1009.0, 0.6)]  # committed at 6.6
+    patient = [greeting, caller_turn(1009.0, 0.6)]  # waited out the pause
+    assert turn_ends_in_pauses(timeline, early) == 1
+    assert turn_ends_in_pauses(timeline, patient) == 0
+    # Its audio came after the caller had finished, so the caller-side metric can't see it.
+    assert false_cutoffs(timeline) == (0, 1)
+
+
+def test_turn_ends_in_pauses_needs_both_clocks() -> None:
+    timeline = Timeline(
+        caller=[CallerUtterance("hello", 5.0, 9.0, pauses=((6.0, 7.5),))],
+        agent_audio=agent_audio((1.0, 3.0)),
+    )
+    assert turn_ends_in_pauses(timeline, []) is None
+    silent = Timeline(caller=timeline.caller, agent_audio=agent_audio())
+    assert turn_ends_in_pauses(silent, [{"role": "assistant", "started_speaking_at": 1.0}]) is None

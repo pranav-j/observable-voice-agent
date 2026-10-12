@@ -46,6 +46,10 @@ def _audio_summary(results: list[RunResult]) -> dict[str, Any] | None:
     dead_air = sum(a.get("dead_air_turns", 0) for a in audio)
     cutoffs = sum(a.get("false_cutoffs", 0) for a in audio)
     pauses = sum(a.get("scripted_pauses", 0) for a in audio)
+    # Only runs whose agent turn records were there to measure it.
+    early = [a for a in audio if a.get("turn_ends_in_pauses") is not None]
+    early_count = sum(a["turn_ends_in_pauses"] for a in early)
+    early_pauses = sum(a.get("scripted_pauses", 0) for a in early)
     wer: dict[str, list[int]] = defaultdict(lambda: [0, 0])
     for a in audio:
         for key in ("all", _noise_level(a)):
@@ -70,6 +74,9 @@ def _audio_summary(results: list[RunResult]) -> dict[str, Any] | None:
         "scripted_pauses": pauses,
         "false_cutoffs": cutoffs,
         "false_cutoff_rate": _rate(cutoffs, pauses),
+        "turn_ends_in_pauses": early_count if early else None,
+        "turn_end_in_pause_rate": _rate(early_count, early_pauses) if early else None,
+        "turn_end_pauses_measured": early_pauses,
         "wer": _rate(errors, words),
         "wer_words": words,
         "wer_by_noise": {
@@ -397,6 +404,14 @@ def _audio_markdown(a: dict[str, Any] | None, mode: str) -> list[str]:
         f"{_num(a['barge_in_stop_ms_p95'], 0)} ({a['barge_ins']} barge-ins) |",
         f"| False cut-offs | {a['false_cutoffs']}/{a['scripted_pauses']} scripted pauses "
         f"({_pct(a['false_cutoff_rate'])}) |",
+        "| Turn ended during a scripted pause, agent's clock | "
+        + (
+            "not measured"
+            if a.get("turn_ends_in_pauses") is None
+            else f"{a['turn_ends_in_pauses']}/{a['turn_end_pauses_measured']} scripted pauses "
+            f"({_pct(a['turn_end_in_pause_rate'])})"
+        )
+        + " |",
         f"| WER | {_pct(a['wer'])} ({a['wer_words']} words) |",
         *(
             f"| WER, {level} | {_pct(w['wer'])} ({w['words']} words) |"
