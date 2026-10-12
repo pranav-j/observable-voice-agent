@@ -46,9 +46,9 @@ The two audio runs differ in more than speech: some agent fixes landed between t
 | Agent ignores interruptions | Barge-in stop p50 912 → 16895 ms |
 | Agent drops item modifiers | Order exact match 1.000 → 0.000 |
 | LLM 0.8 s slower to first token | p95 latency +44%, and `make gate` fails |
-| Turns end on voice activity alone, after 150 ms | Task success 0.889 → 0.333. The false cut-off metric didn't move, because replies were too slow to land inside a pause |
+| Turns end on voice activity alone, after 150 ms | Sentences split at a scripted mid-sentence pause 0/9 → 6/6, after two harness fixes |
 
-Building that table found a real bug: the first barge-in metric made the "ignores interruptions" fault look like an improvement. It's fixed, and the affected reports were re-scored from their saved audio.
+Building that table found bugs in the harness, not just the agent. The first barge-in metric made the "ignores interruptions" fault look like an improvement. And the pause scenarios made a paused caller sound finished, so even the healthy agent split their sentences. Both are fixed: the barge-in reports were re-scored from their saved audio, and the pause scenarios were run again.
 
 ## Experiments
 
