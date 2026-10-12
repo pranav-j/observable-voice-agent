@@ -51,17 +51,19 @@ def test_full_readback(menu: Menu) -> None:
 
 
 def test_pack_size_is_spoken(menu: Menu) -> None:
-    assert "Four Veg Samosa, two pieces each." in readback_text(menu, ("veg_samosa", 4, None, []))
-    assert "One Gulab Jamun, two pieces." in readback_text(menu, ("gulab_jamun", 1, None, []))
+    four = readback_text(menu, ("veg_samosa", 4, None, []))
+    assert "Four Veg Samosa, each with two pieces." in four
+    one = readback_text(menu, ("gulab_jamun", 1, None, []))
+    assert "One Gulab Jamun, which comes as two pieces." in one
 
 
 @pytest.mark.parametrize(
     ("name", "quantity", "note"),
     [
-        ("Veg Samosa (2 pcs)", 1, "two pieces"),
-        ("Veg Samosa (2 pcs)", 3, "two pieces each"),
-        ("Momo (1 pc)", 2, "one piece each"),
-        ("Party Platter (24 pcs)", 1, "24 pieces"),
+        ("Veg Samosa (2 pcs)", 1, "which comes as two pieces"),
+        ("Veg Samosa (2 pcs)", 3, "each with two pieces"),
+        ("Momo (1 pc)", 2, "each with one piece"),
+        ("Party Platter (24 pcs)", 1, "which comes as 24 pieces"),
         ("Chef Special (spicy)", 1, None),
         ("Masala Dosa", 1, None),
     ],

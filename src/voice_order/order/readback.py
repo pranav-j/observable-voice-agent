@@ -81,9 +81,11 @@ _PACK = re.compile(r"\((\d+)\s*pcs?\)", re.IGNORECASE)
 
 
 def pack_note(name: str, quantity: int) -> str | None:
-    """'(2 pcs)' in a name -> 'two pieces', or 'two pieces each' for more than one.
+    """'(2 pcs)' in a name -> 'which comes as two pieces', or 'each with two pieces'.
 
-    Other bracket notes return None and stay unspoken.
+    A bare "One Gulab Jamun, two pieces" was heard as the wrong quantity: a caller who
+    asked for one objected to "two pieces" and had it removed. Other bracket notes
+    return None and stay unspoken.
     """
     match = _PACK.search(name)
     if match is None:
@@ -91,7 +93,7 @@ def pack_note(name: str, quantity: int) -> str | None:
     count = int(match.group(1))
     word = NUMBER_WORDS[count] if count < len(NUMBER_WORDS) else str(count)
     pieces = f"{word} {'piece' if count == 1 else 'pieces'}"
-    return f"{pieces} each" if quantity > 1 else pieces
+    return f"each with {pieces}" if quantity > 1 else f"which comes as {pieces}"
 
 
 def join_words(words: list[str]) -> str:
