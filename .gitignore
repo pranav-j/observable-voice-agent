@@ -31,3 +31,6 @@ reports/**/raw/
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# Local speech models (downloaded with make models)
+models/
