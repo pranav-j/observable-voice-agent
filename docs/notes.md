@@ -470,3 +470,11 @@ Two more levers on local speech, each against a fresh run of the same six scenar
 **Preemptive generation** came back. It took caller-side latency from 5106 to 4761 ms at p50 and from 8483 to 7157 ms at p95, and the one doubled reply in 18 calls is about the rate I'd been seeing without it. All told, these six scenarios now answer about 2.1 seconds sooner at the median than at the start, and 3.3 seconds sooner at p95. Every turn still counts as dead air, though, and what's left is mostly LLM round trips. Fewer tool steps per turn would be the next thing to try.
 
 The gate fails the slow-LLM fault run, on both p95 latency and task success, and exits non-zero. Showing it on an actual pull request needs the API key added as a GitHub secret.
+
+## Limits before anyone else can call it
+
+A public demo needs limits, since every call costs a bit of LLM and ties up the CPU that runs the speech models. Calls already end after five minutes. Now `/token`, where every call starts, can also refuse a call past a per-IP hourly limit or a daily total, with a message the web page shows. Both are off unless set, so they don't get in the way of the evals.
+
+The one thing I almost got wrong was the caller's address. Behind a hosting proxy, the real address comes in `X-Forwarded-For`, and I nearly took the first entry. But the client can send that header itself with anything in it, and the proxy only appends. So the first entry is whatever the client wants it to be, and the last one is the one the proxy actually saw. There's a test for exactly that.
+
+The counts live in memory, so a restart resets them. For a single demo instance that's an acceptable worst case. Nothing is deployed yet, so none of this has met real traffic.
