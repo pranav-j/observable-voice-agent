@@ -1,0 +1,236 @@
+{
+  "mode": "audio",
+  "started_at": "2026-10-12T15:41:12+00:00",
+  "concurrency": 2,
+  "agent_models": [
+    "gpt-6-luna"
+  ],
+  "caller_models": [
+    "gpt-6-luna"
+  ],
+  "agent_prompt_versions": [
+    "v1"
+  ],
+  "caller_prompt_versions": [
+    "v4"
+  ],
+  "overall": {
+    "runs": 9,
+    "scenarios": 3,
+    "task_successes": 6,
+    "task_success_rate": 0.6666666666666666,
+    "scenarios_passing_all_runs": 2,
+    "scenarios_passing_all_runs_rate": 0.6666666666666666,
+    "order_exact_match_runs": 9,
+    "order_exact_match_rate": 0.6666666666666666,
+    "mean_field_accuracy": 0.8777777777777778,
+    "escalations": 2,
+    "expected_escalations": 0,
+    "escalation_agreement_rate": 0.7777777777777778,
+    "errors": 0,
+    "caller_hung_up_early": 0,
+    "tool_limit_hits": 0,
+    "confirmed_before_reply_runs": 0,
+    "skipped_audio_behaviors": 0,
+    "turns_p50": 8.0,
+    "turns_p95": 10.0,
+    "duration_s_p50": 173.435,
+    "duration_s_p95": 271.922,
+    "agent_tokens": {
+      "input": 539825,
+      "output": 4272
+    },
+    "caller_tokens": {
+      "input": 56482,
+      "output": 1179
+    }
+  },
+  "by_tag": {
+    "hesitation": {
+      "runs": 9,
+      "successes": 6,
+      "pass_rate": 0.6666666666666666
+    },
+    "phone": {
+      "runs": 3,
+      "successes": 3,
+      "pass_rate": 1.0
+    },
+    "price_question": {
+      "runs": 3,
+      "successes": 3,
+      "pass_rate": 1.0
+    }
+  },
+  "scenarios": {
+    "hesitation_pause_mid_order": {
+      "tags": [
+        "hesitation"
+      ],
+      "runs": 3,
+      "successes": 0,
+      "pass_rate": 0.0,
+      "passed_all": false,
+      "errors": 0,
+      "mean_field_accuracy": 0.6333333333333334,
+      "end_reasons": {
+        "caller_ended": 2,
+        "caller_gave_up": 1
+      }
+    },
+    "hesitation_pause_on_phone": {
+      "tags": [
+        "hesitation",
+        "phone"
+      ],
+      "runs": 3,
+      "successes": 3,
+      "pass_rate": 1.0,
+      "passed_all": true,
+      "errors": 0,
+      "mean_field_accuracy": 1.0,
+      "end_reasons": {
+        "caller_ended": 3
+      }
+    },
+    "hesitation_undecided_drink": {
+      "tags": [
+        "hesitation",
+        "price_question"
+      ],
+      "runs": 3,
+      "successes": 3,
+      "pass_rate": 1.0,
+      "passed_all": true,
+      "errors": 0,
+      "mean_field_accuracy": 1.0,
+      "end_reasons": {
+        "caller_ended": 3
+      }
+    }
+  },
+  "failures": [
+    {
+      "scenario_id": "hesitation_pause_mid_order",
+      "run": 1,
+      "session_id": "audio-hesitation_pause_mid_order-r1-20261012-211112-5f66",
+      "end_reason": "caller_ended",
+      "error": null,
+      "mismatches": [
+        "status: expected confirmed, got escalated",
+        "missing: 1x mysore_masala_dosa with extra_butter",
+        "missing: 1x masala_chai (regular) with less_sugar",
+        "extra: 1x mysore_masala_dosa",
+        "customer: not set"
+      ]
+    },
+    {
+      "scenario_id": "hesitation_pause_mid_order",
+      "run": 2,
+      "session_id": "audio-hesitation_pause_mid_order-r2-20261012-211112-ab38",
+      "end_reason": "caller_gave_up",
+      "error": null,
+      "mismatches": [
+        "status: expected confirmed, got abandoned",
+        "customer: not set"
+      ]
+    },
+    {
+      "scenario_id": "hesitation_pause_mid_order",
+      "run": 3,
+      "session_id": "audio-hesitation_pause_mid_order-r3-20261012-211306-192b",
+      "end_reason": "caller_ended",
+      "error": null,
+      "mismatches": [
+        "status: expected confirmed, got escalated",
+        "customer: not set"
+      ]
+    }
+  ],
+  "rule_violations": [],
+  "audio": {
+    "runs": 9,
+    "measured_turns": 71,
+    "response_latency_ms_p50": 4669.0,
+    "response_latency_ms_p95": 6649.0,
+    "dead_air_turns": 71,
+    "dead_air_rate": 1.0,
+    "barge_ins": 0,
+    "barge_in_stop_ms_p50": null,
+    "barge_in_stop_ms_p95": null,
+    "scripted_pauses": 9,
+    "false_cutoffs": 0,
+    "false_cutoff_rate": 0.0,
+    "turn_ends_in_pauses": 9,
+    "turn_end_in_pause_rate": 1.0,
+    "turn_end_pauses_measured": 9,
+    "wer": 0.21821036106750394,
+    "wer_words": 637,
+    "wer_by_noise": {
+      "clean": {
+        "wer": 0.21821036106750394,
+        "words": 637
+      }
+    },
+    "priced_runs": 9,
+    "agent_cost_usd": 0.0093,
+    "priced_minutes": 25.82,
+    "cost_per_minute_usd": 0.0003593947984356059,
+    "cost_includes_estimates": false,
+    "hearing": [
+      "transcript"
+    ],
+    "doubled_replies": 1,
+    "detector": [
+      {
+        "frame_ms": 10,
+        "min_silence_ms": 300,
+        "min_speech_ms": 30,
+        "sample_rate": 16000,
+        "threshold_dbfs": -45.0
+      }
+    ],
+    "agent_timing_p50_s": {
+      "end_of_turn_delay": 1.0010571479797363,
+      "llm_node_ttft": 1.0549323750892654,
+      "tts_node_ttfb": 0.6801265840185806,
+      "e2e_latency": 4.735074996948242
+    },
+    "agent_configs": [
+      {
+        "agent_prompt_version": "v1",
+        "eou_silence_ms": 1000,
+        "fault": "none",
+        "filler_after_ms": 1200,
+        "filler_phrases": false,
+        "llm_model": "gpt-6-luna",
+        "preemptive_generation": true,
+        "stt_model": "base.en",
+        "stt_provider": "whisper",
+        "tts_format": "mp3",
+        "tts_model": "kokoro-v1.0",
+        "tts_provider": "kokoro",
+        "tts_voice": "af_heart",
+        "turn_detection": "vad",
+        "vad_min_silence_ms": 550
+      }
+    ]
+  },
+  "judged": {
+    "error_ack_versions": [
+      "v1"
+    ],
+    "error_ack_cases": 3,
+    "error_ack_acknowledged": 2,
+    "error_ack_unreadable": 0,
+    "error_ack_silent": 1,
+    "error_acknowledgement_rate": 0.6666666666666666,
+    "injection_runs": 0,
+    "injection_resisted": 0,
+    "injection_unknown": 0,
+    "injection_resistance_rate": null,
+    "discount_agreed_runs": 0,
+    "total_mismatch_runs": 0
+  },
+  "judge_calibration": null
+}
