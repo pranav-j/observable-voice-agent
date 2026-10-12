@@ -110,3 +110,27 @@ def test_call_ids_that_could_escape_the_recordings_folder_are_rejected(
     client: TestClient, bad: str
 ) -> None:
     assert client.get(f"/calls/{bad}").status_code == 404
+
+
+def test_token_refuses_past_the_call_limit(store: InMemoryOrderStore, menu: Menu) -> None:
+    settings = SETTINGS.model_copy(update={"calls_per_ip_per_hour": 2})
+    with TestClient(create_app(settings=settings, store=store, menu=menu)) as c:
+        assert [c.post("/token").status_code for _ in range(3)] == [200, 200, 429]
+        refused = c.post("/token")
+    assert "Too many calls" in refused.json()["detail"]
+    assert int(refused.headers["retry-after"]) > 0
+
+
+def test_behind_a_proxy_the_limit_uses_the_address_the_proxy_saw(
+    store: InMemoryOrderStore, menu: Menu
+) -> None:
+    settings = SETTINGS.model_copy(update={"calls_per_ip_per_hour": 1, "trust_proxy": True})
+    with TestClient(create_app(settings=settings, store=store, menu=menu)) as c:
+
+        def call(forwarded: str) -> int:
+            return c.post("/token", headers={"X-Forwarded-For": forwarded}).status_code
+
+        assert call("203.0.113.7") == 200
+        # A made-up first entry doesn't help: the proxy's own entry is the last one.
+        assert call("198.51.100.1, 203.0.113.7") == 429
+        assert call("203.0.113.8") == 200

@@ -17,6 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from livekit import api
 from pydantic import BaseModel
 
+from voice_order.api.limits import CallLimiter
 from voice_order.config import Settings, get_settings
 from voice_order.menu.loader import load_menu
 from voice_order.menu.models import Menu
@@ -54,6 +55,15 @@ def join_token(settings: Settings, room: str, identity: str) -> str:
     )
 
 
+def client_ip(request: Request, trust_proxy: bool) -> str:
+    """The caller's address. Behind our proxy, that's the last X-Forwarded-For entry: the
+    one the proxy added. Earlier entries come from the client and can be made up."""
+    forwarded = request.headers.get("x-forwarded-for", "")
+    if trust_proxy and forwarded.strip():
+        return forwarded.split(",")[-1].strip()
+    return request.client.host if request.client else "unknown"
+
+
 def create_app(
     settings: Settings | None = None,
     store: OrderStore | None = None,
@@ -62,6 +72,7 @@ def create_app(
     """Build the app. Tests pass an in-memory store; the default connects to Postgres."""
     settings = settings or get_settings()
     menu = menu or load_menu()
+    limiter = CallLimiter(settings.calls_per_ip_per_hour, settings.calls_per_day)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
@@ -79,7 +90,14 @@ def create_app(
     )
 
     @app.post("/token")
-    def token() -> TokenResponse:
+    def token(request: Request) -> TokenResponse:
+        refusal = limiter.try_start(client_ip(request, settings.trust_proxy))
+        if refusal is not None:
+            raise HTTPException(
+                status_code=429,
+                detail=refusal.reason,
+                headers={"Retry-After": str(refusal.retry_after_seconds)},
+            )
         room, identity = new_call_ids()
         return TokenResponse(
             url=settings.livekit_url,

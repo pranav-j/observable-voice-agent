@@ -51,6 +51,10 @@ class Settings(BaseSettings):
     filler_after_ms: int = Field(default=1200, ge=0)  # tool calls slower than this get a filler
     max_call_seconds: int = Field(default=300, gt=0)
     idle_timeout_seconds: int = Field(default=30, gt=0)  # caller silent this long: end the call
+    # Limits on starting calls, for a public demo (see docs/adr/0008-demo-limits.md). 0 = none.
+    calls_per_ip_per_hour: int = Field(default=0, ge=0)
+    calls_per_day: int = Field(default=0, ge=0)
+    trust_proxy: bool = False  # take the caller's IP from X-Forwarded-For (behind a proxy)
     fault: Fault = "none"  # breaks the voice worker on purpose, to test the eval harness
 
     # Observability and output

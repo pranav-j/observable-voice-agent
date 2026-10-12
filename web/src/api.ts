@@ -32,6 +32,11 @@ export type CallSummary = {
 
 export async function fetchToken(): Promise<TokenResponse> {
   const response = await fetch(`${API}/token`, { method: 'POST' })
+  if (response.status === 429) {
+    // The demo's call limits: the backend says why, in words meant for the caller.
+    const body = (await response.json().catch(() => null)) as { detail?: string } | null
+    throw new Error(body?.detail ?? 'Too many calls right now. Try again later.')
+  }
   if (!response.ok) throw new Error(`token request failed: ${response.status}`)
   return (await response.json()) as TokenResponse
 }
