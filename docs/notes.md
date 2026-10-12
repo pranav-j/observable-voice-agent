@@ -442,3 +442,13 @@ The first try at the local baseline stopped early on a familiar-looking error: "
 The second try died differently: "BadZipFile: Overlapped entries: 'hm_omega.npy'". Both simulated callers in a run share one Kokoro model, and Kokoro reads its voices lazily out of a zip file. Two threads reading the same zip at once corrupted the read. Calls into each local model now take turns. I checked the fix with three threads hammering one shared Kokoro before restarting.
 
 The partial runs also showed the local pipeline's real weakness: names. "Nikhil" became "Nick Hill" every time, and "Pooja", "Neha" and "Imran" came out as "Pooj", "Nihal" and "Imrn". `base.en` is an English-only Whisper model listening to Indian names spoken by Kokoro voices, and that combination is hard. The full baseline will show how much it costs, and a multilingual model or a short context prompt for Whisper are the obvious things to try next.
+
+## The caller's voice was failing the test
+
+The first full local-speech run passed 64 of 93 (`reports/20261012-050510-audio`), against 85 for hosted speech. Replies started a quarter sooner, from 6.8 to 5.0 seconds at p50, and the agent's speech cost nothing. But 27 of the 29 failures were names or phone numbers.
+
+Before blaming Whisper, I tested it offline, which costs nothing. Kokoro spoke names, spelled names and phone numbers in the six caller voices, and I ran four Whisper variants over them, with and without a context prompt. Every English model got all twelve phone numbers right, so those failures came from the calls themselves, like numbers split across turns. Names were bad whatever I tried: between 5 and 10 of 18.
+
+Then I ran Whisper on names spoken by OpenAI's voices, which I had saved from earlier runs. `base.en` got 16 of 21 and `small.en` got 19 of 21. The same recognizer got about twice as many names right. Kokoro reads Indian names through an American-English pronouncer and mangles them, so a lot of what looked like the agent mishearing was the simulated caller mispronouncing. It's the same lesson as before: check the harness before blaming the agent.
+
+So the fair local setup keeps the agent on local speech and gives the simulated caller OpenAI's voice. The caller's voice was only about a tenth of the cost, so a full run is about a dollar, and that run is now the local baseline. The Kokoro-caller report stays as a record of what an unrealistic caller does to the numbers.
