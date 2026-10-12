@@ -1,0 +1,183 @@
+{
+  "mode": "audio",
+  "started_at": "2026-10-11T23:31:40+00:00",
+  "concurrency": 2,
+  "agent_models": [
+    "gpt-6-luna"
+  ],
+  "caller_models": [
+    "gpt-6-luna"
+  ],
+  "agent_prompt_versions": [
+    "v1"
+  ],
+  "caller_prompt_versions": [
+    "v4"
+  ],
+  "overall": {
+    "runs": 6,
+    "scenarios": 3,
+    "task_successes": 6,
+    "task_success_rate": 1.0,
+    "scenarios_passing_all_runs": 3,
+    "scenarios_passing_all_runs_rate": 1.0,
+    "order_exact_match_runs": 6,
+    "order_exact_match_rate": 1.0,
+    "mean_field_accuracy": 1.0,
+    "escalations": 0,
+    "expected_escalations": 0,
+    "escalation_agreement_rate": 1.0,
+    "errors": 0,
+    "caller_hung_up_early": 0,
+    "tool_limit_hits": 0,
+    "confirmed_before_reply_runs": 0,
+    "skipped_audio_behaviors": 0,
+    "turns_p50": 7.0,
+    "turns_p95": 9.0,
+    "duration_s_p50": 194.711,
+    "duration_s_p95": 265.966,
+    "agent_tokens": {
+      "input": 356325,
+      "output": 2661
+    },
+    "caller_tokens": {
+      "input": 36416,
+      "output": 749
+    }
+  },
+  "by_tag": {
+    "hesitation": {
+      "runs": 6,
+      "successes": 6,
+      "pass_rate": 1.0
+    },
+    "phone": {
+      "runs": 2,
+      "successes": 2,
+      "pass_rate": 1.0
+    },
+    "price_question": {
+      "runs": 2,
+      "successes": 2,
+      "pass_rate": 1.0
+    }
+  },
+  "scenarios": {
+    "hesitation_pause_mid_order": {
+      "tags": [
+        "hesitation"
+      ],
+      "runs": 2,
+      "successes": 2,
+      "pass_rate": 1.0,
+      "passed_all": true,
+      "errors": 0,
+      "mean_field_accuracy": 1.0,
+      "end_reasons": {
+        "caller_ended": 2
+      }
+    },
+    "hesitation_pause_on_phone": {
+      "tags": [
+        "hesitation",
+        "phone"
+      ],
+      "runs": 2,
+      "successes": 2,
+      "pass_rate": 1.0,
+      "passed_all": true,
+      "errors": 0,
+      "mean_field_accuracy": 1.0,
+      "end_reasons": {
+        "caller_ended": 2
+      }
+    },
+    "hesitation_undecided_drink": {
+      "tags": [
+        "hesitation",
+        "price_question"
+      ],
+      "runs": 2,
+      "successes": 2,
+      "pass_rate": 1.0,
+      "passed_all": true,
+      "errors": 0,
+      "mean_field_accuracy": 1.0,
+      "end_reasons": {
+        "caller_ended": 2
+      }
+    }
+  },
+  "failures": [],
+  "rule_violations": [],
+  "audio": {
+    "runs": 6,
+    "measured_turns": 44,
+    "response_latency_ms_p50": 5717.0,
+    "response_latency_ms_p95": 8347.0,
+    "dead_air_turns": 44,
+    "dead_air_rate": 1.0,
+    "barge_ins": 0,
+    "barge_in_stop_ms_p50": null,
+    "barge_in_stop_ms_p95": null,
+    "scripted_pauses": 6,
+    "false_cutoffs": 0,
+    "false_cutoff_rate": 0.0,
+    "wer": 0.19796954314720813,
+    "wer_words": 394,
+    "wer_by_noise": {
+      "clean": {
+        "wer": 0.19796954314720813,
+        "words": 394
+      }
+    },
+    "priced_runs": 6,
+    "agent_cost_usd": 0.4959,
+    "priced_minutes": 20.96,
+    "cost_per_minute_usd": 0.0236600122338638,
+    "cost_includes_estimates": true,
+    "hearing": [
+      "transcript"
+    ],
+    "doubled_replies": 0,
+    "detector": [
+      {
+        "frame_ms": 10,
+        "min_silence_ms": 300,
+        "min_speech_ms": 30,
+        "sample_rate": 16000,
+        "threshold_dbfs": -45.0
+      }
+    ],
+    "agent_configs": [
+      {
+        "agent_prompt_version": "v1",
+        "eou_silence_ms": 150,
+        "fault": "aggressive_eou",
+        "filler_phrases": false,
+        "llm_model": "gpt-6-luna",
+        "preemptive_generation": false,
+        "stt_model": "gpt-live-transcribe",
+        "tts_model": "gpt-4o-mini-tts",
+        "tts_voice": "coral"
+      }
+    ]
+  },
+  "judged": {
+    "error_ack_versions": [
+      "v1"
+    ],
+    "error_ack_cases": 0,
+    "error_ack_acknowledged": 0,
+    "error_ack_unreadable": 0,
+    "error_ack_silent": 2,
+    "error_acknowledgement_rate": null,
+    "injection_runs": 0,
+    "injection_resisted": 0,
+    "injection_unknown": 0,
+    "injection_resistance_rate": null,
+    "discount_agreed_runs": 0,
+    "total_mismatch_runs": 0
+  },
+  "judge_calibration": null
+}

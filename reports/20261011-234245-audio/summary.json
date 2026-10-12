@@ -1,0 +1,207 @@
+{
+  "mode": "audio",
+  "started_at": "2026-10-11T23:42:45+00:00",
+  "concurrency": 2,
+  "agent_models": [
+    "gpt-6-luna"
+  ],
+  "caller_models": [
+    "gpt-6-luna"
+  ],
+  "agent_prompt_versions": [
+    "v1"
+  ],
+  "caller_prompt_versions": [
+    "v4"
+  ],
+  "overall": {
+    "runs": 8,
+    "scenarios": 4,
+    "task_successes": 6,
+    "task_success_rate": 0.75,
+    "scenarios_passing_all_runs": 2,
+    "scenarios_passing_all_runs_rate": 0.5,
+    "order_exact_match_runs": 8,
+    "order_exact_match_rate": 0.875,
+    "mean_field_accuracy": 0.95,
+    "escalations": 0,
+    "expected_escalations": 0,
+    "escalation_agreement_rate": 1.0,
+    "errors": 0,
+    "caller_hung_up_early": 1,
+    "tool_limit_hits": 0,
+    "confirmed_before_reply_runs": 0,
+    "skipped_audio_behaviors": 0,
+    "turns_p50": 5.0,
+    "turns_p95": 8.0,
+    "duration_s_p50": 208.956,
+    "duration_s_p95": 330.044,
+    "agent_tokens": {
+      "input": 504942,
+      "output": 3780
+    },
+    "caller_tokens": {
+      "input": 38682,
+      "output": 932
+    }
+  },
+  "by_tag": {
+    "happy_path": {
+      "runs": 8,
+      "successes": 6,
+      "pass_rate": 0.75
+    }
+  },
+  "scenarios": {
+    "happy_path_chatty_biryani": {
+      "tags": [
+        "happy_path"
+      ],
+      "runs": 2,
+      "successes": 2,
+      "pass_rate": 1.0,
+      "passed_all": true,
+      "errors": 0,
+      "mean_field_accuracy": 1.0,
+      "end_reasons": {
+        "caller_ended": 2
+      }
+    },
+    "happy_path_details_upfront": {
+      "tags": [
+        "happy_path"
+      ],
+      "runs": 2,
+      "successes": 1,
+      "pass_rate": 0.5,
+      "passed_all": false,
+      "errors": 0,
+      "mean_field_accuracy": 0.8,
+      "end_reasons": {
+        "caller_ended": 2
+      }
+    },
+    "happy_path_multi_item_modifiers": {
+      "tags": [
+        "happy_path"
+      ],
+      "runs": 2,
+      "successes": 2,
+      "pass_rate": 1.0,
+      "passed_all": true,
+      "errors": 0,
+      "mean_field_accuracy": 1.0,
+      "end_reasons": {
+        "caller_ended": 2
+      }
+    },
+    "happy_path_single_coffee": {
+      "tags": [
+        "happy_path"
+      ],
+      "runs": 2,
+      "successes": 1,
+      "pass_rate": 0.5,
+      "passed_all": false,
+      "errors": 0,
+      "mean_field_accuracy": 1.0,
+      "end_reasons": {
+        "caller_ended": 1,
+        "caller_hung_up_early": 1
+      }
+    }
+  },
+  "failures": [
+    {
+      "scenario_id": "happy_path_details_upfront",
+      "run": 1,
+      "session_id": "audio-happy_path_details_upfront-r1-20261012-051639-679b",
+      "end_reason": "caller_ended",
+      "error": null,
+      "mismatches": [
+        "missing: 1x veg_samosa"
+      ]
+    },
+    {
+      "scenario_id": "happy_path_single_coffee",
+      "run": 1,
+      "session_id": "audio-happy_path_single_coffee-r1-20261012-052441-97cf",
+      "end_reason": "caller_hung_up_early",
+      "error": null,
+      "mismatches": [
+        "status: expected confirmed, got abandoned"
+      ]
+    }
+  ],
+  "rule_violations": [],
+  "audio": {
+    "runs": 8,
+    "measured_turns": 51,
+    "response_latency_ms_p50": 8487.0,
+    "response_latency_ms_p95": 14433.0,
+    "dead_air_turns": 51,
+    "dead_air_rate": 1.0,
+    "barge_ins": 0,
+    "barge_in_stop_ms_p50": null,
+    "barge_in_stop_ms_p95": null,
+    "scripted_pauses": 0,
+    "false_cutoffs": 0,
+    "false_cutoff_rate": null,
+    "wer": 0.09023941068139964,
+    "wer_words": 543,
+    "wer_by_noise": {
+      "clean": {
+        "wer": 0.09023941068139964,
+        "words": 543
+      }
+    },
+    "priced_runs": 8,
+    "agent_cost_usd": 0.6762,
+    "priced_minutes": 28.15,
+    "cost_per_minute_usd": 0.024018539032371472,
+    "cost_includes_estimates": true,
+    "hearing": [
+      "transcript"
+    ],
+    "doubled_replies": 0,
+    "detector": [
+      {
+        "frame_ms": 10,
+        "min_silence_ms": 300,
+        "min_speech_ms": 30,
+        "sample_rate": 16000,
+        "threshold_dbfs": -45.0
+      }
+    ],
+    "agent_configs": [
+      {
+        "agent_prompt_version": "v1",
+        "eou_silence_ms": 500,
+        "fault": "slow_llm",
+        "filler_phrases": false,
+        "llm_model": "gpt-6-luna",
+        "preemptive_generation": false,
+        "stt_model": "gpt-live-transcribe",
+        "tts_model": "gpt-4o-mini-tts",
+        "tts_voice": "coral"
+      }
+    ]
+  },
+  "judged": {
+    "error_ack_versions": [
+      "v1"
+    ],
+    "error_ack_cases": 1,
+    "error_ack_acknowledged": 1,
+    "error_ack_unreadable": 0,
+    "error_ack_silent": 0,
+    "error_acknowledgement_rate": 1.0,
+    "injection_runs": 0,
+    "injection_resisted": 0,
+    "injection_unknown": 0,
+    "injection_resistance_rate": null,
+    "discount_agreed_runs": 0,
+    "total_mismatch_runs": 0
+  },
+  "judge_calibration": null
+}
