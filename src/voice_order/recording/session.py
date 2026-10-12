@@ -48,6 +48,11 @@ def split_channels(stereo_path: Path, out_dir: Path) -> tuple[Path, Path]:
     return paths
 
 
+def wav_seconds(path: Path) -> float:
+    with wave.open(str(path), "rb") as w:
+        return w.getnframes() / w.getframerate()
+
+
 def transcript(report: SessionReport) -> list[dict[str, Any]]:
     return [
         {
@@ -90,17 +95,23 @@ def tool_calls(report: SessionReport) -> list[dict[str, Any]]:
 def save_session(report: SessionReport, out_dir: Path, rates: Rates) -> Path:
     out_dir.mkdir(parents=True, exist_ok=True)
     audio = Path(report.audio_recording_path) if report.audio_recording_path else None
+    recorded_seconds: float | None = None
     if audio is not None and audio.exists():
         # The original lives in a temporary directory LiveKit deletes when the job ends.
         kept = out_dir / "audio.ogg"
         shutil.copyfile(audio, kept)
-        split_channels(kept, out_dir)
+        caller_wav, _ = split_channels(kept, out_dir)
+        recorded_seconds = wav_seconds(caller_wav)
     (out_dir / "transcript.json").write_text(json.dumps(transcript(report), indent=2))
     with (out_dir / "tool_calls.jsonl").open("w", encoding="utf-8") as f:
         for call in tool_calls(report):
             f.write(json.dumps(call, ensure_ascii=False) + "\n")
     (out_dir / "report.json").write_text(json.dumps(report.to_dict(), indent=2, default=str))
-    usage = summarize_usage(list(report.model_usage or []), rates, call_seconds=report.duration)
+    # Speech-to-text with no reported duration is estimated from the call's length. Use the
+    # recorded audio when there is some: the session clock kept running while the machine
+    # slept, and once billed four short calls as over an hour each.
+    call_seconds = recorded_seconds if recorded_seconds else report.duration
+    usage = summarize_usage(list(report.model_usage or []), rates, call_seconds=call_seconds)
     usage["duration_seconds"] = report.duration
     (out_dir / "usage.json").write_text(json.dumps(usage, indent=2))
     return out_dir

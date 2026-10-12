@@ -10,7 +10,13 @@ import av
 import numpy as np
 from livekit.agents.llm import ChatContext, ChatMessage, FunctionCall, FunctionCallOutput
 
-from voice_order.recording.session import SAMPLE_RATE, split_channels, tool_calls, transcript
+from voice_order.recording.session import (
+    SAMPLE_RATE,
+    split_channels,
+    tool_calls,
+    transcript,
+    wav_seconds,
+)
 
 
 def write_stereo_ogg(path: Path, seconds: float = 1.0) -> None:
@@ -89,3 +95,13 @@ def test_tool_calls_are_paired_with_their_results() -> None:
         ("end_call", {"reason": "done"}, None),
     ]
     assert json.dumps(calls)  # serializable as written to tool_calls.jsonl
+
+
+def test_wav_seconds(tmp_path: Path) -> None:
+    path = tmp_path / "a.wav"
+    with wave.open(str(path), "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(16000)
+        w.writeframes(b"\x00\x00" * 24000)
+    assert wav_seconds(path) == 1.5
