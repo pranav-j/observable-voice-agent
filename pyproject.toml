@@ -63,6 +63,10 @@ files = ["src", "tests", "evals"]
 mypy_path = ["src"]
 plugins = ["pydantic.mypy"]
 
+[[tool.mypy.overrides]]
+module = ["faster_whisper", "faster_whisper.*"]  # ships without type information
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
