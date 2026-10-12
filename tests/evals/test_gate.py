@@ -6,7 +6,7 @@ from typing import Any
 
 import pytest
 import yaml
-from evals.gate import GATE, METRICS, Check, check, main, metrics_of
+from evals.gate import GATE, METRICS, Check, baseline_key, check, main, metrics_of
 
 
 def summary(mode: str = "audio", **sections: dict[str, Any]) -> dict[str, Any]:
@@ -92,3 +92,30 @@ def test_cli_without_a_baseline(tmp_path: Path, capsys: pytest.CaptureFixture[st
     report = _report(tmp_path / "r", summary())
     assert main([str(report), "--baseline", str(tmp_path / "none.json")]) == 2
     assert "no audio baseline" in capsys.readouterr().err
+
+
+def test_local_speech_reports_get_their_own_baseline() -> None:
+    local = summary(
+        audio={"agent_configs": [{"stt_provider": "whisper", "tts_provider": "kokoro"}]}
+    )
+    hosted = summary(
+        audio={"agent_configs": [{"stt_provider": "openai", "tts_provider": "openai"}]}
+    )
+    old = summary(audio={"agent_configs": [{"stt_model": "gpt-live-transcribe"}]})  # pre-providers
+    assert baseline_key(local) == "audio:whisper+kokoro"
+    assert baseline_key(hosted) == baseline_key(old) == "audio"
+    with pytest.raises(ValueError, match="no audio:whisper\\+kokoro baseline"):
+        check(local, baseline_of(hosted), {"audio": {}})
+
+
+def test_a_report_mixing_speech_providers_is_refused() -> None:
+    mixed = summary(
+        audio={
+            "agent_configs": [
+                {"stt_provider": "openai", "tts_provider": "openai"},
+                {"stt_provider": "whisper", "tts_provider": "kokoro"},
+            ]
+        }
+    )
+    with pytest.raises(ValueError, match="mixes speech providers"):
+        baseline_key(mixed)

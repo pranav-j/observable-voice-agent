@@ -78,12 +78,31 @@ def metrics_of(summary: dict[str, Any]) -> dict[str, float | None]:
     return values
 
 
+def baseline_key(summary: dict[str, Any]) -> str:
+    """Which baseline a report is gated against: its mode, plus its speech providers.
+
+    Hosted and local speech are different systems to measure, so each gets its own
+    baseline. Hosted speech keeps the plain mode name ("audio").
+    """
+    mode: str = summary["mode"]
+    configs = (summary.get("audio") or {}).get("agent_configs") or []
+    speech = {
+        (c.get("stt_provider", "openai"), c.get("tts_provider", "openai")) for c in configs if c
+    }
+    if len(speech) > 1:
+        raise ValueError(f"the report mixes speech providers: {sorted(speech)}")
+    if not speech or speech == {("openai", "openai")}:
+        return mode
+    ((stt, tts),) = speech
+    return f"{mode}:{stt}+{tts}"
+
+
 def check(summary: dict[str, Any], baseline: dict[str, Any], gate: dict[str, Any]) -> list[Check]:
-    mode = summary["mode"]
+    mode, key = summary["mode"], baseline_key(summary)
     rules = gate.get(mode) or {}
-    if mode not in baseline:
-        raise ValueError(f"no {mode} baseline in the baseline file")
-    current, base = metrics_of(summary), baseline[mode]["metrics"]
+    if key not in baseline:
+        raise ValueError(f"no {key} baseline in the baseline file")
+    current, base = metrics_of(summary), baseline[key]["metrics"]
     checks = []
     for metric, rule in rules.items():
         if metric not in METRICS:
@@ -126,9 +145,10 @@ def main(argv: list[str] | None = None) -> int:
     summary = json.loads((args.report / "summary.json").read_text())
     baseline = json.loads(args.baseline.read_text()) if args.baseline.exists() else {}
     if args.update_baseline:
-        baseline[summary["mode"]] = baseline_entry(summary, args.report)
+        key = baseline_key(summary)
+        baseline[key] = baseline_entry(summary, args.report)
         args.baseline.write_text(json.dumps(baseline, indent=2, sort_keys=True) + "\n")
-        print(f"{args.baseline}: {summary['mode']} baseline is now {args.report}")
+        print(f"{args.baseline}: {key} baseline is now {args.report}")
         return 0
     try:
         checks = check(summary, baseline, yaml.safe_load(args.gate.read_text()))
