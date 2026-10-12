@@ -46,7 +46,7 @@ Measured from the caller's side, from the audio it received.
 | Dead air (over 2 s) | 84 turns (100.0%) |
 | Barge-in stop p50 / p95 (ms) | n/a / n/a (0 barge-ins) |
 | False cut-offs | 0/9 scripted pauses (0.0%) |
-| Turn ended during a scripted pause, agent's clock | 8/9 scripted pauses (88.9%) |
+| Turn ended during a scripted pause, agent's clock | 9/9 scripted pauses (100.0%) |
 | WER | 13.8% (853 words) |
 | WER, clean | 13.8% (853 words) |
 | Agent cost per minute | $0.000 ($0.012 over 31.4 min, 9 runs) |

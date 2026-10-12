@@ -96,7 +96,7 @@ Measured from the caller's side, from the audio it received.
 | Dead air (over 2 s) | 654 turns (100.0%) |
 | Barge-in stop p50 / p95 (ms) | 988 / 1065 (7 barge-ins) |
 | False cut-offs | 0/9 scripted pauses (0.0%) |
-| Turn ended during a scripted pause, agent's clock | 5/9 scripted pauses (55.6%) |
+| Turn ended during a scripted pause, agent's clock | 6/9 scripted pauses (66.7%) |
 | WER | 17.5% (6023 words) |
 | WER, SNR 10 dB | 28.0% (107 words) |
 | WER, SNR 15 dB | 14.1% (149 words) |
@@ -107,6 +107,8 @@ Measured from the caller's side, from the audio it received.
 | Caller hearing | transcript |
 
 Agent-side p50 (s): end_of_turn_delay 0.93, llm_node_ttft 1.12, tts_node_ttfb 0.72, e2e_latency 5.14.
+
+Agent-side p95 (s): end_of_turn_delay 2.50, llm_node_ttft 1.66, tts_node_ttfb 1.86, e2e_latency 8.06.
 
 Detector: frame_ms 10, min_silence_ms 300, min_speech_ms 30, sample_rate 16000, threshold_dbfs -45.0.
 

@@ -58,6 +58,8 @@ Measured from the caller's side, from the audio it received.
 
 Agent-side p50 (s): end_of_turn_delay 0.59, llm_node_ttft 1.24, tts_node_ttfb 1.06, e2e_latency 5.43.
 
+Agent-side p95 (s): end_of_turn_delay 2.50, llm_node_ttft 2.67, tts_node_ttfb 1.44, e2e_latency 9.25.
+
 Detector: frame_ms 10, min_silence_ms 300, min_speech_ms 30, sample_rate 16000, threshold_dbfs -45.0.
 
 Agent config: agent_prompt_version v1, eou_silence_ms 500, fault no_barge_in, filler_phrases False, llm_model gpt-6-luna, preemptive_generation False, stt_model gpt-live-transcribe, tts_model gpt-4o-mini-tts, tts_voice coral.
