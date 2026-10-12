@@ -21,6 +21,7 @@ EXTRA: dict[str, tuple[str, str]] = {
     "dead_air_rate": ("audio", "dead_air_rate"),
     "barge_in_stop_ms_p50": ("audio", "barge_in_stop_ms_p50"),
     "doubled_replies": ("audio", "doubled_replies"),
+    "turn_end_in_pause_rate": ("audio", "turn_end_in_pause_rate"),
 }
 
 
