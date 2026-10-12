@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     tts_format: Literal["mp3", "pcm"] = "mp3"  # pcm skips decoding before playback
     # Local speech instead of OpenAI's (see docs/adr/0007-local-speech.md)
     stt_provider: Literal["openai", "whisper"] = "openai"
-    whisper_model: str = "small.en"
+    whisper_model: str = "base.en"  # small.en is more accurate but ~1.4 s per utterance on CPU
     tts_provider: Literal["openai", "kokoro"] = "openai"
     kokoro_voice: str = "af_heart"
     models_dir: str = "models"  # local model files, downloaded with make models

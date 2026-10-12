@@ -50,7 +50,7 @@ def to_pcm16(audio: np.ndarray[Any, Any]) -> bytes:
 
 
 class WhisperSTT(stt.STT[Never]):  # no extra events beyond LiveKit's own
-    def __init__(self, *, model: str = "small.en", language: str = "en") -> None:
+    def __init__(self, *, model: str = "base.en", language: str = "en") -> None:
         super().__init__(capabilities=stt.STTCapabilities(streaming=False, interim_results=False))
         self._model_name = model
         self._language = language

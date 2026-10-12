@@ -120,7 +120,7 @@ models: $(VENV)/bin/python ## Download the local speech models (Kokoro and Whisp
 	@mkdir -p models/kokoro
 	@test -f models/kokoro/kokoro-v1.0.onnx || curl -fL --progress-bar -o models/kokoro/kokoro-v1.0.onnx $(KOKORO_URL)/kokoro-v1.0.onnx
 	@test -f models/kokoro/voices-v1.0.bin || curl -fL --progress-bar -o models/kokoro/voices-v1.0.bin $(KOKORO_URL)/voices-v1.0.bin
-	$(UV) run --locked python -c "from faster_whisper import WhisperModel; WhisperModel('$(or $(WHISPER_MODEL),small.en)', device='cpu', compute_type='int8')"
+	$(UV) run --locked python -c "from faster_whisper import WhisperModel; WhisperModel('$(or $(WHISPER_MODEL),base.en)', device='cpu', compute_type='int8')"
 	@echo "Local speech models are ready. Set STT_PROVIDER=whisper and TTS_PROVIDER=kokoro to use them."
 
 annotate: $(VENV)/bin/python ## make annotate SESSION=<id>: start the expected order for a real call
