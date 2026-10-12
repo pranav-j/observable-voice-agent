@@ -33,6 +33,11 @@ class Settings(BaseSettings):
     tts_model: str = "gpt-4o-mini-tts"
     tts_voice: str = "coral"
     tts_format: Literal["mp3", "pcm"] = "mp3"  # pcm skips decoding before playback
+    # cascade: speech-to-text, the LLM, then text-to-speech. realtime: one OpenAI model hears
+    # and speaks, with the same tools (the speech-to-speech experiment, E2).
+    pipeline: Literal["cascade", "realtime"] = "cascade"
+    realtime_model: str = "gpt-realtime-mini"
+    realtime_voice: str = "marin"
     # Local speech instead of OpenAI's (see docs/adr/0007-local-speech.md)
     stt_provider: Literal["openai", "whisper"] = "whisper"
     whisper_model: str = "base.en"  # small.en is more accurate but ~1.4 s per utterance on CPU
@@ -73,27 +78,45 @@ class Settings(BaseSettings):
     def effective_eou_silence_ms(self) -> int:
         return AGGRESSIVE_EOU_MS if self.fault == "aggressive_eou" else self.eou_silence_ms
 
+    @property
+    def speech_providers(self) -> tuple[str, str]:
+        """Who hears and who speaks, as recorded with each call: costs differ by orders of
+        magnitude between them, so cost estimates only compare calls with the same pair."""
+        if self.pipeline == "realtime":
+            return "realtime", "realtime"
+        return self.stt_provider, self.tts_provider
+
     def stt_choice(self) -> tuple[str, str]:
         """(provider, model) for speech-to-text."""
+        if self.pipeline == "realtime":
+            return "openai", self.realtime_model
         if self.stt_provider == "whisper":
             return "local", self.whisper_model
         return "openai", self.stt_model
 
     def tts_choice(self) -> tuple[str, str]:
         """(provider, model) for text-to-speech."""
+        if self.pipeline == "realtime":
+            return "openai", self.realtime_model
         if self.tts_provider == "kokoro":
             return "local", "kokoro-v1.0"
         return "openai", self.tts_model
 
     def voice_config(self) -> dict[str, Any]:
         """The settings that shape a voice call, saved with each one so runs can be compared."""
+        realtime = self.pipeline == "realtime"
+        if realtime:
+            voice = self.realtime_voice
+        else:
+            voice = self.kokoro_voice if self.tts_provider == "kokoro" else self.tts_voice
         return {
-            "llm_model": self.llm_model,
-            "stt_provider": self.stt_provider,
+            "pipeline": self.pipeline,
+            "llm_model": self.realtime_model if realtime else self.llm_model,
+            "stt_provider": self.speech_providers[0],
             "stt_model": self.stt_choice()[1],
-            "tts_provider": self.tts_provider,
+            "tts_provider": self.speech_providers[1],
             "tts_model": self.tts_choice()[1],
-            "tts_voice": self.kokoro_voice if self.tts_provider == "kokoro" else self.tts_voice,
+            "tts_voice": voice,
             "tts_format": self.tts_format,
             "eou_silence_ms": self.effective_eou_silence_ms,
             "turn_detection": self.effective_turn_detection,

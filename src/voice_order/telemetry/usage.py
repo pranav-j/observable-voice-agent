@@ -20,6 +20,31 @@ class LLMRate(BaseModel):
     input_per_1m: float
     cached_input_per_1m: float = 0.0
     output_per_1m: float
+    # Speech-to-speech models also price audio tokens, much higher than text ones.
+    audio_input_per_1m: float | None = None
+    cached_audio_input_per_1m: float = 0.0
+    audio_output_per_1m: float = 0.0
+
+
+def llm_cost(u: Any, r: LLMRate) -> float:
+    """USD for one model's usage. With audio rates, audio and text tokens are priced apart."""
+    if r.audio_input_per_1m is None:
+        cached = _get(u, "input_cached_tokens")
+        return (
+            (_get(u, "input_tokens") - cached) * r.input_per_1m
+            + cached * r.cached_input_per_1m
+            + _get(u, "output_tokens") * r.output_per_1m
+        ) / 1e6
+    text_cached = _get(u, "input_cached_text_tokens")
+    audio_cached = _get(u, "input_cached_audio_tokens")
+    return (
+        (_get(u, "input_text_tokens") - text_cached) * r.input_per_1m
+        + text_cached * r.cached_input_per_1m
+        + (_get(u, "input_audio_tokens") - audio_cached) * r.audio_input_per_1m
+        + audio_cached * r.cached_audio_input_per_1m
+        + _get(u, "output_text_tokens") * r.output_per_1m
+        + _get(u, "output_audio_tokens") * r.audio_output_per_1m
+    ) / 1e6
 
 
 class STTRate(BaseModel):
@@ -64,19 +89,19 @@ def summarize_usage(
         line: dict[str, Any] = {"kind": kind, "model": key}
         cost: float | None = None
         if kind == "llm":
-            cached = _get(u, "input_cached_tokens")
             line |= {
                 "input_tokens": int(_get(u, "input_tokens")),
-                "cached_input_tokens": int(cached),
+                "cached_input_tokens": int(_get(u, "input_cached_tokens")),
                 "output_tokens": int(_get(u, "output_tokens")),
             }
+            if _get(u, "input_audio_tokens") or _get(u, "output_audio_tokens"):
+                line |= {
+                    "input_audio_tokens": int(_get(u, "input_audio_tokens")),
+                    "cached_input_audio_tokens": int(_get(u, "input_cached_audio_tokens")),
+                    "output_audio_tokens": int(_get(u, "output_audio_tokens")),
+                }
             if (r := rates.llm.get(key)) is not None:
-                fresh = _get(u, "input_tokens") - cached
-                cost = (
-                    fresh * r.input_per_1m
-                    + cached * r.cached_input_per_1m
-                    + _get(u, "output_tokens") * r.output_per_1m
-                ) / 1e6
+                cost = llm_cost(u, r)
         elif kind == "stt":
             seconds = _get(u, "audio_duration")
             if seconds == 0 and call_seconds:

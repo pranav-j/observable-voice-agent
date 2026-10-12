@@ -148,3 +148,24 @@ def test_turn_detection_is_a_setting_and_the_fault_overrides_it(
     monkeypatch.setenv("TURN_DETECTION", "semantic")
     monkeypatch.setenv("FAULT", "aggressive_eou")
     assert Settings(_env_file=None).effective_turn_detection == "vad"
+
+
+def test_realtime_pipeline_is_recorded_as_its_own_speech(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("PIPELINE", "realtime")
+    monkeypatch.setenv("REALTIME_MODEL", "gpt-realtime")
+    s = Settings(_env_file=None)
+    assert s.speech_providers == ("realtime", "realtime")
+    assert s.stt_choice() == s.tts_choice() == ("openai", "gpt-realtime")
+    config = s.voice_config()
+    assert (config["pipeline"], config["llm_model"], config["tts_voice"]) == (
+        "realtime",
+        "gpt-realtime",
+        "marin",
+    )
+
+
+def test_cascade_is_the_default_pipeline() -> None:
+    s = Settings(_env_file=None)
+    assert s.pipeline == "cascade"
+    assert s.speech_providers == (s.stt_provider, s.tts_provider)
+    assert s.voice_config()["llm_model"] == s.llm_model

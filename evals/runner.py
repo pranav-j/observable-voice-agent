@@ -306,7 +306,7 @@ async def _recorded(args: argparse.Namespace, settings: Settings) -> int:
 
 def _audio_go_ahead(settings: Settings, runs: int, *, yes: bool, caller_voice: str) -> bool:
     """Print what an audio run is likely to cost; stop unless it's small or --yes."""
-    providers = (settings.stt_provider, settings.tts_provider)
+    providers = settings.speech_providers
     past = past_call_costs(Path(settings.recordings_dir), providers)
     guess = estimate(runs, past, caller_speech_paid=caller_voice == "openai")
     amount = "unknown" if guess.usd is None else f"about ${guess.usd:.2f}"

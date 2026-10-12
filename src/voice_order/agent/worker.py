@@ -108,7 +108,10 @@ def _is_tool_call(chunk: object) -> bool:
 def prewarm(proc: JobProcess) -> None:
     # Loading models blocks, so do it once per process, before calls arrive.
     proc.userdata["vad"] = silero.VAD.load(min_silence_duration=settings.vad_min_silence_ms / 1000)
-    proc.userdata["stt"], proc.userdata["tts"] = speech_models(settings)
+    if settings.pipeline == "cascade":  # the realtime model hears and speaks by itself
+        proc.userdata["stt"], proc.userdata["tts"] = speech_models(settings)
+    else:
+        proc.userdata["stt"] = proc.userdata["tts"] = None
 
 
 def speech_models(settings: Settings) -> tuple[Any, Any]:
@@ -136,6 +139,16 @@ def speech_models(settings: Settings) -> tuple[Any, Any]:
 
 def build_session(settings: Settings, vad: Any, stt: Any, tts: Any) -> AgentSession[None]:
     key = settings.openai_api_key.get_secret_value()
+    if settings.pipeline == "realtime":
+        # One model hears, decides and speaks. Turn-taking and interruptions are its own
+        # (server-side voice detection); it transcribes the caller for the transcript.
+        return AgentSession(
+            llm=lk_openai.realtime.RealtimeModel(
+                model=settings.realtime_model, voice=settings.realtime_voice, api_key=key
+            ),
+            user_away_timeout=settings.idle_timeout_seconds,
+            max_tool_steps=MAX_TOOL_ROUNDS,
+        )
     return AgentSession(
         stt=stt,
         llm=lk_openai.responses.LLM(
@@ -164,6 +177,18 @@ def build_session(settings: Settings, vad: Any, stt: Any, tts: Any) -> AgentSess
         user_away_timeout=settings.idle_timeout_seconds,
         max_tool_steps=MAX_TOOL_ROUNDS,  # LiveKit's default is 3; text mode allows the same
     )
+
+
+async def speak(session: AgentSession[None], line: str, *, interruptible: bool = True) -> None:
+    """Say a fixed line. A realtime model has no separate voice to read text with, so it's
+    asked to say the line itself."""
+    if settings.pipeline == "realtime":
+        await session.generate_reply(
+            instructions=f"Say exactly this, and nothing else: {line}",
+            allow_interruptions=interruptible,
+        )
+    else:
+        await session.say(line, allow_interruptions=interruptible)
 
 
 async def publish(room: rtc.Room, topic: str, payload: dict[str, Any]) -> None:
@@ -208,7 +233,7 @@ async def entrypoint(ctx: JobContext) -> None:
             "stt.provider": settings.stt_choice()[0],
             "stt.model": settings.stt_choice()[1],
             "llm.provider": "openai",
-            "llm.model": settings.llm_model,
+            "llm.model": settings.voice_config()["llm_model"],
             "tts.provider": settings.tts_choice()[0],
             "tts.model": settings.tts_choice()[1],
         },
@@ -279,7 +304,7 @@ async def entrypoint(ctx: JobContext) -> None:
             call.order = abandon(call.order)
             call.ending = CallEnd(kind="end_call", reason=reason)
             await store.save(call.order)
-            await session.say(line, allow_interruptions=False)
+            await speak(session, line, interruptible=False)
 
     @session.on("user_state_changed")
     def _on_user_state(ev: UserStateChangedEvent) -> None:
@@ -291,7 +316,7 @@ async def entrypoint(ctx: JobContext) -> None:
 
     await session.start(agent, room=ctx.room, record=True)  # stereo: caller left, agent right
     await publish(ctx.room, ORDER_TOPIC, {"session_id": call.order.session_id, **order_view(call)})
-    await session.say(greeting_prompt(menu.restaurant).text)
+    await speak(session, greeting_prompt(menu.restaurant).text)
 
     async def time_limit() -> None:
         await asyncio.sleep(settings.max_call_seconds)

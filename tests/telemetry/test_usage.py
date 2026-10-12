@@ -85,3 +85,38 @@ def test_a_reported_stt_duration_is_used_as_is() -> None:
     line = summarize_usage([reported], load_rates(), call_seconds=120.0)["models"][0]
     assert "estimated_from_call_length" not in line
     assert line["audio_seconds"] == 30.0
+
+
+def test_speech_to_speech_prices_audio_and_text_tokens_apart() -> None:
+    summary = summarize_usage(
+        [
+            usage(
+                "llm",
+                "gpt-realtime-mini",
+                input_tokens=12_000,
+                input_cached_tokens=8_000,
+                input_text_tokens=9_000,
+                input_cached_text_tokens=7_000,
+                input_audio_tokens=3_000,
+                input_cached_audio_tokens=1_000,
+                output_tokens=2_500,
+                output_text_tokens=500,
+                output_audio_tokens=2_000,
+            )
+        ],
+        load_rates(),
+    )
+    (line,) = summary["models"]
+    expected = (
+        2_000 * 0.60 + 7_000 * 0.06 + 2_000 * 10.00 + 1_000 * 0.30 + 500 * 2.40 + 2_000 * 20.00
+    ) / 1e6
+    assert line["cost_usd"] == pytest.approx(expected)
+    assert (line["input_audio_tokens"], line["output_audio_tokens"]) == (3_000, 2_000)
+
+
+def test_text_only_models_keep_the_plain_formula() -> None:
+    summary = summarize_usage(
+        [usage("llm", "gpt-6-luna", input_tokens=1_000_000, output_tokens=100_000)], load_rates()
+    )
+    assert summary["models"][0]["cost_usd"] == pytest.approx(0.10 + 0.05)
+    assert "input_audio_tokens" not in summary["models"][0]
