@@ -68,7 +68,7 @@ def test_get_settings_is_cached() -> None:
 def test_voice_defaults() -> None:
     s = Settings(_env_file=None)
     assert (s.eou_silence_ms, s.max_call_seconds) == (500, 300)
-    assert s.enable_preemptive_generation is False
+    assert s.enable_preemptive_generation is True
     assert s.livekit_url.startswith("ws://")
 
 
@@ -81,9 +81,9 @@ def test_livekit_secret_is_masked(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_voice_knobs_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("EOU_SILENCE_MS", "150")
-    monkeypatch.setenv("ENABLE_PREEMPTIVE_GENERATION", "true")
+    monkeypatch.setenv("ENABLE_PREEMPTIVE_GENERATION", "false")
     s = Settings(_env_file=None)
-    assert (s.eou_silence_ms, s.enable_preemptive_generation) == (150, True)
+    assert (s.eou_silence_ms, s.enable_preemptive_generation) == (150, False)
 
 
 def test_every_setting_is_documented_in_env_example() -> None:
@@ -101,7 +101,7 @@ def test_every_setting_is_documented_in_env_example() -> None:
 def test_voice_config_names_what_shapes_a_call() -> None:
     config = Settings(_env_file=None, eou_silence_ms=300).voice_config()
     assert config["eou_silence_ms"] == 300
-    assert config["preemptive_generation"] is False
+    assert config["preemptive_generation"] is True
     assert {"llm_model", "stt_model", "tts_model", "tts_voice"} <= set(config)
 
 
