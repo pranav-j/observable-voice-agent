@@ -485,7 +485,7 @@ I wanted the turn-detection experiment to show how often the agent cuts a caller
 
 One trap there. I first used each turn record's `created_at` as the moment the turn ended. With preemptive generation on, LiveKit keeps the message it made for the early reply, so `created_at` can come before the turn actually ended. Stop time plus end-of-turn delay is the reliable one.
 
-Re-scoring the saved runs with it was a surprise. With the turn detector on, the agent ended the turn inside the pause in 6 of 9 pauses on the hosted baseline and 6 of 9 on the local one. Turning the detector off on purpose, the aggressive end-of-turn fault, did no worse at 4 of 6. The transcripts make it obvious: "Hi, um, could I get?" went in as a whole turn, and "One Mysore masala dosa, please" came a few seconds later as another.
+Re-scoring the saved runs with it was a surprise. With the turn detector on, the agent ended the turn inside the pause in 6 of 9 pauses on the hosted baseline and 6 of 9 on the local one. Turning the detector off on purpose, with the aggressive end-of-turn fault, came out the same: 4 of 6. The transcripts make it obvious: "Hi, um, could I get?" went in as a whole turn, and the rest of the sentence came a few seconds later as another.
 
 The traces showed the detector had run and rated those half sentences as finished. It listens to the audio, not the words. And the simulated caller made each half separately: for a pause, it synthesized "Hi, umm, could I get" as its own line, and the second half as another. A line synthesized on its own ends the way a finished sentence ends, so the detector was right. A person who stops to think in the middle of a sentence doesn't sound like that.
 
