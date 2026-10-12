@@ -131,3 +131,9 @@ def test_local_speech_is_named_in_the_saved_config(monkeypatch: pytest.MonkeyPat
         "kokoro-v1.0",
         "bf_emma",
     )
+
+
+def test_vad_silence_is_a_setting(monkeypatch: pytest.MonkeyPatch) -> None:
+    assert Settings(_env_file=None).voice_config()["vad_min_silence_ms"] == 550
+    monkeypatch.setenv("VAD_MIN_SILENCE_MS", "300")
+    assert Settings(_env_file=None).vad_min_silence_ms == 300

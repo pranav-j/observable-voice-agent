@@ -103,7 +103,7 @@ def _is_tool_call(chunk: object) -> bool:
 
 def prewarm(proc: JobProcess) -> None:
     # Loading models blocks, so do it once per process, before calls arrive.
-    proc.userdata["vad"] = silero.VAD.load()
+    proc.userdata["vad"] = silero.VAD.load(min_silence_duration=settings.vad_min_silence_ms / 1000)
     proc.userdata["stt"], proc.userdata["tts"] = speech_models(settings)
 
 
