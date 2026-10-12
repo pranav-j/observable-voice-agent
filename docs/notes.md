@@ -401,3 +401,15 @@ Two things in the report changed what I thought I knew.
 **The judge was grading silence.** Error acknowledgement first came out at 13 of 21. All eight misses had no reply at all. That was mostly the agent correctly saying nothing while the caller finished reading out a number. The judge marked those as failures to communicate, but there was nothing to grade. Silence after an error is now counted on its own and kept out of the rate.
 
 The calibration file for the judge is ready: twenty real cases from the reports, plus five I constructed where the reply claims success. Nearly every real reply handled its error well, so without the constructed ones a judge that always said yes would look perfect. The labels have to come from a person.
+
+## Breaking the agent on purpose
+
+I ran each seeded fault against the scenarios it should affect and compared the results with the same scenarios in the baseline. The full write-up is in `docs/harness-validation.md`. Two faults were caught straight away. Dropping modifiers took exact match from perfect to zero. Slowing the LLM pushed p95 latency up 44%, well past the gate margin.
+
+The other two found problems in my harness, which is what this exercise is for.
+
+**The barge-in metric was measuring the wrong thing.** With barge-in switched off, the agent talks straight over the caller, so its stop time should explode. Instead it got *faster*, 917 to 207 ms. The metric stopped the clock at the end of the agent's current speech segment, and segments end at every pause between sentences. An agent that ignores you finishes its sentence, pauses, and keeps going, and the metric only saw the pause. Now it runs to the end of the agent's reply. Because every run saves its audio, I re-scored the baseline and every fault report without making a single call. The fault now shows up as about 17 seconds instead of under one, and the baseline barely moved.
+
+**The end-of-turn fault couldn't break the agent.** Cutting the silence wait to 150 ms changed nothing, because the semantic turn detector holds the turn when a sentence sounds unfinished. Good for the agent, useless as a test. With the turn model removed as well, it did break: task success fell from 89% to 33%. But the false cut-off metric still read zero. It counts agent audio that starts during the caller's pause, and with replies taking about six seconds, the audio never started until the caller had finished, even though the turn had already been cut. That metric only becomes meaningful once replies are faster than a pause, and I've written that down as open.
+
+One more thing went wrong overnight. The Mac went to sleep on battery partway through a fault run. The worker's sessions stayed open through it, and four two-minute calls were costed as more than an hour each, because speech-to-text cost is estimated from call length when the provider doesn't report it. The estimate now uses the length of the recorded audio, which doesn't grow while the machine sleeps, and long runs now keep the Mac awake.
