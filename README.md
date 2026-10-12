@@ -54,7 +54,7 @@ Building that table found a real bug: the first barge-in metric made the "ignore
 
 - **[E1, latency](docs/experiments/E1-latency.md):** one lever at a time. Raw PCM from text-to-speech, local speech and preemptive generation were kept. Filler phrases ("One moment.") were rejected: they started the audio sooner but halved task success, because the caller answered the filler. A shorter end-of-speech silence was rejected because it cut callers off.
 - **E2, cascade against speech-to-speech:** not run. It was cut when the API budget ran out, so there's no finding to report.
-- **E3, turn detection:** in progress.
+- **[E3, turn detection](docs/experiments/E3-turn-detection.md):** on silence alone, every setting up to 1000 ms ended the turn at all 9 scripted mid-sentence pauses, splitting the caller's sentence. LiveKit's turn detector, which listens to intonation, split none, for 0.95 s at the median against 0.90 s. Its cost is a long tail: when unsure it waits 2.5 s. Getting there exposed a harness bug: the simulated caller synthesized each half of a paused line separately, so the first half sounded finished and the detector rightly ended the turn.
 - **[E4, speech-to-text on noisy calls](docs/experiments/E4-stt-noise.md):** local Whisper heard more words wrong than the hosted recognizer (17.9% against 16.0% on the noisy scenarios), but got the same or more orders exactly right (9 of 9 against 8 of 9). The read-back and the caller's corrections absorb most recognition errors. Names are the exception.
 
 ## Cost
