@@ -492,3 +492,15 @@ The traces showed the detector had run and rated those half sentences as finishe
 Now the caller synthesizes the whole line once and cuts the pause in at the quietest moment near the split. I checked it offline with the same detector model on 41 paused lines in three Kokoro voices (`reports/20261012-pause-prosody`). Pauses that sounded finished went from 52 of 123 to 17 of 123. Real line endings came out at 86 of 123, so the detector does hear the difference.
 
 It's the same lesson again: before blaming the agent, check what the harness actually sent it. It also means every result I had on hesitation, including the aggressive end-of-turn fault looking caught only by task success, was measured with a broken test. The turn-detection experiment is running again on the fixed caller.
+
+## Turn detection, on a caller that sounds right
+
+With the caller fixed, I ran the turn-detection sweep again on the three hesitation scenarios: LiveKit's turn detector at its 500 ms minimum, and silence alone at 300, 600, 1000 and 1500 ms. Nine scripted pauses each (`docs/experiments/E3-turn-detection.md`).
+
+The detector split none of the nine sentences. Silence alone split all nine at every setting up to 1000 ms, and five of nine at 1500 ms, where only the 1.2 s pauses survived. A pause long enough to think in is longer than any silence threshold you'd want on every turn, so on silence alone there's no good setting. The detector costs very little at the median, 0.95 s to end a turn against 0.90 s. Its cost is the tail: when it thinks you're not done, it waits 2.5 seconds. In these runs that hit one-word names and phone numbers, which come up in every order.
+
+Two smaller things I learned on the way. The 300 and 600 ms settings behave the same, because Whisper can't start until voice detection has heard 550 ms of silence. And my first version of the split count missed some splits. The agent sometimes ended the turn a few hundred milliseconds after the pause was over, before it had heard enough of the caller's next word to notice. The phone number still arrived as two turns. Now the count looks at where the caller's speech stopped and whether the turn ended before the sentence did, not at whether the commit fell inside the pause.
+
+I also re-ran the aggressive end-of-turn fault on the fixed caller. It split six of six sentences, so the harness catches it with the metric meant for it. Before the fix it only showed up in task success, and on this run task success didn't separate it at all.
+
+Then the network dropped in the middle of the sweep, and one setting's calls all failed with connection errors. I threw that report away and ran it again rather than keep a run that measured my Wi-Fi.
