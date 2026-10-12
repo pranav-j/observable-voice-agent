@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="218" viewBox="0 0 900 218" font-family="Helvetica, Arial, sans-serif" font-size="12">
+<rect width="900" height="218" fill="#ffffff"/>
+<text x="12" y="22" font-size="14" font-weight="bold" fill="#222">Where a reply's time goes (p50)</text>
+<text x="12" y="40" fill="#555">Bars: the agent's own stage timings. Tick: when the caller heard the reply start.</text>
+<text x="12" y="80" fill="#222">hosted speech (20261011)</text>
+<rect x="190.0" y="66" width="46.2" height="22" fill="#8e9aaf"/>
+<text x="213.1" y="81" fill="#fff" text-anchor="middle">0.58s</text>
+<rect x="236.2" y="66" width="277.1" height="22" fill="#4c78a8"/>
+<text x="374.7" y="81" fill="#fff" text-anchor="middle">3.46s</text>
+<rect x="513.3" y="66" width="87.9" height="22" fill="#f58518"/>
+<text x="557.2" y="81" fill="#fff" text-anchor="middle">1.10s</text>
+<line x1="730.5" y1="62" x2="730.5" y2="92" stroke="#222"/>
+<text x="734.5" y="104" fill="#222">caller hears it: 6.76s</text>
+<text x="12" y="134" fill="#222">local speech (20261012)</text>
+<rect x="190.0" y="120" width="70.3" height="22" fill="#8e9aaf"/>
+<text x="225.1" y="135" fill="#fff" text-anchor="middle">0.88s</text>
+<rect x="260.3" y="120" width="257.0" height="22" fill="#4c78a8"/>
+<text x="388.8" y="135" fill="#fff" text-anchor="middle">3.21s</text>
+<rect x="517.3" y="120" width="55.5" height="22" fill="#f58518"/>
+<text x="545.0" y="135" fill="#fff" text-anchor="middle">0.69s</text>
+<line x1="580.8" y1="116" x2="580.8" y2="146" stroke="#222"/>
+<text x="584.8" y="158" fill="#222">caller hears it: 4.88s</text>
+<rect x="190" y="182" width="12" height="12" fill="#8e9aaf"/>
+<text x="206" y="192" fill="#222">end of turn</text>
+<rect x="310" y="182" width="12" height="12" fill="#4c78a8"/>
+<text x="326" y="192" fill="#222">LLM + tools</text>
+<rect x="430" y="182" width="12" height="12" fill="#f58518"/>
+<text x="446" y="192" fill="#222">first audio</text>
+</svg>
