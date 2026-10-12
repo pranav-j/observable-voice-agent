@@ -95,6 +95,12 @@ class TextCaller:
         reply = await self.llm.complete(self.current_instructions(), self.history, [])
         self.usage += reply.usage
         text, ended, gave_up = parse_markers(reply.text)
+        if phase == "readback" and ended and not text and not gave_up:
+            # Hanging up on a read-back without a word breaks the caller's own rules, and
+            # it happened a couple of times per suite. Ask once more.
+            reply = await self.llm.complete(self.current_instructions(), self.history, [])
+            self.usage += reply.usage
+            text, ended, gave_up = parse_markers(reply.text)
         if text:
             self.history.append(AssistantMessage(text))
         return CallerTurn(text, ended=ended, gave_up=gave_up, scripted=False, usage=reply.usage)

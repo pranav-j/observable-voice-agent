@@ -103,6 +103,21 @@ async def test_scripted_lines_stay_in_the_callers_instructions() -> None:
     assert caller.current_instructions().startswith(caller.instructions)
 
 
+async def test_silent_hang_up_on_a_readback_is_asked_again() -> None:
+    llm = ScriptedLLM(reply("[END]"), reply("Yes, that's right. Goodbye. [END]"))
+    caller = TextCaller(llm, scenario(), RESTAURANT)
+    turn = await caller.respond("Let me read that back... Is that correct?", phase="readback")
+    assert (turn.text, turn.ended) == ("Yes, that's right. Goodbye.", True)
+    assert len(llm.requests) == 2
+
+
+async def test_silent_hang_up_elsewhere_is_left_alone() -> None:
+    llm = ScriptedLLM(reply("[END]"))
+    turn = await TextCaller(llm, scenario(), RESTAURANT).respond("Goodbye!")
+    assert (turn.text, turn.ended) == ("", True)
+    assert len(llm.requests) == 1
+
+
 async def test_turn_trigger_fires_on_that_turn() -> None:
     llm = ScriptedLLM(reply("A cold coffee."), reply("Two dosas too."))
     caller = TextCaller(
