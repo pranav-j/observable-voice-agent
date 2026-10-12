@@ -146,7 +146,7 @@ class _FakeKokoro:
 
     def create(self, text: str, **kwargs: Any) -> tuple[np.ndarray[Any, Any], int]:
         self.calls.append({"text": text, **kwargs})
-        return np.full(24_000, 0.2, dtype=np.float32), 24_000
+        return np.full(3 * 24_000, 0.2, dtype=np.float32), 24_000  # long enough for the line
 
 
 async def test_caller_can_speak_with_kokoro() -> None:
@@ -160,7 +160,7 @@ async def test_caller_can_speak_with_kokoro() -> None:
         kokoro=kokoro,
     )
     pcm = await caller.synthesize("It's 9876523456.")
-    assert len(pcm) == 24_000
+    assert len(pcm) == 3 * 24_000
     (call,) = kokoro.calls
     assert (call["voice"], call["speed"]) == ("hf_alpha", 0.9)
     assert call["text"] == speakable("It's 9876523456.")  # digits still read out one by one
