@@ -57,6 +57,8 @@ Measured from the caller's side, from the audio it received.
 | Replies with a sentence said twice | 1 |
 | Caller hearing | transcript |
 
+Agent-side p50 (s): end_of_turn_delay 0.58, llm_node_ttft 1.50, tts_node_ttfb 1.00, e2e_latency 5.93.
+
 Detector: frame_ms 10, min_silence_ms 300, min_speech_ms 30, sample_rate 16000, threshold_dbfs -45.0.
 
 Agent config: agent_prompt_version v1, eou_silence_ms 500, fault none, filler_after_ms 1200, filler_phrases False, llm_model gpt-6-luna, preemptive_generation False, stt_model gpt-live-transcribe, tts_format pcm, tts_model gpt-4o-mini-tts, tts_voice coral.
