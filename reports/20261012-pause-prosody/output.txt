@@ -1,0 +1,126 @@
+ 0.38  0.26  0.27  hf_alpha  9876526457
+ 0.25  0.23  0.28  hm_omega  9876526457
+ 0.26  0.28  0.19  bf_emma   9876526457
+ 0.38  0.37  0.33  hf_alpha  9876526457.
+ 0.25  0.25  0.30  hm_omega  9876526457.
+ 0.26  0.26  0.23  bf_emma   9876526457.
+ 0.36  0.19  0.66  hf_alpha  Hi, umm, I'd like a Mysore masala dosa with extra butter, pl
+ 0.29  0.15  0.62  hm_omega  Hi, umm, I'd like a Mysore masala dosa with extra butter, pl
+ 0.18  0.36  0.48  bf_emma   Hi, umm, I'd like a Mysore masala dosa with extra butter, pl
+ 0.43  0.32  0.54  hf_alpha  Hi, umm, I'm deciding between a cold brew and a medium cold
+ 0.33  0.15  0.40  hm_omega  Hi, umm, I'm deciding between a cold brew and a medium cold
+ 0.50  0.15  0.24  bf_emma   Hi, umm, I'm deciding between a cold brew and a medium cold
+ 0.56  0.33  0.67  hf_alpha  Hi, umm, I'm trying to decide between a cold brew and a medi
+ 0.35  0.19  0.60  hm_omega  Hi, umm, I'm trying to decide between a cold brew and a medi
+ 0.32  0.18  0.69  bf_emma   Hi, umm, I'm trying to decide between a cold brew and a medi
+ 0.39  0.17  0.70  hf_alpha  Hi, umm, I’d like one Mysore masala dosa, please. With extra
+ 0.29  0.17  0.59  hm_omega  Hi, umm, I’d like one Mysore masala dosa, please. With extra
+ 0.39  0.13  0.35  bf_emma   Hi, umm, I’d like one Mysore masala dosa, please. With extra
+ 0.17  0.23  0.62  hf_alpha  Hi, umm, I’m deciding between a cold brew and a medium cold
+ 0.07  0.21  0.72  hm_omega  Hi, umm, I’m deciding between a cold brew and a medium cold
+ 0.07  0.19  0.67  bf_emma   Hi, umm, I’m deciding between a cold brew and a medium cold
+ 0.56  0.30  0.24  hf_alpha  Hi, umm, I’m trying to decide between a cold brew and a medi
+ 0.35  0.21  0.33  hm_omega  Hi, umm, I’m trying to decide between a cold brew and a medi
+ 0.32  0.17  0.19  bf_emma   Hi, umm, I’m trying to decide between a cold brew and a medi
+ 0.56  0.29  0.22  hf_alpha  Hi, umm, I’m trying to decide between a cold brew and a medi
+ 0.35  0.22  0.17  hm_omega  Hi, umm, I’m trying to decide between a cold brew and a medi
+ 0.32  0.18  0.24  bf_emma   Hi, umm, I’m trying to decide between a cold brew and a medi
+ 0.56  0.33  0.67  hf_alpha  Hi, umm, I’m trying to decide between a cold brew and a medi
+ 0.35  0.19  0.60  hm_omega  Hi, umm, I’m trying to decide between a cold brew and a medi
+ 0.32  0.18  0.69  bf_emma   Hi, umm, I’m trying to decide between a cold brew and a medi
+ 0.56  0.31  0.45  hf_alpha  Hi, umm, I’m trying to decide between a cold brew and a medi
+ 0.35  0.19  0.48  hm_omega  Hi, umm, I’m trying to decide between a cold brew and a medi
+ 0.32  0.14  0.51  bf_emma   Hi, umm, I’m trying to decide between a cold brew and a medi
+ 0.33  0.25  0.29  hf_alpha  Hi, umm, I’m trying to decide between a cold brew and a medi
+ 0.33  0.17  0.17  hm_omega  Hi, umm, I’m trying to decide between a cold brew and a medi
+ 0.29  0.20  0.37  bf_emma   Hi, umm, I’m trying to decide between a cold brew and a medi
+ 0.36  0.08  0.52  hf_alpha  Hi, umm, could I ask how much the cold brew costs?
+ 0.15  0.15  0.56  hm_omega  Hi, umm, could I ask how much the cold brew costs?
+ 0.40  0.22  0.34  bf_emma   Hi, umm, could I ask how much the cold brew costs?
+ 0.50  0.09  0.67  hf_alpha  Hi, umm, could I get one Mysore masala dosa with extra butte
+ 0.32  0.11  0.65  hm_omega  Hi, umm, could I get one Mysore masala dosa with extra butte
+ 0.39  0.15  0.51  bf_emma   Hi, umm, could I get one Mysore masala dosa with extra butte
+ 0.36  0.35  0.62  hf_alpha  Hi, umm, could I get one Mysore masala dosa, please?
+ 0.15  0.20  0.70  hm_omega  Hi, umm, could I get one Mysore masala dosa, please?
+ 0.30  0.08  0.61  bf_emma   Hi, umm, could I get one Mysore masala dosa, please?
+ 0.64  0.37  0.70  hf_alpha  Hi, umm, could I get one Mysore masala dosa, please? And, um
+ 0.38  0.16  0.64  hm_omega  Hi, umm, could I get one Mysore masala dosa, please? And, um
+ 0.40  0.52  0.30  bf_emma   Hi, umm, could I get one Mysore masala dosa, please? And, um
+ 0.64  0.31  0.72  hf_alpha  Hi, umm, could I get one Mysore masala dosa, please? I’d lik
+ 0.38  0.12  0.69  hm_omega  Hi, umm, could I get one Mysore masala dosa, please? I’d lik
+ 0.40  0.36  0.23  bf_emma   Hi, umm, could I get one Mysore masala dosa, please? I’d lik
+ 0.50  0.17  0.65  hf_alpha  Hi, umm, could I get one Mysore masala dosa, please? With ex
+ 0.32  0.10  0.56  hm_omega  Hi, umm, could I get one Mysore masala dosa, please? With ex
+ 0.39  0.52  0.43  bf_emma   Hi, umm, could I get one Mysore masala dosa, please? With ex
+ 0.33  0.14  0.65  hf_alpha  Hi, umm... I’d like one Mysore masala dosa with extra butter
+ 0.33  0.17  0.63  hm_omega  Hi, umm... I’d like one Mysore masala dosa with extra butter
+ 0.22  0.25  0.52  bf_emma   Hi, umm... I’d like one Mysore masala dosa with extra butter
+ 0.21  0.12  0.55  hf_alpha  Hi, umm... I’d like one Mysore masala dosa, please. Extra bu
+ 0.29  0.10  0.57  hm_omega  Hi, umm... I’d like one Mysore masala dosa, please. Extra bu
+ 0.33  0.07  0.52  bf_emma   Hi, umm... I’d like one Mysore masala dosa, please. Extra bu
+ 0.39  0.09  0.65  hf_alpha  Hi, umm... could I get one Mysore masala dosa with extra but
+ 0.36  0.10  0.63  hm_omega  Hi, umm... could I get one Mysore masala dosa with extra but
+ 0.45  0.11  0.52  bf_emma   Hi, umm... could I get one Mysore masala dosa with extra but
+ 0.39  0.33  0.68  hf_alpha  Hi, umm... could I get one Mysore masala dosa, with extra bu
+ 0.36  0.10  0.63  hm_omega  Hi, umm... could I get one Mysore masala dosa, with extra bu
+ 0.45  0.10  0.54  bf_emma   Hi, umm... could I get one Mysore masala dosa, with extra bu
+ 0.35  0.26  0.34  hf_alpha  It's 9876526457.
+ 0.26  0.57  0.28  hm_omega  It's 9876526457.
+ 0.30  0.22  0.18  bf_emma   It's 9876526457.
+ 0.35  0.26  0.34  hf_alpha  It’s 9 8 7 6 5 2 6 4 5 7.
+ 0.26  0.57  0.28  hm_omega  It’s 9 8 7 6 5 2 6 4 5 7.
+ 0.30  0.22  0.18  bf_emma   It’s 9 8 7 6 5 2 6 4 5 7.
+ 0.35  0.26  0.34  hf_alpha  It’s 9876526457.
+ 0.26  0.57  0.28  hm_omega  It’s 9876526457.
+ 0.30  0.22  0.18  bf_emma   It’s 9876526457.
+ 0.49  0.31  0.38  hf_alpha  It’s Ritu. My phone number is 9876526457.
+ 0.38  0.39  0.24  hm_omega  It’s Ritu. My phone number is 9876526457.
+ 0.23  0.14  0.28  bf_emma   It’s Ritu. My phone number is 9876526457.
+ 0.48  0.20  0.34  hf_alpha  The name is right, but the number isn’t. It’s 9876526457.
+ 0.31  0.20  0.31  hm_omega  The name is right, but the number isn’t. It’s 9876526457.
+ 0.25  0.25  0.21  bf_emma   The name is right, but the number isn’t. It’s 9876526457.
+ 0.32  0.12  0.69  hf_alpha  Umm, I’d like one Mysore masala dosa with extra butter, plea
+ 0.16  0.10  0.63  hm_omega  Umm, I’d like one Mysore masala dosa with extra butter, plea
+ 0.22  0.17  0.51  bf_emma   Umm, I’d like one Mysore masala dosa with extra butter, plea
+ 0.56  0.26  0.68  hf_alpha  Umm, I’d like one Mysore masala dosa, please. Could I get ex
+ 0.25  0.29  0.64  hm_omega  Umm, I’d like one Mysore masala dosa, please. Could I get ex
+ 0.42  0.35  0.45  bf_emma   Umm, I’d like one Mysore masala dosa, please. Could I get ex
+ 0.32  0.08  0.68  hf_alpha  Umm, I’d like one Mysore masala dosa, please. With extra but
+ 0.16  0.17  0.57  hm_omega  Umm, I’d like one Mysore masala dosa, please. With extra but
+ 0.22  0.20  0.50  bf_emma   Umm, I’d like one Mysore masala dosa, please. With extra but
+ 0.30  0.11  0.64  hf_alpha  Umm, could I get one Mysore masala dosa with extra butter, p
+ 0.19  0.13  0.61  hm_omega  Umm, could I get one Mysore masala dosa with extra butter, p
+ 0.18  0.43  0.52  bf_emma   Umm, could I get one Mysore masala dosa with extra butter, p
+ 0.67  0.57  0.70  hf_alpha  Umm, could I get one Mysore masala dosa with extra butter, p
+ 0.43  0.39  0.37  hm_omega  Umm, could I get one Mysore masala dosa with extra butter, p
+ 0.46  0.60  0.36  bf_emma   Umm, could I get one Mysore masala dosa with extra butter, p
+ 0.44  0.19  0.64  hf_alpha  Umm, could I get one Mysore masala dosa with extra butter?
+ 0.30  0.18  0.60  hm_omega  Umm, could I get one Mysore masala dosa with extra butter?
+ 0.40  0.10  0.40  bf_emma   Umm, could I get one Mysore masala dosa with extra butter?
+ 0.16  0.31  0.69  hf_alpha  Umm, could I get one Mysore masala dosa, please?
+ 0.13  0.28  0.67  hm_omega  Umm, could I get one Mysore masala dosa, please?
+ 0.23  0.11  0.58  bf_emma   Umm, could I get one Mysore masala dosa, please?
+ 0.59  0.47  0.67  hf_alpha  Umm, could I get one Mysore masala dosa, please? And, umm, e
+ 0.36  0.18  0.62  hm_omega  Umm, could I get one Mysore masala dosa, please? And, umm, e
+ 0.37  0.41  0.43  bf_emma   Umm, could I get one Mysore masala dosa, please? And, umm, e
+ 0.30  0.14  0.64  hf_alpha  Umm, could I get one Mysore masala dosa, please? With extra
+ 0.19  0.13  0.56  hm_omega  Umm, could I get one Mysore masala dosa, please? With extra
+ 0.18  0.39  0.44  bf_emma   Umm, could I get one Mysore masala dosa, please? With extra
+ 0.44  0.13  0.65  hf_alpha  Umm, could I get one Mysore masala dosa, with extra butter?
+ 0.30  0.21  0.60  hm_omega  Umm, could I get one Mysore masala dosa, with extra butter?
+ 0.40  0.09  0.54  bf_emma   Umm, could I get one Mysore masala dosa, with extra butter?
+ 0.31  0.17  0.65  hf_alpha  Umm, hi. Could I get one Mysore masala dosa, please?
+ 0.14  0.10  0.68  hm_omega  Umm, hi. Could I get one Mysore masala dosa, please?
+ 0.34  0.13  0.59  bf_emma   Umm, hi. Could I get one Mysore masala dosa, please?
+ 0.54  0.35  0.57  hf_alpha  Umm, hi. Could I get one Mysore masala dosa, please? I’d lik
+ 0.39  0.29  0.56  hm_omega  Umm, hi. Could I get one Mysore masala dosa, please? I’d lik
+ 0.41  0.37  0.27  bf_emma   Umm, hi. Could I get one Mysore masala dosa, please? I’d lik
+ 0.53  0.28  0.70  hf_alpha  Umm, hi. Could I get one Mysore masala dosa, please? with ex
+ 0.28  0.10  0.52  hm_omega  Umm, hi. Could I get one Mysore masala dosa, please? with ex
+ 0.46  0.20  0.45  bf_emma   Umm, hi. Could I get one Mysore masala dosa, please? with ex
+ 0.43  0.24  0.35  hf_alpha  Umm, it’s 9876526457.
+ 0.36  0.42  0.26  hm_omega  Umm, it’s 9876526457.
+ 0.24  0.21  0.25  bf_emma   Umm, it’s 9876526457.
+
+123 lines x voices. mean p(end of turn): old 0.34  cut 0.23  real end 0.49
+above LiveKit's 0.36 threshold: old 52/123  cut 17/123  real end 86/123
