@@ -50,6 +50,43 @@ On latency alone this looks like the biggest win, but it isn't one. The metric t
 - Region co-location wasn't tried: everything ran from one laptop against OpenAI's public endpoints.
 - Preemptive generation wasn't measured, because the budget ran out. Doubled replies were later traced to split caller turns rather than to preemptive generation, so it deserves a fair measurement.
 
-## Next
+## On local speech
 
-Speech moved to local models (Whisper and Kokoro, `docs/adr/0007-local-speech.md`) to cut cost. That's also a latency change in its own right: Kokoro starts speaking in about half the time. The remaining levers get measured on that pipeline against its own baseline, starting with the end-of-turn wait, since Whisper only starts transcribing once the caller has stopped speaking.
+Speech moved to local models (`docs/adr/0007-local-speech.md`), mainly to cut cost. That move is a latency change of its own. Over the full suite, it took caller-side latency from 6756 to 4885 ms at p50 and from 10284 to 8761 ms at p95, at the same task success of 85/93 (`reports/20261011-163931-audio` against `reports/20261012-072648-audio`). The agent code also improved between those two runs. The voice now starts in 0.69 s instead of 1.10 s at p50. The end of turn got slower, from 0.58 to 0.88 s, because Whisper transcribes only after voice detection decides the caller has stopped.
+
+The remaining levers were measured on that pipeline, against a fresh run of the same six scenarios on the same code. That run was `reports/20261012-093814-audio`: 18/18 passed, at 5106 / 8483 ms.
+
+### Lever 3: a shorter end-of-speech silence for voice detection, 550 → 300 ms (rejected)
+
+Report: `reports/20261012-100257-audio`.
+
+| Metric | Before | After |
+|---|---|---|
+| Response latency p50 / p95 (ms) | 5106 / 8483 | 5251 / 9042 |
+| End-of-turn delay, p50 (s) | 0.882 | 0.593 |
+| False cut-offs | 0 of 6 pauses | 1 of 6 pauses |
+| Task success | 18/18 | 16/18 |
+
+The agent's own end of turn got 0.3 s faster, but callers didn't get answers any sooner, and the agent started answering into a caller's mid-sentence pause. This is also the first run where `false_cutoff_rate` moved. With replies this fast, an early answer finally lands inside the pause, which partly answers the open item in `docs/harness-validation.md`. Rejected.
+
+### Lever 4: preemptive generation (kept)
+
+Report: `reports/20261012-102638-audio`.
+
+| Metric | Before | After |
+|---|---|---|
+| Response latency p50 / p95 (ms) | 5106 / 8483 | 4761 / 7157 |
+| Task success | 18/18 | 17/18 |
+| Replies with a sentence said twice | 0 | 1 |
+
+It's a real gain, especially at p95. The one failure is the Mysore-versus-plain masala dosa mix-up, which happens without preemptive generation too. One doubled reply in 18 calls is about the rate seen with it off: 3 in 93 in the full local run. That fits doubling coming from split caller turns, not from this setting. Kept, and on by default.
+
+## Where it stands
+
+| Configuration | Report | Response latency p50 / p95 (ms) |
+|---|---|---|
+| Start: hosted speech, MP3 | `20261011-163931-audio`, six scenarios | 6861 / 10444 |
+| Local speech, same code as lever 3 and 4 | `20261012-093814-audio` | 5106 / 8483 |
+| Local speech plus preemptive generation | `20261012-102638-audio` | 4761 / 7157 |
+
+That's about 2.1 s off the median and 3.3 s off p95 for these scenarios. Every turn is still over two seconds, which counts as dead air. What's left is mostly LLM round trips: each step takes about a second to its first token, and a turn with tool calls needs two or three of them. The next real gains would come from fewer steps per turn, for example by letting the model add an item without searching first, or from a faster LLM. Neither has been tried yet.
