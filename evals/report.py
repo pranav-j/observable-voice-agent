@@ -87,6 +87,12 @@ def _audio_summary(results: list[RunResult]) -> dict[str, Any] | None:
         else None,
         # Timing depends on these; runs scored with different settings can't be compared.
         "detector": [json.loads(d) for d in sorted(detectors)],
+        # The agent's own stage timings, for explaining the caller-side numbers.
+        "agent_timing_p50_s": {
+            key: percentile(values, 50)
+            for key in ("end_of_turn_delay", "llm_node_ttft", "tts_node_ttfb", "e2e_latency")
+            if (values := [v for a in audio for v in (a.get("agent_timing") or {}).get(key, [])])
+        },
         # What the worker reported for each call. More than one means mixed settings.
         "agent_configs": [json.loads(c) for c in sorted(configs)],
     }
@@ -399,6 +405,13 @@ def _audio_markdown(a: dict[str, Any] | None, mode: str) -> list[str]:
         f"| Agent cost per minute | {cost} |",
         f"| Replies with a sentence said twice | {_num(a.get('doubled_replies'), 0)} |",
         f"| Caller hearing | {', '.join(a['hearing'])} |",
+        "",
+        "Agent-side p50 (s): "
+        + (
+            ", ".join(f"{k} {v:.2f}" for k, v in a.get("agent_timing_p50_s", {}).items())
+            or "not recorded"
+        )
+        + ".",
         "",
         "Detector: " + "; ".join(_settings_text(d) for d in a["detector"]) + ".",
         "",

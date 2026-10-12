@@ -17,7 +17,7 @@ from typing import Any
 import numpy as np
 
 from evals.audio.detector import DETECTOR_SETTINGS
-from evals.audio.metrics import CallerUtterance, Timeline, audio_metrics
+from evals.audio.metrics import CallerUtterance, Timeline, agent_timings, audio_metrics
 from evals.judge.apply import attach_calibration, load_results
 from evals.report import render_markdown, summarize
 from evals.text_run import RunResult
@@ -44,7 +44,7 @@ def timeline_from(folder: Path) -> Timeline:
     )
 
 
-def rescore(report: Path) -> tuple[list[RunResult], int]:
+def rescore(report: Path, recordings: Path = Path("recordings")) -> tuple[list[RunResult], int]:
     """The report's runs with audio metrics recomputed, and how many had saved audio."""
     runs, done = [], 0
     for r in load_results(report):
@@ -53,6 +53,10 @@ def rescore(report: Path) -> tuple[list[RunResult], int]:
             runs.append(r)
             continue
         fresh = audio_metrics(timeline_from(folder))
+        turns = recordings / r.session_id / "turns.jsonl"
+        if turns.exists():  # the worker's own stage timings, if the recording is still here
+            records = [json.loads(x) for x in turns.read_text().splitlines() if x.strip()]
+            fresh["agent_timing"] = agent_timings(records)
         runs.append(
             r.model_copy(update={"audio": r.audio | fresh | {"detector": DETECTOR_SETTINGS}})
         )

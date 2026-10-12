@@ -342,3 +342,11 @@ def test_doubled_replies_are_unknown_until_measured() -> None:
     assert "| Replies with a sentence said twice | n/a |" in md
     new = audio_result(2, noise=None, doubled_replies=1)
     assert summarize([old, new], mode="audio", started_at=STARTED)["audio"]["doubled_replies"] == 1
+
+
+def test_agent_stage_timings_are_summarized() -> None:
+    a = audio_result(1, noise=None, agent_timing={"llm_node_ttft": [1.0, 2.0, 3.0]})
+    b = audio_result(2, noise=None)  # an older run without them
+    summary = summarize([a, b], mode="audio", started_at=STARTED)
+    assert summary["audio"]["agent_timing_p50_s"] == {"llm_node_ttft": 2.0}
+    assert "Agent-side p50 (s): llm_node_ttft 2.00." in render_markdown(summary)

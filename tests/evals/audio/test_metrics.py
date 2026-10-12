@@ -1,11 +1,14 @@
 """Audio metrics on hand-built timelines, where the right answers are known."""
 
+from typing import Any
+
 import numpy as np
 import pytest
 from evals.audio.detector import SAMPLE_RATE, Segment
 from evals.audio.metrics import (
     CallerUtterance,
     Timeline,
+    agent_timings,
     audio_metrics,
     barge_in_stop_times,
     doubled_replies,
@@ -163,3 +166,17 @@ def test_barge_in_stop_runs_to_the_end_of_the_reply_not_the_sentence() -> None:
         [Segment(0.0, 1.0), Segment(2.0, 2.6)], [Segment(1.5, 2.5), Segment(2.8, 4.0)]
     )
     assert m["barge_in_stop_ms"] == [2000]
+
+
+def test_agent_timings_keep_only_logged_numbers() -> None:
+    records: list[dict[str, Any]] = [
+        {"role": "user", "end_of_turn_delay": 0.6},
+        {"role": "assistant", "llm_node_ttft": 1.1, "tts_node_ttfb": 1.0, "e2e_latency": 4.2},
+        {"role": "assistant", "tts_node_ttfb": None},
+    ]
+    assert agent_timings(records) == {
+        "end_of_turn_delay": [0.6],
+        "llm_node_ttft": [1.1],
+        "tts_node_ttfb": [1.0],
+        "e2e_latency": [4.2],
+    }

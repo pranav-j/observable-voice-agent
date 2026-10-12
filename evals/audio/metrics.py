@@ -212,3 +212,20 @@ def doubled_replies(agent_messages: list[str]) -> int:
         if any(a == b and len(a) > 3 for a, b in pairwise(sentences)):
             count += 1
     return count
+
+
+# --- the agent's own account of where time went ----------------------------------------------
+
+AGENT_TIMINGS = ("end_of_turn_delay", "llm_node_ttft", "tts_node_ttfb", "e2e_latency")
+
+
+def agent_timings(turn_records: list[dict[str, Any]]) -> dict[str, list[float]]:
+    """Per-turn timings the agent logged (seconds), for explaining caller-side latency.
+
+    The caller-side numbers are the measurement. These say which stage a change moved:
+    a faster speech synthesizer can be hidden by a slower LLM hour.
+    """
+    return {
+        key: [float(r[key]) for r in turn_records if isinstance(r.get(key), int | float)]
+        for key in AGENT_TIMINGS
+    }

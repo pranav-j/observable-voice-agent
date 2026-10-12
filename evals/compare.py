@@ -29,6 +29,9 @@ def _metrics(summary: dict[str, Any]) -> dict[str, float | None]:
     for name, (section, key) in EXTRA.items():
         value = (summary.get(section) or {}).get(key)
         values[name] = float(value) if isinstance(value, int | float) else None
+    stages = (summary.get("audio") or {}).get("agent_timing_p50_s") or {}
+    for key, value in stages.items():
+        values[f"agent_{key}_p50_s"] = float(value)
     return values
 
 

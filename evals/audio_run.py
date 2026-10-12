@@ -20,7 +20,7 @@ from openai import AsyncOpenAI
 from evals.audio.caller import VOICE_POOL, AudioCaller, Hearing
 from evals.audio.detector import DETECTOR_SETTINGS
 from evals.audio.detector import SAMPLE_RATE as LISTEN_RATE
-from evals.audio.metrics import audio_metrics, doubled_replies
+from evals.audio.metrics import agent_timings, audio_metrics, doubled_replies
 from evals.audio.noise import SAMPLE_RATE as SPEAK_RATE
 from evals.caller.text_caller import CALLER_PROMPT_VERSION, Phase, TextCaller
 from evals.scenario import Behavior, Scenario
@@ -229,6 +229,12 @@ async def run_audio_scenario(
         if said_file.exists()
         else []
     )
+    turns_file = folder / "turns.jsonl"
+    turn_records = (
+        [json.loads(line) for line in turns_file.read_text().splitlines() if line.strip()]
+        if turns_file.exists()
+        else []
+    )
     final = await store.get(session_id)
     timeline = caller.timeline()
     if raw_dir is not None:
@@ -267,6 +273,7 @@ async def run_audio_scenario(
             "call_seconds": usage.get("duration_seconds") if usage else round(duration, 1),
             "agent_config": agent_config,
             "doubled_replies": doubled_replies(agent_said),
+            "agent_timing": agent_timings(turn_records),
             "detector": DETECTOR_SETTINGS,
         },
     )
