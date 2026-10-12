@@ -460,3 +460,13 @@ With the agent on local speech and the simulated caller back on OpenAI's voice, 
 The stage timings show where the time moved. The voice starts 0.4 seconds sooner, and the end of the turn takes 0.3 seconds longer, because voice detection has to decide the caller has stopped before Whisper can start. So that silence setting is the next lever.
 
 Two of the eight failures were the agent saving "Puja with two Os" and "Mira with two Es" as names. A description of the spelling is now rejected as a name, and the tool says to pass the name spelled that way.
+
+## The last latency levers, and the gate doing its job
+
+Two more levers on local speech, each against a fresh run of the same six scenarios on the same code.
+
+**Cutting voice detection's end-of-speech silence from 550 to 300 ms** made the agent's own end of turn 0.3 seconds faster, but callers didn't hear back any sooner. And the agent started answering into a caller's mid-sentence pause. That was the first time the false cut-off metric moved: replies are finally fast enough to land inside a pause. Rejected.
+
+**Preemptive generation** came back. It took caller-side latency from 5106 to 4761 ms at p50 and from 8483 to 7157 ms at p95, and the one doubled reply in 18 calls is about the rate I'd been seeing without it. All told, these six scenarios now answer about 2.1 seconds sooner at the median than at the start, and 3.3 seconds sooner at p95. Every turn still counts as dead air, though, and what's left is mostly LLM round trips. Fewer tool steps per turn would be the next thing to try.
+
+The gate fails the slow-LLM fault run, on both p95 latency and task success, and exits non-zero. Showing it on an actual pull request needs the API key added as a GitHub secret.

@@ -35,3 +35,9 @@ The metric now runs to the end of the agent's reply: speech less than 1.5 s apar
 ## Still open
 
 **`false_cutoff_rate` can't see cut-offs while replies are this slow.** It counts scripted pauses during which agent *audio* starts. With the stronger fault, the agent did commit turns in the middle of the caller's sentence, which is why orders came out wrong. But its replies take about 6 seconds to start, so the audio began after the caller had already finished. The damage shows up in task success and exact match, not in this metric. The metric only becomes sensitive once replies are faster than a pause, so it needs re-checking after the latency work. An agent-side measure, such as "turn committed during a scripted pause", would catch it regardless of speed.
+
+**Update, on faster replies.** On local speech with preemptive generation, replies are fast enough for this metric to work. In the latency experiment, cutting voice detection's end-of-speech silence to 300 ms caused one cut-off in six scripted pauses, and `false_cutoff_rate` recorded it (`reports/20261012-100257-audio`). The aggressive end-of-turn fault hasn't been re-run on that pipeline yet.
+
+## The gate on a seeded regression
+
+`make gate REPORT=reports/20261011-234245-audio`, the `slow_llm` run, fails against the hosted audio baseline and exits with code 1. p95 latency is 14433 ms against a limit of 11826, and task success is 0.750 against a floor of 0.814. Showing the same failure on a pull request in CI needs the `OPENAI_API_KEY` repository secret, which isn't set yet.
