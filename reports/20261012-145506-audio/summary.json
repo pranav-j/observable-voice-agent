@@ -205,6 +205,12 @@
       "tts_node_ttfb": 0.8113422089954838,
       "e2e_latency": 4.886446952819824
     },
+    "agent_timing_p95_s": {
+      "end_of_turn_delay": 2.5018370151519775,
+      "llm_node_ttft": 2.7199865410802886,
+      "tts_node_ttfb": 3.6926209169905633,
+      "e2e_latency": 9.06516981124878
+    },
     "agent_configs": [
       {
         "agent_prompt_version": "v1",
