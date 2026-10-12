@@ -113,6 +113,34 @@ def split_for_pause(text: str) -> tuple[str, str]:
     return " ".join(words[:half]), " ".join(words[half:])
 
 
+# Where to cut a pause into a line: near the split's share of the spoken text, at the
+# quietest 20 ms within this distance, which is usually the gap between two words.
+PAUSE_SEARCH_SECONDS = 0.3
+
+
+def pause_point(pcm: np.ndarray[Any, Any], text: str, first: str) -> int:
+    """The sample where a pause goes, in speech synthesized from the whole of `text`.
+
+    The line is spoken in one piece and the pause is cut into it, rather than speaking the
+    two halves separately. A half spoken on its own ends the way a finished sentence does,
+    and the agent's turn detector, which listens to intonation, rightly hears it as done.
+    A person who stops mid-sentence doesn't sound finished.
+    """
+    frame = SPEAK_RATE // 50
+    n = len(pcm) // frame
+    energy = np.sqrt((pcm[: n * frame].astype(np.float64).reshape(n, frame) ** 2).mean(axis=1))
+    voiced = np.nonzero(energy > energy.max() * 0.05)[0]
+    if len(voiced) < 3:
+        return len(pcm) // 2
+    start, end = int(voiced[0]), int(voiced[-1]) + 1
+    guess = start + len(speakable(first)) / len(speakable(text)) * (end - start)
+    reach = PAUSE_SEARCH_SECONDS * 50
+    lo, hi = max(int(guess - reach), start + 1), min(int(guess + reach), end - 1)
+    if lo >= hi:
+        return int(guess) * frame
+    return (lo + int(np.argmin(energy[lo:hi]))) * frame + frame // 2
+
+
 def tts_instructions(style: str) -> str:
     return (
         "You are a customer phoning a restaurant to order food. Speak in Indian English, "
@@ -386,12 +414,11 @@ class AudioCaller:
     async def say(
         self, text: str, *, pause_ms: int = 0, interrupt: bool = False
     ) -> CallerUtterance:
-        """Speak `text`. With pause_ms, a silence is inserted where `split_for_pause` says."""
+        """Speak `text`. With pause_ms, a silence is cut in where `split_for_pause` says."""
         first, second = split_for_pause(text)
         if pause_ms and first and second:
-            a, b = await asyncio.gather(self.synthesize(first), self.synthesize(second))
-            pcm = np.concatenate([a, b])
-            pauses = [(len(a), int(SPEAK_RATE * pause_ms / 1000))]
+            pcm = await self.synthesize(text)
+            pauses = [(pause_point(pcm, text, first), int(SPEAK_RATE * pause_ms / 1000))]
         else:
             pcm, pauses = await self.synthesize(text), []
         done: asyncio.Future[CallerUtterance] = asyncio.get_running_loop().create_future()

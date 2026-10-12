@@ -1,5 +1,6 @@
 """Pure helpers of the audio caller."""
 
+import asyncio
 from typing import Any
 
 import numpy as np
@@ -10,6 +11,7 @@ from evals.audio.caller import (
     VOICE_POOL,
     AgentState,
     AudioCaller,
+    pause_point,
     speakable,
     split_for_pause,
     tts_instructions,
@@ -182,3 +184,46 @@ async def test_a_one_word_kokoro_line_passes_the_floor() -> None:
     )
     pcm = await caller.synthesize("Neha.")
     assert len(pcm) / 24_000 >= MIN_LINE_SECONDS
+
+
+def _words(*seconds: float, gap: float = 0.08) -> np.ndarray[Any, Any]:
+    """Tone bursts for words, with short near-silent gaps between them."""
+    rate, parts = 24_000, [np.zeros(4_800, dtype=np.int16)]
+    for s in seconds:
+        n = int(s * rate)
+        parts.append((6000 * np.sin(np.arange(n) / 5)).astype(np.int16))
+        parts.append((30 * np.sin(np.arange(int(gap * rate)) / 5)).astype(np.int16))
+    return np.concatenate([*parts, np.zeros(7_200, dtype=np.int16)])
+
+
+def test_pause_is_cut_into_the_gap_nearest_the_split() -> None:
+    pcm = _words(0.4, 0.4, 0.4, 0.4)  # four equal words
+    text = "aaaa bbbb cccc dddd"
+    first, _ = split_for_pause(text)
+    cut = pause_point(pcm, text, first)
+    gap_start = 4_800 + int(2 * 0.4 * 24_000) + int(0.08 * 24_000)  # after the second word
+    assert gap_start <= cut < gap_start + int(0.08 * 24_000)
+
+
+def test_pause_point_falls_back_to_the_middle_of_silence() -> None:
+    assert pause_point(np.zeros(24_000, dtype=np.int16), "a b", "a") == 12_000
+
+
+async def test_a_paused_line_is_spoken_in_one_piece() -> None:
+    kokoro = _FakeKokoro()
+    caller = AudioCaller(
+        client=None,  # type: ignore[arg-type]
+        voice="voice_pool.female_1",
+        style="hesitant",
+        noise=None,
+        voice_provider="kokoro",
+        kokoro=kokoro,
+    )
+    line = "Umm, could I get one Mysore masala dosa?"
+    task = asyncio.create_task(caller.say(line, pause_ms=1500))
+    speech = await caller._queue.get()
+    task.cancel()
+    assert [c["text"] for c in kokoro.calls] == [speakable(line)]
+    ((at, length),) = speech.pauses
+    assert 0 < at < len(speech.pcm)
+    assert length == int(1.5 * 24_000)
