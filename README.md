@@ -111,6 +111,7 @@ The simulated caller joins the LiveKit room as an ordinary participant, so its a
 - [0005 Audio eval measurement](docs/adr/0005-audio-eval-measurement.md): how the harness hears the agent and times it.
 - [0006 Eval gate](docs/adr/0006-eval-gate.md): baselines and margins that fail a change.
 - [0007 Local speech](docs/adr/0007-local-speech.md): Whisper and Kokoro by default, hosted speech one setting away.
+- [0008 Demo limits](docs/adr/0008-demo-limits.md): call length, calls per IP per hour, calls per day.
 
 Problems found along the way, and what I did about them, are in [docs/notes.md](docs/notes.md).
 
@@ -124,7 +125,7 @@ Problems found along the way, and what I did about them, are in [docs/notes.md](
 - **The LLM judge isn't calibrated.** Judged metrics like error acknowledgement are reported, but the hand labels needed to check the judge haven't been made yet.
 - **The CI gate hasn't run on a pull request.** It fails a seeded regression locally. Running it in CI needs an API key secret on the repository.
 - **Small samples.** Three runs per scenario. A difference of a few runs between reports is noise.
-- **No deployment yet**, so no public demo, rate limiting or daily cap. No phone line either: WebRTC only, English only.
+- **Not deployed yet**, so there's no public demo. The call limits a deployment needs are built ([ADR 0008](docs/adr/0008-demo-limits.md)) but haven't been tried on a live host. No phone line either: WebRTC only, English only.
 
 ## Setup and run
 
