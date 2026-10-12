@@ -6,12 +6,13 @@ import sys
 from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 import psycopg
 from openai import AsyncOpenAI
 from psycopg_pool import PoolTimeout
 
-from evals.audio.caller import Hearing
+from evals.audio.caller import CallerVoice, Hearing
 from evals.audio.cost import estimate, past_call_costs
 from evals.audio_run import run_audio_scenario
 from evals.judge.apply import apply_judges, attach_calibration
@@ -89,8 +90,10 @@ def audio_player(
     caller_llm: LLMFactory,
     hearing: Hearing,
     raw_dir: Path,
+    caller_voice: CallerVoice = "openai",
 ) -> Play:
     client = AsyncOpenAI(api_key=settings.openai_api_key.get_secret_value())
+    kokoro = load_kokoro(Path(settings.models_dir) / "kokoro") if caller_voice == "kokoro" else None
 
     def play(scenario: Scenario, run: int) -> Awaitable[RunResult]:
         return run_audio_scenario(
@@ -103,9 +106,18 @@ def audio_player(
             client=client,
             hearing=hearing,
             raw_dir=raw_dir,
+            caller_voice=caller_voice,
+            kokoro=kokoro,
         )
 
     return play
+
+
+def load_kokoro(model_dir: Path) -> Any:
+    """One Kokoro for every simulated caller in the run; it takes a second to load."""
+    from kokoro_onnx import Kokoro  # heavy import, only for --caller-voice kokoro
+
+    return Kokoro(str(model_dir / "kokoro-v1.0.onnx"), str(model_dir / "voices-v1.0.bin"))
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -124,6 +136,12 @@ def _parser() -> argparse.ArgumentParser:
         help="audio: how the caller understands the agent (timing always comes from audio)",
     )
     p.add_argument("--yes", action="store_true", help="audio: run even if the estimate is high")
+    p.add_argument(
+        "--caller-voice",
+        choices=["openai", "kokoro"],
+        default="openai",
+        help="audio: the simulated caller's voice (kokoro runs locally; make models first)",
+    )
     p.add_argument("--no-judge", action="store_true", help="skip the LLM judges afterwards")
     p.add_argument("--reports-dir", type=Path, default=Path("reports"))
     p.add_argument("--scenario-dir", type=Path, default=SCENARIO_DIR)
@@ -199,6 +217,7 @@ async def main(
             caller_llm=caller_llm,
             hearing=args.hearing,
             raw_dir=out / "raw" / "audio",
+            caller_voice=args.caller_voice,
         )
     else:
         play = text_player(menu=menu, store=store, agent_llm=agent_llm, caller_llm=caller_llm)

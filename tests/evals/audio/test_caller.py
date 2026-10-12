@@ -1,5 +1,7 @@
 """Pure helpers of the audio caller."""
 
+from typing import Any
+
 import numpy as np
 import pytest
 from evals.audio.caller import (
@@ -136,3 +138,29 @@ def test_a_late_closing_line_belongs_to_when_it_started() -> None:
     # started at 10.0, so the next reply (since 20.0) doesn't repeat it.
     agent = AgentState(transcripts=[(10.0, "Let me read that back."), (22.0, "Done.")])
     assert agent.heard_since(20.0) == "Done."
+
+
+class _FakeKokoro:
+    def __init__(self) -> None:
+        self.calls: list[dict[str, Any]] = []
+
+    def create(self, text: str, **kwargs: Any) -> tuple[np.ndarray[Any, Any], int]:
+        self.calls.append({"text": text, **kwargs})
+        return np.full(24_000, 0.2, dtype=np.float32), 24_000
+
+
+async def test_caller_can_speak_with_kokoro() -> None:
+    kokoro = _FakeKokoro()
+    caller = AudioCaller(
+        client=None,  # type: ignore[arg-type]
+        voice="voice_pool.female_1",
+        style="hesitant",
+        noise=None,
+        voice_provider="kokoro",
+        kokoro=kokoro,
+    )
+    pcm = await caller.synthesize("It's 9876523456.")
+    assert len(pcm) == 24_000
+    (call,) = kokoro.calls
+    assert (call["voice"], call["speed"]) == ("hf_alpha", 0.9)
+    assert call["text"] == speakable("It's 9876523456.")  # digits still read out one by one

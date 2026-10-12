@@ -17,7 +17,7 @@ from typing import Any
 
 from openai import AsyncOpenAI
 
-from evals.audio.caller import VOICE_POOL, AudioCaller, Hearing
+from evals.audio.caller import AudioCaller, CallerVoice, Hearing
 from evals.audio.detector import DETECTOR_SETTINGS
 from evals.audio.detector import SAMPLE_RATE as LISTEN_RATE
 from evals.audio.metrics import agent_timings, audio_metrics, doubled_replies
@@ -112,6 +112,8 @@ async def run_audio_scenario(
     client: AsyncOpenAI,
     hearing: Hearing = "transcript",
     raw_dir: Path | None = None,
+    caller_voice: CallerVoice = "openai",
+    kokoro: Any = None,
 ) -> RunResult:
     stamp = time.strftime("%Y%m%d-%H%M%S")
     session_id = f"audio-{scenario.id}-r{run}-{stamp}-{secrets.token_hex(2)}"
@@ -119,7 +121,13 @@ async def run_audio_scenario(
     persona = scenario.persona
     noise = (persona.noise.clip, persona.noise.snr_db) if persona.noise else None
     caller = AudioCaller(
-        client=client, voice=persona.voice or "", style=persona.style, noise=noise, hearing=hearing
+        client=client,
+        voice=persona.voice or "",
+        style=persona.style,
+        noise=noise,
+        hearing=hearing,
+        voice_provider=caller_voice,
+        kokoro=kokoro,
     )
     brain = TextCaller(caller_llm, scenario, menu.restaurant)
     transcript: list[TranscriptEntry] = []
@@ -264,7 +272,8 @@ async def run_audio_scenario(
         audio=metrics
         | {
             "hearing": hearing,
-            "voice": VOICE_POOL.get(persona.voice or "", "alloy"),
+            "caller_voice": caller.voice_provider,
+            "voice": caller.voice,
             "noise": {"clip": noise[0], "snr_db": noise[1]} if noise else None,
             "agent_cost_usd": usage.get("total_cost_usd") if usage else None,
             "agent_cost_is_estimate": bool(

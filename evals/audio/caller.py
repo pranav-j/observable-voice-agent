@@ -48,6 +48,21 @@ VOICE_POOL = {
     "voice_pool.male_3": "ash",
 }
 DEFAULT_VOICE = "alloy"
+
+# The same personas in local Kokoro voices (--caller-voice kokoro). Kokoro has no Indian
+# English voices; its Hindi voices reading English come closest, so most personas use them.
+KOKORO_VOICE_POOL = {
+    "voice_pool.female_1": "hf_alpha",
+    "voice_pool.female_2": "hf_beta",
+    "voice_pool.female_3": "bf_emma",
+    "voice_pool.male_1": "hm_omega",
+    "voice_pool.male_2": "hm_psi",
+    "voice_pool.male_3": "bm_george",
+}
+KOKORO_DEFAULT_VOICE = "af_heart"
+# Kokoro takes no style instructions, only a speed.
+KOKORO_SPEED = {"brisk": 1.1, "chatty": 1.0, "hesitant": 0.9, "confused": 0.95, "adversarial": 1.1}
+CallerVoice = Literal["openai", "kokoro"]
 STYLE_INSTRUCTIONS = {
     "brisk": "brisk and to the point",
     "chatty": "friendly and relaxed",
@@ -147,9 +162,17 @@ class AudioCaller:
         style: str,
         noise: tuple[str, float] | None,
         hearing: Hearing = "transcript",
+        voice_provider: CallerVoice = "openai",
+        kokoro: Any = None,
     ) -> None:
         self.client = client
-        self.voice = VOICE_POOL.get(voice, DEFAULT_VOICE)
+        self.voice_provider = voice_provider
+        if voice_provider == "kokoro":
+            self.voice = KOKORO_VOICE_POOL.get(voice, KOKORO_DEFAULT_VOICE)
+        else:
+            self.voice = VOICE_POOL.get(voice, DEFAULT_VOICE)
+        self.kokoro = kokoro  # a loaded kokoro_onnx.Kokoro, shared by all callers
+        self.speed = KOKORO_SPEED.get(style, 1.0)
         self.instructions = tts_instructions(style)
         self.noise = noise
         self.hearing = hearing
@@ -321,17 +344,28 @@ class AudioCaller:
         spoken = speakable(text)
         shortest = max(MIN_LINE_SECONDS, MIN_SECONDS_PER_WORD * len(spoken.split()))
         for _ in range(TTS_ATTEMPTS):
-            response = await self.client.audio.speech.create(
-                model="gpt-4o-mini-tts",
-                voice=self.voice,
-                input=spoken,
-                instructions=self.instructions,
-                response_format="pcm",
-            )
-            pcm = np.frombuffer(response.content, dtype=np.int16)
+            pcm = await self._speech(spoken)
             if len(pcm) / SPEAK_RATE >= shortest:
                 return speech_at_level(pcm)
         raise RuntimeError(f"text-to-speech kept returning clipped audio for {text!r}")
+
+    async def _speech(self, spoken: str) -> np.ndarray[Any, Any]:
+        """The line as 24 kHz int16 audio, from whichever voice provider this caller uses."""
+        if self.voice_provider == "kokoro":
+            audio, rate = await asyncio.to_thread(
+                self.kokoro.create, spoken, voice=self.voice, speed=self.speed, lang="en-us"
+            )
+            if rate != SPEAK_RATE:
+                raise RuntimeError(f"Kokoro returned {rate} Hz audio, expected {SPEAK_RATE}")
+            return to_pcm16(np.asarray(audio, dtype=np.float64))
+        response = await self.client.audio.speech.create(
+            model="gpt-4o-mini-tts",
+            voice=self.voice,
+            input=spoken,
+            instructions=self.instructions,
+            response_format="pcm",
+        )
+        return np.frombuffer(response.content, dtype=np.int16)
 
     async def say(
         self, text: str, *, pause_ms: int = 0, interrupt: bool = False
