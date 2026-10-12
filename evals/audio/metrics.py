@@ -15,6 +15,9 @@ import numpy as np
 from evals.audio.detector import SAMPLE_RATE, Segment, speech_segments
 
 DEAD_AIR_SECONDS = 2.0
+# Agent speech with gaps shorter than this is one reply: the pauses between its sentences.
+# After a real stop, the next reply can't start this soon (end of turn plus an LLM call).
+SAME_REPLY_GAP_SECONDS = 1.5
 TRANSCRIPT_GRACE_SECONDS = 4.0  # the agent's transcript of a caller line can arrive after it ends
 
 
@@ -60,14 +63,29 @@ def response_latencies(timeline: Timeline) -> list[float]:
     return latencies
 
 
+def speech_runs(segments: list[Segment], gap: float = SAME_REPLY_GAP_SECONDS) -> list[Segment]:
+    """Join segments separated by less than `gap` seconds into one run of speech."""
+    runs: list[Segment] = []
+    for s in segments:
+        if runs and s.start - runs[-1].end < gap:
+            runs[-1] = Segment(runs[-1].start, s.end)
+        else:
+            runs.append(s)
+    return runs
+
+
 def barge_in_stop_times(timeline: Timeline) -> list[float]:
-    """For interruptions made while the agent was speaking: caller onset to agent silence."""
-    speech = timeline.agent_speech()
+    """For interruptions made while the agent was speaking: caller onset to agent silence.
+
+    Silence means the end of the agent's reply, not of its current sentence: an agent that
+    ignores the caller pauses between sentences and carries on.
+    """
+    runs = speech_runs(timeline.agent_speech())
     stops = []
     for u in timeline.caller:
         if not u.interrupt:
             continue
-        talking = next((s for s in speech if s.start <= u.start < s.end), None)
+        talking = next((r for r in runs if r.start <= u.start < r.end), None)
         if talking is not None:
             stops.append(talking.end - u.start)
     return stops
@@ -165,10 +183,11 @@ def recording_metrics(caller: list[Segment], agent: list[Segment]) -> dict[str, 
             end, who = max(before)
             if who == "caller":
                 latencies.append(a.start - end)
+    runs = speech_runs(agent)
     stops = [
-        next(a.end - c.start for a in agent if a.start < c.start < a.end)
+        next(a.end - c.start for a in runs if a.start < c.start < a.end)
         for c in caller
-        if any(a.start < c.start < a.end for a in agent)
+        if any(a.start < c.start < a.end for a in runs)
     ]
     return {
         "response_latencies_ms": [round(x * 1000) for x in latencies],

@@ -13,6 +13,7 @@ from evals.audio.metrics import (
     normalize_words,
     recording_metrics,
     response_latencies,
+    speech_runs,
     utterance_wer,
     word_errors,
 )
@@ -148,3 +149,17 @@ def test_doubled_replies() -> None:
         )
         == 2
     )
+
+
+def test_pauses_between_sentences_join_into_one_reply() -> None:
+    segments = [Segment(1.0, 2.0), Segment(2.4, 3.0), Segment(6.0, 7.0)]
+    assert speech_runs(segments) == [Segment(1.0, 3.0), Segment(6.0, 7.0)]
+
+
+def test_barge_in_stop_runs_to_the_end_of_the_reply_not_the_sentence() -> None:
+    # The agent ignores the caller (who starts at 2.0): it pauses for a sentence break at
+    # 2.5 and carries on until 4.0. Before, this measured only the 0.5 s to the break.
+    m = recording_metrics(
+        [Segment(0.0, 1.0), Segment(2.0, 2.6)], [Segment(1.5, 2.5), Segment(2.8, 4.0)]
+    )
+    assert m["barge_in_stop_ms"] == [2000]

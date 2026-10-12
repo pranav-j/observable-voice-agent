@@ -34,6 +34,8 @@ The agent's received audio is logged on the same clock as it arrives, and saved.
 - **onset**: the first frame of a run of at least **30 ms** of speech
 - **offset**: the last speech frame before at least **300 ms** of non-speech
 
+For barge-in timing, the agent "stops" at the end of its reply, not the end of its current sentence: speech segments less than 1.5 seconds apart count as one reply. After a real stop, the agent's next reply can't begin that soon, because it needs an end of turn and an LLM call first. The first version measured to the end of the current segment. Seeded-fault validation showed that missed an agent that ignores the caller: it pauses at a sentence break and carries on. The rule changed on 2026-10-12, and every compared report was re-scored from its saved audio with `python -m evals.rescore`.
+
 These thresholds live in one place in the code, and every report records them. They must not change between runs that are compared. If they ever have to change, all compared runs get re-scored from their saved audio.
 
 The detector only ever runs on the agent's track. That audio is synthesized speech passed through the Opus codec, with no noise mixed in, so a level threshold separates speech from silence reliably. Noise is only added to what the caller sends.
