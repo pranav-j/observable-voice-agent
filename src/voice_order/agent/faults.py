@@ -6,7 +6,7 @@ The core (menu, order, tools) is never touched: the faults live in the voice lay
 
     no_barge_in      the agent keeps talking when the caller speaks over it
     drop_modifiers   the voice tool layer quietly drops modifiers from add/update
-    aggressive_eou   end-of-turn silence cut to 150 ms
+    aggressive_eou   end-of-turn silence cut to 150 ms, voice activity only (no turn model)
     slow_llm         800 ms added before the LLM's first token
 """
 

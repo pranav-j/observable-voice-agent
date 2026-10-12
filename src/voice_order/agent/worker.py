@@ -93,7 +93,11 @@ def build_session(settings: Settings, vad: Any) -> AgentSession[None]:
         vad=vad,
         turn_handling={
             # Local models only: the defaults in dev mode would call LiveKit's cloud.
-            "turn_detection": inference.TurnDetector(version="v1-mini"),
+            # FAULT=aggressive_eou drops the semantic detector as well: with it, a 150 ms
+            # wait changed nothing, since the model holds the turn on an unfinished sentence.
+            "turn_detection": "vad"
+            if settings.fault == "aggressive_eou"
+            else inference.TurnDetector(version="v1-mini"),
             "endpointing": {"min_delay": settings.effective_eou_silence_ms / 1000},
             "interruption": {"enabled": settings.fault != "no_barge_in", "mode": "vad"},
             "preemptive_generation": {"enabled": settings.enable_preemptive_generation},
