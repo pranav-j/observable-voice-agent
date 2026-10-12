@@ -105,7 +105,15 @@ def test_voice_config_names_what_shapes_a_call() -> None:
     assert {"llm_model", "stt_model", "tts_model", "tts_voice"} <= set(config)
 
 
-def test_openai_speech_by_default() -> None:
+def test_local_speech_by_default() -> None:
+    s = Settings(_env_file=None)
+    assert s.stt_choice() == ("local", "base.en")
+    assert s.tts_choice() == ("local", "kokoro-v1.0")
+
+
+def test_openai_speech_is_one_setting_away(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("STT_PROVIDER", "openai")
+    monkeypatch.setenv("TTS_PROVIDER", "openai")
     s = Settings(_env_file=None)
     assert s.stt_choice() == ("openai", "gpt-live-transcribe")
     assert s.tts_choice() == ("openai", "gpt-4o-mini-tts")

@@ -90,6 +90,7 @@ jobs:
       - name: require the API key
         run: test -n "$OPENAI_API_KEY" || { echo "Set the OPENAI_API_KEY secret first."; exit 1; }
       - run: make setup
+      - run: make models
       - run: make up
 
       # The worker runs in the background for the whole suite; its log is uploaded below.

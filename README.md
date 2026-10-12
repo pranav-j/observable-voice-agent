@@ -17,6 +17,7 @@ A real-time voice agent that takes pickup food orders for a fictional restaurant
 cp .env.example .env   # then add your OPENAI_API_KEY
 make setup    # .venv from the pyenv interpreter, uv sync, pre-commit, web deps
 make up       # postgres, livekit-server, phoenix
+make models   # local speech models: Whisper hears callers, Kokoro speaks (about 500 MB)
 make test
 make lint
 ```

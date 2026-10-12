@@ -15,6 +15,8 @@ Speech models that run well on a laptop now exist. The development machine is an
 - **The agent's voice:** Kokoro (`kokoro-onnx`), selected with `TTS_PROVIDER=kokoro` and `KOKORO_VOICE`, synthesizing a sentence at a time.
 - **The simulated caller's voice:** Kokoro as well, chosen with the eval runner's `--caller-voice kokoro`.
 - **The LLM stays hosted.** It's about 1% of the cost, and the agent depends on reliable tool calling, which small local models are noticeably worse at.
+- **Local speech is the default.** With a realistic simulated caller, it matched hosted speech on task success, 85 of 93 in both `reports/20261011-163931-audio` and `reports/20261012-072648-audio`. Replies started 28% sooner at p50, and the agent's speech cost nothing. The agent code had also improved between those two runs, so this isn't a pure comparison of the two pipelines.
+- **The simulated caller keeps OpenAI's voice by default.** Kokoro mispronounces Indian names. With a Kokoro caller, the local pipeline passed only 64 of 93 (`reports/20261012-050510-audio`), mostly on names, and offline the same recognizer got twice as many names right when an OpenAI voice said them. Caller speech is about a cent per call.
 - **Both pipelines stay available.** The hosted models remain the other setting, not deleted code. Every call saves which providers it used, so reports from the two can't be mixed up.
 - Model inference runs in a worker thread, so a call's event loop never waits on it. The models load once per worker process, in prewarm.
 - The model files live in a gitignored `models/` folder. `make models` downloads them.

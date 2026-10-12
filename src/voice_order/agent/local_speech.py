@@ -130,6 +130,11 @@ class KokoroTTS(tts.TTS[Never]):  # no extra events beyond LiveKit's own
             if self._kokoro is None:
                 from kokoro_onnx import Kokoro  # heavy import, only when used
 
+                if not (self._model_dir / "kokoro-v1.0.onnx").exists():
+                    raise RuntimeError(
+                        f"No Kokoro model in {self._model_dir}. Run `make models` first, or "
+                        "set TTS_PROVIDER=openai."
+                    )
                 self._kokoro = Kokoro(
                     str(self._model_dir / "kokoro-v1.0.onnx"),
                     str(self._model_dir / "voices-v1.0.bin"),

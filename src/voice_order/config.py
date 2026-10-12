@@ -34,9 +34,9 @@ class Settings(BaseSettings):
     tts_voice: str = "coral"
     tts_format: Literal["mp3", "pcm"] = "mp3"  # pcm skips decoding before playback
     # Local speech instead of OpenAI's (see docs/adr/0007-local-speech.md)
-    stt_provider: Literal["openai", "whisper"] = "openai"
+    stt_provider: Literal["openai", "whisper"] = "whisper"
     whisper_model: str = "base.en"  # small.en is more accurate but ~1.4 s per utterance on CPU
-    tts_provider: Literal["openai", "kokoro"] = "openai"
+    tts_provider: Literal["openai", "kokoro"] = "kokoro"
     kokoro_voice: str = "af_heart"
     models_dir: str = "models"  # local model files, downloaded with make models
     eou_silence_ms: int = Field(default=500, ge=0)  # silence before a turn may end

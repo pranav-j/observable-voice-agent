@@ -142,7 +142,9 @@ async def test_expensive_audio_runs_need_yes(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     _past_audio_calls(tmp_path, cost=0.50, count=3)
-    settings = Settings(_env_file=None, recordings_dir=str(tmp_path))
+    settings = Settings(  # hosted speech, like the history above
+        _env_file=None, recordings_dir=str(tmp_path), stt_provider="openai", tts_provider="openai"
+    )
     args = ["--mode", "audio", "--scenarios", "happy_path_single_coffee", "--runs", "3"]
     assert await main(args, settings=settings) == 2
     captured = capsys.readouterr()

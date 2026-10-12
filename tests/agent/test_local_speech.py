@@ -5,6 +5,7 @@ from types import SimpleNamespace
 from typing import Any
 
 import numpy as np
+import pytest
 from livekit import rtc
 from livekit.agents import stt
 
@@ -63,3 +64,9 @@ async def test_kokoro_synthesizes_pcm_through_livekit() -> None:
     # All of it arrives; LiveKit may pad the end of a segment by a frame.
     assert KOKORO_RATE // 2 <= samples < KOKORO_RATE // 2 + KOKORO_RATE // 20
     assert (voice.model, voice.provider) == ("kokoro-v1.0", "local")
+
+
+def test_missing_kokoro_model_says_what_to_do(tmp_path: Path) -> None:
+    voice = KokoroTTS(model_dir=tmp_path)
+    with pytest.raises(RuntimeError, match="make models"):
+        voice.load()
