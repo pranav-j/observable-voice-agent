@@ -197,7 +197,11 @@ def test_turn_ended_in_a_pause_by_the_agents_clock() -> None:
 
     early = [greeting, caller_turn(1006.0, 0.6), caller_turn(1009.0, 0.6)]  # committed at 6.6
     patient = [greeting, caller_turn(1009.0, 0.6)]  # waited out the pause
+    # Committed 0.1 s after the pause ended, before the agent noticed the caller had resumed:
+    # the sentence is still split in two.
+    just_after = [greeting, caller_turn(1006.2, 1.4), caller_turn(1009.0, 1.4)]
     assert turn_ends_in_pauses(timeline, early) == 1
+    assert turn_ends_in_pauses(timeline, just_after) == 1
     assert turn_ends_in_pauses(timeline, patient) == 0
     # Its audio came after the caller had finished, so the caller-side metric can't see it.
     assert false_cutoffs(timeline) == (0, 1)

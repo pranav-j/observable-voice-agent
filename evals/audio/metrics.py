@@ -108,16 +108,27 @@ def false_cutoffs(timeline: Timeline) -> tuple[int, int]:
     return cut, total
 
 
+# How far either side of a pause's start the agent may place the caller's stop: the two
+# clocks are lined up to within a few hundred milliseconds, and voice detection marks the
+# end of speech a little after the last word.
+PAUSE_STOP_SLACK_SECONDS = 0.5
+
+
 def turn_ends_in_pauses(timeline: Timeline, turn_records: list[dict[str, Any]]) -> int | None:
-    """Scripted pauses during which the agent decided the caller's turn was over.
+    """Scripted pauses at which the agent ended the caller's turn mid-sentence.
 
     `false_cutoffs` only sees a premature end of turn once the agent's audio starts before
     the caller finishes, and a slow reply never does. This counts the decision itself, from
-    the agent's own turn records: the caller stopped at `stopped_speaking_at`, and the turn
-    was committed `end_of_turn_delay` later. (Not `created_at`: with preemptive generation,
-    the message kept is the one made before the commit.) The agent logs wall-clock time and
-    the caller its own clock, so the two are lined up on the agent's first words, which both
-    sides recorded. None when either side is missing.
+    the agent's own turn records: a turn whose speech stopped at the pause
+    (`stopped_speaking_at`) and was committed (`end_of_turn_delay` later) before the caller
+    finished the sentence. The commit can land just after the pause ends, before the agent
+    has heard enough of the caller's next word to notice; the sentence is split either way.
+    A turn held through the pause stops at the end of the sentence instead.
+
+    Not `created_at`: with preemptive generation, the message kept is the one made before
+    the commit. The agent logs wall-clock time and the caller its own clock, so the two are
+    lined up on the agent's first words, which both sides recorded. None when either side
+    is missing.
     """
     first = next(
         (
@@ -131,15 +142,21 @@ def turn_ends_in_pauses(timeline: Timeline, turn_records: list[dict[str, Any]]) 
     if first is None or not speech:
         return None
     offset = first - speech[0].start
-    commits = [
-        r["stopped_speaking_at"] + r["end_of_turn_delay"] - offset
+    turns = [
+        (
+            r["stopped_speaking_at"] - offset,
+            r["stopped_speaking_at"] + r["end_of_turn_delay"] - offset,
+        )
         for r in turn_records
         if r.get("role") == "user"
         and isinstance(r.get("stopped_speaking_at"), float)
         and isinstance(r.get("end_of_turn_delay"), float)
     ]
+    slack = PAUSE_STOP_SLACK_SECONDS
     return sum(
-        any(start <= c < end for c in commits) for u in timeline.caller for start, end in u.pauses
+        any(start - slack <= stop < end and commit < u.end for stop, commit in turns)
+        for u in timeline.caller
+        for start, end in u.pauses
     )
 
 
