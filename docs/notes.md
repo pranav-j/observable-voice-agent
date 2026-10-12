@@ -478,3 +478,17 @@ A public demo needs limits, since every call costs a bit of LLM and ties up the 
 The one thing I almost got wrong was the caller's address. Behind a hosting proxy, the real address comes in `X-Forwarded-For`, and I nearly took the first entry. But the client can send that header itself with anything in it, and the proxy only appends. So the first entry is whatever the client wants it to be, and the last one is the one the proxy actually saw. There's a test for exactly that.
 
 The counts live in memory, so a restart resets them. For a single demo instance that's an acceptable worst case. Nothing is deployed yet, so none of this has met real traffic.
+
+## The pause scenarios weren't testing the turn detector
+
+I wanted the turn-detection experiment to show how often the agent cuts a caller off mid-sentence, and the false cut-off metric wasn't up to it. It only counts a cut-off when the agent's audio starts before the caller finishes, and with replies taking four or five seconds, that almost never happens. So I added a count from the agent's side: did the agent end the caller's turn while the caller was still in the scripted pause? The agent logs when the caller stopped and how long it waited before ending the turn, and I line its clock up with the caller's on the greeting, which both sides record.
+
+One trap there. I first used each turn record's `created_at` as the moment the turn ended. With preemptive generation on, LiveKit keeps the message it made for the early reply, so `created_at` can come before the turn actually ended. Stop time plus end-of-turn delay is the reliable one.
+
+Re-scoring the saved runs with it was a surprise. With the turn detector on, the agent ended the turn inside the pause in 6 of 9 pauses on the hosted baseline and 6 of 9 on the local one. Turning the detector off on purpose, the aggressive end-of-turn fault, did no worse at 4 of 6. The transcripts make it obvious: "Hi, um, could I get?" went in as a whole turn, and "One Mysore masala dosa, please" came a few seconds later as another.
+
+The traces showed the detector had run and rated those half sentences as finished. It listens to the audio, not the words. And the simulated caller made each half separately: for a pause, it synthesized "Hi, umm, could I get" as its own line, and the second half as another. A line synthesized on its own ends the way a finished sentence ends, so the detector was right. A person who stops to think in the middle of a sentence doesn't sound like that.
+
+Now the caller synthesizes the whole line once and cuts the pause in at the quietest moment near the split. I checked it offline with the same detector model on 41 paused lines in three Kokoro voices (`reports/20261012-pause-prosody`). Pauses that sounded finished went from 52 of 123 to 17 of 123. Real line endings came out at 86 of 123, so the detector does hear the difference.
+
+It's the same lesson again: before blaming the agent, check what the harness actually sent it. It also means every result I had on hesitation, including the aggressive end-of-turn fault looking caught only by task success, was measured with a broken test. The turn-detection experiment is running again on the fixed caller.
