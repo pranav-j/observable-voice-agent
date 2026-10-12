@@ -12,6 +12,7 @@ import contextlib
 import io
 import json
 import re
+import threading
 import time
 import wave
 from dataclasses import dataclass, field
@@ -63,6 +64,17 @@ KOKORO_DEFAULT_VOICE = "af_heart"
 # Kokoro takes no style instructions, only a speed.
 KOKORO_SPEED = {"brisk": 1.1, "chatty": 1.0, "hesitant": 0.9, "confused": 0.95, "adversarial": 1.1}
 CallerVoice = Literal["openai", "kokoro"]
+# All callers in a run share one Kokoro, and its voice file is read lazily from a zip that
+# isn't safe to read from two threads at once ("BadZipFile: Overlapped entries").
+_KOKORO_LOCK = threading.Lock()
+
+
+def _kokoro_create(kokoro: Any, text: str, voice: str, speed: float) -> tuple[Any, int]:
+    with _KOKORO_LOCK:
+        audio, rate = kokoro.create(text, voice=voice, speed=speed, lang="en-us")
+    return audio, int(rate)
+
+
 STYLE_INSTRUCTIONS = {
     "brisk": "brisk and to the point",
     "chatty": "friendly and relaxed",
@@ -353,7 +365,7 @@ class AudioCaller:
         """The line as 24 kHz int16 audio, from whichever voice provider this caller uses."""
         if self.voice_provider == "kokoro":
             audio, rate = await asyncio.to_thread(
-                self.kokoro.create, spoken, voice=self.voice, speed=self.speed, lang="en-us"
+                _kokoro_create, self.kokoro, spoken, self.voice, self.speed
             )
             if rate != SPEAK_RATE:
                 raise RuntimeError(f"Kokoro returned {rate} Hz audio, expected {SPEAK_RATE}")

@@ -56,6 +56,7 @@ class WhisperSTT(stt.STT[Never]):  # no extra events beyond LiveKit's own
         self._language = language
         self._whisper: Any = None
         self._load_lock = threading.Lock()
+        self._run_lock = threading.Lock()
 
     @property
     def model(self) -> str:
@@ -74,8 +75,9 @@ class WhisperSTT(stt.STT[Never]):  # no extra events beyond LiveKit's own
 
     def transcribe(self, audio: np.ndarray[Any, Any]) -> str:
         self.load()
-        segments, _ = self._whisper.transcribe(audio, language=self._language, beam_size=1)
-        return " ".join(s.text.strip() for s in segments).strip()
+        with self._run_lock:  # one transcription at a time per model
+            segments, _ = self._whisper.transcribe(audio, language=self._language, beam_size=1)
+            return " ".join(s.text.strip() for s in segments).strip()
 
     async def _recognize_impl(
         self,
@@ -113,6 +115,7 @@ class KokoroTTS(tts.TTS[Never]):  # no extra events beyond LiveKit's own
         self.lang = lang
         self._kokoro: Any = None
         self._load_lock = threading.Lock()
+        self._run_lock = threading.Lock()
 
     @property
     def model(self) -> str:
@@ -134,7 +137,11 @@ class KokoroTTS(tts.TTS[Never]):  # no extra events beyond LiveKit's own
 
     def speak(self, text: str) -> bytes:
         self.load()
-        audio, rate = self._kokoro.create(text, voice=self.voice, speed=self.speed, lang=self.lang)
+        # Kokoro reads its voice file lazily from a zip, which isn't safe from two threads.
+        with self._run_lock:
+            audio, rate = self._kokoro.create(
+                text, voice=self.voice, speed=self.speed, lang=self.lang
+            )
         if rate != KOKORO_RATE:
             raise RuntimeError(f"Kokoro returned {rate} Hz audio, expected {KOKORO_RATE}")
         return to_pcm16(audio)
