@@ -175,11 +175,22 @@ def test_confirm_works_once_the_caller_has_replied(ready: Session) -> None:
     assert call(ready, "confirm_order")["order"]["status"] == "confirmed"
 
 
-def test_a_new_readback_needs_a_new_reply(ready: Session) -> None:
+def test_refetching_an_answered_readback_keeps_the_answer(ready: Session) -> None:
     read_back(ready)
-    ready.caller_spoke()
-    read_back(ready)  # read it back again, e.g. after a question
+    ready.caller_spoke()  # "Yes, that's correct. Goodbye."
+    again = call(ready, "get_readback")  # fetched again, nothing changed
+    assert "call confirm_order now" in again["instructions"]
+    assert call(ready, "confirm_order")["order"]["status"] == "confirmed"
+
+
+def test_a_change_after_the_answer_needs_a_new_readback_and_reply(ready: Session) -> None:
+    read_back(ready)
+    ready.caller_spoke()  # "Actually, add an affogato."
+    call(ready, "add_item", item_id="affogato", quantity=1)
+    read_back(ready)
     assert call(ready, "confirm_order")["error"] == "READBACK_NOT_ANSWERED"
+    ready.caller_spoke()
+    assert call(ready, "confirm_order")["order"]["status"] == "confirmed"
 
 
 def test_a_stale_readback_still_says_the_order_changed(ready: Session) -> None:

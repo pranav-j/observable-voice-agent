@@ -81,7 +81,8 @@ def _confirmed_before_reply(events: tuple[ToolEvent, ...]) -> bool:
     """A confirm attempt after a read-back in the same agent turn, i.e. before any reply."""
     readback = False
     for e in events:
-        if e.name == "get_readback" and e.result.get("ok"):
+        # A re-fetch of a read-back the caller already answered isn't a new read-back.
+        if e.name == "get_readback" and e.result.get("ok") and not e.result.get("already_answered"):
             readback = True
         elif e.name == "confirm_order" and readback:
             return True

@@ -296,9 +296,23 @@ def set_customer(session: Session, args: SetCustomerArgs) -> Result:
 
 
 def get_readback(session: Session, args: NoArgs) -> Result:
+    # Fetching it again after the caller has already answered, with nothing changed, used
+    # to throw that answer away: the agent re-fetched after "Yes, that's correct.
+    # Goodbye.", couldn't confirm, and the caller had gone.
+    answered = session.order.readback_is_current and session.readback_answered
     marked = state.mark_readback(session.order)  # ORDER_CLOSED if already closed
     readback = build_readback(marked, session.menu)  # ORDER_INCOMPLETE if not ready
     session.order = marked  # recorded only once the read-back exists
+    if answered:
+        return ok(
+            readback=readback.text,
+            already_answered=True,
+            instructions=(
+                "The caller already heard this read-back and replied, and nothing has "
+                "changed. If they said yes, call confirm_order now; there's no need to read "
+                "it again."
+            ),
+        )
     session.readback_text = readback.text  # counts once the agent has said it in full
     session.readback_caller_turn = None
     return ok(
