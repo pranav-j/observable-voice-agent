@@ -349,7 +349,10 @@ def test_agent_stage_timings_are_summarized() -> None:
     b = audio_result(2, noise=None)  # an older run without them
     summary = summarize([a, b], mode="audio", started_at=STARTED)
     assert summary["audio"]["agent_timing_p50_s"] == {"llm_node_ttft": 2.0}
-    assert "Agent-side p50 (s): llm_node_ttft 2.00." in render_markdown(summary)
+    assert summary["audio"]["agent_timing_p95_s"] == {"llm_node_ttft": 3.0}
+    md = render_markdown(summary)
+    assert "Agent-side p50 (s): llm_node_ttft 2.00." in md
+    assert "Agent-side p95 (s): llm_node_ttft 3.00." in md
 
 
 def test_turn_ends_in_pauses_count_only_measured_runs() -> None:

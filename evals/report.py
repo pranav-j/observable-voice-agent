@@ -95,11 +95,8 @@ def _audio_summary(results: list[RunResult]) -> dict[str, Any] | None:
         # Timing depends on these; runs scored with different settings can't be compared.
         "detector": [json.loads(d) for d in sorted(detectors)],
         # The agent's own stage timings, for explaining the caller-side numbers.
-        "agent_timing_p50_s": {
-            key: percentile(values, 50)
-            for key in ("end_of_turn_delay", "llm_node_ttft", "tts_node_ttfb", "e2e_latency")
-            if (values := [v for a in audio for v in (a.get("agent_timing") or {}).get(key, [])])
-        },
+        "agent_timing_p50_s": _stage_percentiles(audio, 50),
+        "agent_timing_p95_s": _stage_percentiles(audio, 95),
         # What the worker reported for each call. More than one means mixed settings.
         "agent_configs": [json.loads(c) for c in sorted(configs)],
     }
@@ -254,6 +251,15 @@ def summarize(
 
 
 # --- markdown ----------------------------------------------------------------------------
+
+
+def _stage_percentiles(audio: list[dict[str, Any]], p: float) -> dict[str, float | None]:
+    """The agent's own stage timings, for explaining the caller-side numbers."""
+    return {
+        key: percentile(values, p)
+        for key in ("end_of_turn_delay", "llm_node_ttft", "tts_node_ttfb", "e2e_latency")
+        if (values := [v for a in audio for v in (a.get("agent_timing") or {}).get(key, [])])
+    }
 
 
 def _pct(value: float | None) -> str:
@@ -421,13 +427,15 @@ def _audio_markdown(a: dict[str, Any] | None, mode: str) -> list[str]:
         f"| Replies with a sentence said twice | {_num(a.get('doubled_replies'), 0)} |",
         f"| Caller hearing | {', '.join(a['hearing'])} |",
         "",
-        "Agent-side p50 (s): "
-        + (
-            ", ".join(f"{k} {v:.2f}" for k, v in a.get("agent_timing_p50_s", {}).items())
-            or "not recorded"
-        )
-        + ".",
-        "",
+        *(
+            f"Agent-side p{p} (s): "
+            + (
+                ", ".join(f"{k} {v:.2f}" for k, v in a.get(f"agent_timing_p{p}_s", {}).items())
+                or "not recorded"
+            )
+            + ".\n"  # a blank line after each, so they stay separate paragraphs
+            for p in (50, 95)
+        ),
         "Detector: " + "; ".join(_settings_text(d) for d in a["detector"]) + ".",
         "",
         "Agent config: " + "; ".join(_settings_text(c) for c in a.get("agent_configs", [])) + ".",
