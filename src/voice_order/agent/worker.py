@@ -31,6 +31,7 @@ from openai.types import Reasoning
 
 from voice_order.agent.faults import SLOW_LLM_DELAY_S, delay_first
 from voice_order.agent.filler import fillers, with_filler
+from voice_order.agent.local_speech import KokoroTTS, WhisperSTT
 from voice_order.agent.tools import StepText, livekit_tools
 from voice_order.config import Settings, get_settings
 from voice_order.menu.loader import load_menu
@@ -101,14 +102,38 @@ def _is_tool_call(chunk: object) -> bool:
 
 
 def prewarm(proc: JobProcess) -> None:
-    # Loading the VAD model blocks, so do it once per process, before calls arrive.
+    # Loading models blocks, so do it once per process, before calls arrive.
     proc.userdata["vad"] = silero.VAD.load()
+    proc.userdata["stt"], proc.userdata["tts"] = speech_models(settings)
 
 
-def build_session(settings: Settings, vad: Any) -> AgentSession[None]:
+def speech_models(settings: Settings) -> tuple[Any, Any]:
+    """Speech-to-text and text-to-speech for a call: local models are loaded up front."""
+    key = settings.openai_api_key.get_secret_value()
+    if settings.stt_provider == "whisper":
+        stt: Any = WhisperSTT(model=settings.whisper_model)
+        stt.load()
+    else:
+        stt = lk_openai.STT(model=settings.stt_model, api_key=key)
+    if settings.tts_provider == "kokoro":
+        tts: Any = KokoroTTS(
+            model_dir=Path(settings.models_dir) / "kokoro", voice=settings.kokoro_voice
+        )
+        tts.load()
+    else:
+        tts = lk_openai.TTS(
+            model=settings.tts_model,
+            voice=settings.tts_voice,
+            api_key=key,
+            response_format=settings.tts_format,
+        )
+    return stt, tts
+
+
+def build_session(settings: Settings, vad: Any, stt: Any, tts: Any) -> AgentSession[None]:
     key = settings.openai_api_key.get_secret_value()
     return AgentSession(
-        stt=lk_openai.STT(model=settings.stt_model, api_key=key),
+        stt=stt,
         llm=lk_openai.responses.LLM(
             model=settings.llm_model,
             api_key=key,
@@ -119,12 +144,7 @@ def build_session(settings: Settings, vad: Any) -> AgentSession[None]:
             # repeats the call it thinks is unanswered (an item added three times).
             store=False,
         ),
-        tts=lk_openai.TTS(
-            model=settings.tts_model,
-            voice=settings.tts_voice,
-            api_key=key,
-            response_format=settings.tts_format,
-        ),
+        tts=tts,
         vad=vad,
         turn_handling={
             # Local models only: the defaults in dev mode would call LiveKit's cloud.
@@ -181,12 +201,12 @@ async def entrypoint(ctx: JobContext) -> None:
         settings.phoenix_collector_endpoint,
         {
             "session_id": session_id,
-            "stt.provider": "openai",
-            "stt.model": settings.stt_model,
+            "stt.provider": settings.stt_choice()[0],
+            "stt.model": settings.stt_choice()[1],
             "llm.provider": "openai",
             "llm.model": settings.llm_model,
-            "tts.provider": "openai",
-            "tts.model": settings.tts_model,
+            "tts.provider": settings.tts_choice()[0],
+            "tts.model": settings.tts_choice()[1],
         },
     )
 
@@ -224,7 +244,8 @@ async def entrypoint(ctx: JobContext) -> None:
             call, store, on_tool_result, step, drop_modifiers=settings.fault == "drop_modifiers"
         ),
     )
-    session = build_session(settings, ctx.proc.userdata["vad"])
+    userdata = ctx.proc.userdata
+    session = build_session(settings, userdata["vad"], userdata["stt"], userdata["tts"])
     background: set[asyncio.Task[None]] = set()
 
     @session.on("conversation_item_added")

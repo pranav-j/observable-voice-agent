@@ -103,3 +103,23 @@ def test_voice_config_names_what_shapes_a_call() -> None:
     assert config["eou_silence_ms"] == 300
     assert config["preemptive_generation"] is False
     assert {"llm_model", "stt_model", "tts_model", "tts_voice"} <= set(config)
+
+
+def test_openai_speech_by_default() -> None:
+    s = Settings(_env_file=None)
+    assert s.stt_choice() == ("openai", "gpt-live-transcribe")
+    assert s.tts_choice() == ("openai", "gpt-4o-mini-tts")
+
+
+def test_local_speech_is_named_in_the_saved_config(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("STT_PROVIDER", "whisper")
+    monkeypatch.setenv("WHISPER_MODEL", "base.en")
+    monkeypatch.setenv("TTS_PROVIDER", "kokoro")
+    monkeypatch.setenv("KOKORO_VOICE", "bf_emma")
+    config = Settings(_env_file=None).voice_config()
+    assert (config["stt_provider"], config["stt_model"]) == ("whisper", "base.en")
+    assert (config["tts_provider"], config["tts_model"], config["tts_voice"]) == (
+        "kokoro",
+        "kokoro-v1.0",
+        "bf_emma",
+    )

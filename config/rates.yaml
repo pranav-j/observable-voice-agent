@@ -13,7 +13,12 @@ stt:
   openai/gpt-live-transcribe: {per_minute: 0.017}
   openai/gpt-realtime-whisper: {per_minute: 0.017}
   openai/gpt-4o-mini-transcribe: {per_minute: 0.003}
+  # Local Whisper models run on this machine: no per-call price.
+  local/base.en: {per_minute: 0.0}
+  local/small.en: {per_minute: 0.0}
+  local/medium.en: {per_minute: 0.0}
 
 tts:
   openai/gpt-4o-mini-tts: {input_per_1m: 0.60, output_per_1m: 12.00}
   openai/tts-1: {per_1m_characters: 15.00}
+  local/kokoro-v1.0: {}  # runs on this machine: no per-call price

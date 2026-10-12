@@ -33,6 +33,12 @@ class Settings(BaseSettings):
     tts_model: str = "gpt-4o-mini-tts"
     tts_voice: str = "coral"
     tts_format: Literal["mp3", "pcm"] = "mp3"  # pcm skips decoding before playback
+    # Local speech instead of OpenAI's (see docs/adr/0007-local-speech.md)
+    stt_provider: Literal["openai", "whisper"] = "openai"
+    whisper_model: str = "small.en"
+    tts_provider: Literal["openai", "kokoro"] = "openai"
+    kokoro_voice: str = "af_heart"
+    models_dir: str = "models"  # local model files, downloaded with make models
     eou_silence_ms: int = Field(default=500, ge=0)  # silence before a turn may end
     enable_preemptive_generation: bool = False  # on, it sometimes said a sentence twice
     enable_filler_phrases: bool = False
@@ -53,13 +59,27 @@ class Settings(BaseSettings):
     def effective_eou_silence_ms(self) -> int:
         return AGGRESSIVE_EOU_MS if self.fault == "aggressive_eou" else self.eou_silence_ms
 
+    def stt_choice(self) -> tuple[str, str]:
+        """(provider, model) for speech-to-text."""
+        if self.stt_provider == "whisper":
+            return "local", self.whisper_model
+        return "openai", self.stt_model
+
+    def tts_choice(self) -> tuple[str, str]:
+        """(provider, model) for text-to-speech."""
+        if self.tts_provider == "kokoro":
+            return "local", "kokoro-v1.0"
+        return "openai", self.tts_model
+
     def voice_config(self) -> dict[str, Any]:
         """The settings that shape a voice call, saved with each one so runs can be compared."""
         return {
             "llm_model": self.llm_model,
-            "stt_model": self.stt_model,
-            "tts_model": self.tts_model,
-            "tts_voice": self.tts_voice,
+            "stt_provider": self.stt_provider,
+            "stt_model": self.stt_choice()[1],
+            "tts_provider": self.tts_provider,
+            "tts_model": self.tts_choice()[1],
+            "tts_voice": self.kokoro_voice if self.tts_provider == "kokoro" else self.tts_voice,
             "tts_format": self.tts_format,
             "eou_silence_ms": self.effective_eou_silence_ms,
             "preemptive_generation": self.enable_preemptive_generation,

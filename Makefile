@@ -21,7 +21,7 @@ NVM_USE := if [ "$$(node --version 2>/dev/null)" != "v$$(cat .nvmrc)" ]; then \
 	if [ -s "$$NVM_DIR/nvm.sh" ]; then . "$$NVM_DIR/nvm.sh" && nvm use >/dev/null || exit 1; fi; \
 	fi;
 
-.PHONY: help setup up down dev worker voice-smoke chat test test-integration lint fmt eval annotate judge judge-sample judge-calibrate gate baseline compare
+.PHONY: help setup up down dev worker voice-smoke chat test test-integration lint fmt eval annotate judge judge-sample judge-calibrate gate baseline compare models
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*## "} /^[a-zA-Z_-]+:.*## / {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -114,6 +114,14 @@ baseline: $(VENV)/bin/python ## make baseline REPORT=<dir>: record a reviewed re
 compare: $(VENV)/bin/python ## make compare BEFORE=<dir> AFTER=<dir> [ONLY=<glob>]: two reports side by side
 	@test -n "$(BEFORE)" -a -n "$(AFTER)" || { echo "Usage: make compare BEFORE=reports/<a> AFTER=reports/<b>"; exit 2; }
 	$(UV) run --locked python -m evals.compare '$(BEFORE)' '$(AFTER)' $(if $(ONLY),--scenarios '$(ONLY)')
+
+KOKORO_URL := https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0
+models: $(VENV)/bin/python ## Download the local speech models (Kokoro and Whisper)
+	@mkdir -p models/kokoro
+	@test -f models/kokoro/kokoro-v1.0.onnx || curl -fL --progress-bar -o models/kokoro/kokoro-v1.0.onnx $(KOKORO_URL)/kokoro-v1.0.onnx
+	@test -f models/kokoro/voices-v1.0.bin || curl -fL --progress-bar -o models/kokoro/voices-v1.0.bin $(KOKORO_URL)/voices-v1.0.bin
+	$(UV) run --locked python -c "from faster_whisper import WhisperModel; WhisperModel('$(or $(WHISPER_MODEL),small.en)', device='cpu', compute_type='int8')"
+	@echo "Local speech models are ready. Set STT_PROVIDER=whisper and TTS_PROVIDER=kokoro to use them."
 
 annotate: $(VENV)/bin/python ## make annotate SESSION=<id>: start the expected order for a real call
 	@test -n "$(SESSION)" || { echo "Usage: make annotate SESSION=<session id from recordings/>"; exit 2; }
