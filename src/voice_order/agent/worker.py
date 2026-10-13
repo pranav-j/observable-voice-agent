@@ -285,7 +285,7 @@ async def entrypoint(ctx: JobContext) -> None:
             task = asyncio.create_task(publish(ctx.room, TURN_TOPIC, record))
             background.add(task)
             task.add_done_callback(background.discard)
-            if ev.item.role == "user":
+            if ev.item.role == "user" and settings.pipeline == "cascade":
                 call.caller_spoke()  # lets confirm_order check the caller replied to the read-back
             elif ev.item.role == "assistant":
                 # An interrupted message holds only what was played, so a read-back the
@@ -308,6 +308,11 @@ async def entrypoint(ctx: JobContext) -> None:
 
     @session.on("user_state_changed")
     def _on_user_state(ev: UserStateChangedEvent) -> None:
+        # A realtime model answers from the audio, and the caller's transcript can arrive
+        # after it has already acted, even after its next read-back. So there, the caller
+        # has replied once they've finished speaking.
+        if settings.pipeline == "realtime" and ev.old_state == "speaking":
+            call.caller_spoke()
         if ev.new_state == "away":
             # The loop only holds weak references to tasks; keep one until it's done.
             task = asyncio.create_task(end_with(AWAY, "caller went quiet"))
