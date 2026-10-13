@@ -92,6 +92,10 @@ def _audio_summary(results: list[RunResult]) -> dict[str, Any] | None:
         "doubled_replies": sum(a["doubled_replies"] for a in audio if "doubled_replies" in a)
         if any("doubled_replies" in a for a in audio)
         else None,
+        # Calls where no agent joined at first and had to be sent again. None: not tracked.
+        "redispatched": sum(bool(a.get("redispatched")) for a in audio)
+        if any("redispatched" in a for a in audio)
+        else None,
         # Timing depends on these; runs scored with different settings can't be compared.
         "detector": [json.loads(d) for d in sorted(detectors)],
         # The agent's own stage timings, for explaining the caller-side numbers.
@@ -425,6 +429,7 @@ def _audio_markdown(a: dict[str, Any] | None, mode: str) -> list[str]:
         ),
         f"| Agent cost per minute | {cost} |",
         f"| Replies with a sentence said twice | {_num(a.get('doubled_replies'), 0)} |",
+        f"| Agent sent again after not joining | {_num(a.get('redispatched'), 0)} runs |",
         f"| Caller hearing | {', '.join(a['hearing'])} |",
         "",
         *(

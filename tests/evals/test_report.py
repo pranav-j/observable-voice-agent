@@ -366,3 +366,13 @@ def test_turn_ends_in_pauses_count_only_measured_runs() -> None:
     assert (a["turn_ends_in_pauses"], a["turn_end_pauses_measured"]) == (1, 2)
     assert a["turn_end_in_pause_rate"] == 0.5
     assert "| 1/2 scripted pauses (50.0%) |" in render_markdown(summary)
+
+
+def test_calls_the_agent_had_to_be_sent_again_to_are_counted() -> None:
+    old = audio_result(1, noise=None)
+    assert summarize([old], mode="audio", started_at=STARTED)["audio"]["redispatched"] is None
+    late = audio_result(2, noise=None, redispatched=True)
+    fine = audio_result(3, noise=None, redispatched=False)
+    summary = summarize([late, fine], mode="audio", started_at=STARTED)
+    assert summary["audio"]["redispatched"] == 1
+    assert "| Agent sent again after not joining | 1 runs |" in render_markdown(summary)

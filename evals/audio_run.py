@@ -9,6 +9,7 @@ the worker saved for the call.
 
 import asyncio
 import json
+import logging
 import secrets
 import time
 import wave
@@ -31,7 +32,7 @@ from evals.caller.text_caller import CALLER_PROMPT_VERSION, Phase, TextCaller
 from evals.scenario import Behavior, Scenario
 from evals.scoring.order import score_order
 from evals.text_run import EndReason, RunResult, TranscriptEntry
-from voice_order.api.app import join_token
+from voice_order.api.app import join_token, redispatch
 from voice_order.config import Settings
 from voice_order.menu.models import Menu
 from voice_order.order.state import spoken_digits
@@ -40,8 +41,13 @@ from voice_order.store.base import OrderStore
 from voice_order.textmode.llm import LLMClient, Usage
 
 GREETING_WAIT_S = 30.0
+# A worker can decline the call without LiveKit asking again; then ask once more, as the
+# web page does.
+REDISPATCH_AFTER_S = 10.0
 REPLY_WAIT_S = 30.0
 USAGE_WAIT_S = 60.0  # saving the recording can take a while after the caller leaves
+
+log = logging.getLogger("evals.audio_run")
 
 
 def _pauses(scenario: Scenario) -> dict[int, int]:
@@ -177,10 +183,19 @@ async def run_audio_scenario(
         utterance = await caller.say(scripted.text, interrupt=True)
         return await caller.agent_reply(utterance.end, REPLY_WAIT_S)
 
+    redispatched = False
     try:
         await caller.join(
             settings.livekit_url, join_token(settings, session_id, identity), identity
         )
+        if not await caller.wait_until(
+            lambda: bool(caller.room.remote_participants), REDISPATCH_AFTER_S
+        ):
+            log.warning(
+                "no agent in %s after %.0fs; dispatching again", session_id, REDISPATCH_AFTER_S
+            )
+            await redispatch(settings, session_id)
+            redispatched = True
         agent_text = await caller.agent_reply(0.0, GREETING_WAIT_S)
         if not agent_text and caller.agent.last_loud == 0:
             raise RuntimeError("the agent never answered; is the worker running (make worker)?")
@@ -287,6 +302,7 @@ async def run_audio_scenario(
             "call_seconds": usage.get("duration_seconds") if usage else round(duration, 1),
             "agent_config": agent_config,
             "doubled_replies": doubled_replies(agent_said),
+            "redispatched": redispatched,
             "agent_timing": agent_timings(turn_records),
             "turn_ends_in_pauses": turn_ends_in_pauses(timeline, turn_records),
             "detector": DETECTOR_SETTINGS,
