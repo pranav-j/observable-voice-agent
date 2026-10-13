@@ -32,6 +32,7 @@ from openai.types import Reasoning
 from voice_order.agent.faults import SLOW_LLM_DELAY_S, delay_first
 from voice_order.agent.filler import fillers, with_filler
 from voice_order.agent.local_speech import KokoroTTS, WhisperSTT
+from voice_order.agent.repeats import without_repeats
 from voice_order.agent.tools import StepText, livekit_tools
 from voice_order.config import Settings, get_settings
 from voice_order.menu.loader import load_menu
@@ -81,8 +82,11 @@ class OrderAgent(Agent):
         self, chat_ctx: llm.ChatContext, tools: list[llm.Tool], model_settings: ModelSettings
     ) -> AsyncIterable[Any]:
         self.step.reset()
-        chunks = delay_first(
-            Agent.default.llm_node(self, chat_ctx, tools, model_settings), self.first_token_delay
+        chunks = without_repeats(
+            delay_first(
+                Agent.default.llm_node(self, chat_ctx, tools, model_settings),
+                self.first_token_delay,
+            )
         )
         filler_due, self.filler_due = self.filler_due, False
         if filler_due and self.filler_after is not None:
