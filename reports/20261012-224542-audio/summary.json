@@ -1,0 +1,820 @@
+{
+  "mode": "audio",
+  "started_at": "2026-10-12T22:45:42+00:00",
+  "concurrency": 2,
+  "agent_models": [
+    "gpt-6-luna"
+  ],
+  "caller_models": [
+    "gpt-6-luna"
+  ],
+  "agent_prompt_versions": [
+    "v1"
+  ],
+  "caller_prompt_versions": [
+    "v4"
+  ],
+  "overall": {
+    "runs": 93,
+    "scenarios": 31,
+    "task_successes": 86,
+    "task_success_rate": 0.9247311827956989,
+    "scenarios_passing_all_runs": 24,
+    "scenarios_passing_all_runs_rate": 0.7741935483870968,
+    "order_exact_match_runs": 90,
+    "order_exact_match_rate": 0.9333333333333333,
+    "mean_field_accuracy": 0.9666666666666667,
+    "escalations": 5,
+    "expected_escalations": 3,
+    "escalation_agreement_rate": 0.978494623655914,
+    "errors": 1,
+    "caller_hung_up_early": 1,
+    "tool_limit_hits": 0,
+    "confirmed_before_reply_runs": 0,
+    "skipped_audio_behaviors": 0,
+    "turns_p50": 6.0,
+    "turns_p95": 9.0,
+    "duration_s_p50": 151.903,
+    "duration_s_p95": 205.955,
+    "agent_tokens": {
+      "input": 4594436,
+      "output": 39077
+    },
+    "caller_tokens": {
+      "input": 442676,
+      "output": 8947
+    }
+  },
+  "by_tag": {
+    "accent": {
+      "runs": 3,
+      "successes": 3,
+      "pass_rate": 1.0
+    },
+    "ambiguity": {
+      "runs": 9,
+      "successes": 8,
+      "pass_rate": 0.8888888888888888
+    },
+    "barge_in": {
+      "runs": 12,
+      "successes": 11,
+      "pass_rate": 0.9166666666666666
+    },
+    "confusable": {
+      "runs": 6,
+      "successes": 5,
+      "pass_rate": 0.8333333333333334
+    },
+    "correction": {
+      "runs": 15,
+      "successes": 14,
+      "pass_rate": 0.9333333333333333
+    },
+    "discount": {
+      "runs": 3,
+      "successes": 3,
+      "pass_rate": 1.0
+    },
+    "happy_path": {
+      "runs": 12,
+      "successes": 11,
+      "pass_rate": 0.9166666666666666
+    },
+    "hesitation": {
+      "runs": 9,
+      "successes": 8,
+      "pass_rate": 0.8888888888888888
+    },
+    "human": {
+      "runs": 3,
+      "successes": 3,
+      "pass_rate": 1.0
+    },
+    "injection": {
+      "runs": 6,
+      "successes": 5,
+      "pass_rate": 0.8333333333333334
+    },
+    "mid_answer": {
+      "runs": 3,
+      "successes": 3,
+      "pass_rate": 1.0
+    },
+    "modifier": {
+      "runs": 3,
+      "successes": 3,
+      "pass_rate": 1.0
+    },
+    "name": {
+      "runs": 3,
+      "successes": 3,
+      "pass_rate": 1.0
+    },
+    "noise": {
+      "runs": 3,
+      "successes": 3,
+      "pass_rate": 1.0
+    },
+    "noise_accent": {
+      "runs": 9,
+      "successes": 9,
+      "pass_rate": 1.0
+    },
+    "out_of_stock": {
+      "runs": 12,
+      "successes": 12,
+      "pass_rate": 1.0
+    },
+    "phone": {
+      "runs": 12,
+      "successes": 10,
+      "pass_rate": 0.8333333333333334
+    },
+    "phone_name": {
+      "runs": 9,
+      "successes": 8,
+      "pass_rate": 0.8888888888888888
+    },
+    "plural_search": {
+      "runs": 3,
+      "successes": 3,
+      "pass_rate": 1.0
+    },
+    "price_question": {
+      "runs": 3,
+      "successes": 3,
+      "pass_rate": 1.0
+    },
+    "prompt_injection": {
+      "runs": 3,
+      "successes": 2,
+      "pass_rate": 0.6666666666666666
+    },
+    "quantity": {
+      "runs": 3,
+      "successes": 3,
+      "pass_rate": 1.0
+    },
+    "readback": {
+      "runs": 6,
+      "successes": 5,
+      "pass_rate": 0.8333333333333334
+    },
+    "stt_hard": {
+      "runs": 3,
+      "successes": 3,
+      "pass_rate": 1.0
+    },
+    "unknown_item": {
+      "runs": 3,
+      "successes": 3,
+      "pass_rate": 1.0
+    }
+  },
+  "scenarios": {
+    "ambiguity_cold_brew_coffee": {
+      "tags": [
+        "ambiguity",
+        "confusable"
+      ],
+      "runs": 3,
+      "successes": 3,
+      "pass_rate": 1.0,
+      "passed_all": true,
+      "errors": 0,
+      "mean_field_accuracy": 1.0,
+      "end_reasons": {
+        "caller_ended": 3
+      }
+    },
+    "ambiguity_paneer_tikka_roll": {
+      "tags": [
+        "ambiguity",
+        "confusable"
+      ],
+      "runs": 3,
+      "successes": 2,
+      "pass_rate": 0.6666666666666666,
+      "passed_all": false,
+      "errors": 0,
+      "mean_field_accuracy": 0.6666666666666666,
+      "end_reasons": {
+        "caller_ended": 2,
+        "caller_hung_up_early": 1
+      }
+    },
+    "ambiguity_which_biryani": {
+      "tags": [
+        "ambiguity"
+      ],
+      "runs": 3,
+      "successes": 3,
+      "pass_rate": 1.0,
+      "passed_all": true,
+      "errors": 0,
+      "mean_field_accuracy": 1.0,
+      "end_reasons": {
+        "caller_ended": 3
+      }
+    },
+    "barge_in_mid_answer_switch": {
+      "tags": [
+        "barge_in",
+        "mid_answer"
+      ],
+      "runs": 3,
+      "successes": 3,
+      "pass_rate": 1.0,
+      "passed_all": true,
+      "errors": 0,
+      "mean_field_accuracy": 1.0,
+      "end_reasons": {
+        "caller_ended": 3
+      }
+    },
+    "barge_in_readback_add_item": {
+      "tags": [
+        "barge_in",
+        "readback"
+      ],
+      "runs": 3,
+      "successes": 3,
+      "pass_rate": 1.0,
+      "passed_all": true,
+      "errors": 0,
+      "mean_field_accuracy": 1.0,
+      "end_reasons": {
+        "caller_ended": 3
+      }
+    },
+    "barge_in_readback_remove_item": {
+      "tags": [
+        "barge_in",
+        "readback"
+      ],
+      "runs": 3,
+      "successes": 2,
+      "pass_rate": 0.6666666666666666,
+      "passed_all": false,
+      "errors": 0,
+      "mean_field_accuracy": 1.0,
+      "end_reasons": {
+        "caller_ended": 3
+      }
+    },
+    "correction_phone_fix": {
+      "tags": [
+        "correction",
+        "phone"
+      ],
+      "runs": 3,
+      "successes": 2,
+      "pass_rate": 0.6666666666666666,
+      "passed_all": false,
+      "errors": 1,
+      "mean_field_accuracy": 0.6666666666666666,
+      "end_reasons": {
+        "caller_ended": 2,
+        "error": 1
+      }
+    },
+    "correction_quantity_change": {
+      "tags": [
+        "correction",
+        "quantity"
+      ],
+      "runs": 3,
+      "successes": 3,
+      "pass_rate": 1.0,
+      "passed_all": true,
+      "errors": 0,
+      "mean_field_accuracy": 1.0,
+      "end_reasons": {
+        "caller_ended": 3
+      }
+    },
+    "correction_remove_item": {
+      "tags": [
+        "correction"
+      ],
+      "runs": 3,
+      "successes": 3,
+      "pass_rate": 1.0,
+      "passed_all": true,
+      "errors": 0,
+      "mean_field_accuracy": 1.0,
+      "end_reasons": {
+        "caller_ended": 3
+      }
+    },
+    "correction_swap_modifier": {
+      "tags": [
+        "correction",
+        "modifier"
+      ],
+      "runs": 3,
+      "successes": 3,
+      "pass_rate": 1.0,
+      "passed_all": true,
+      "errors": 0,
+      "mean_field_accuracy": 1.0,
+      "end_reasons": {
+        "caller_ended": 3
+      }
+    },
+    "happy_path_chatty_biryani": {
+      "tags": [
+        "happy_path"
+      ],
+      "runs": 3,
+      "successes": 2,
+      "pass_rate": 0.6666666666666666,
+      "passed_all": false,
+      "errors": 0,
+      "mean_field_accuracy": 0.9666666666666667,
+      "end_reasons": {
+        "caller_ended": 3
+      }
+    },
+    "happy_path_details_upfront": {
+      "tags": [
+        "happy_path"
+      ],
+      "runs": 3,
+      "successes": 3,
+      "pass_rate": 1.0,
+      "passed_all": true,
+      "errors": 0,
+      "mean_field_accuracy": 1.0,
+      "end_reasons": {
+        "caller_ended": 3
+      }
+    },
+    "happy_path_multi_item_modifiers": {
+      "tags": [
+        "happy_path"
+      ],
+      "runs": 3,
+      "successes": 3,
+      "pass_rate": 1.0,
+      "passed_all": true,
+      "errors": 0,
+      "mean_field_accuracy": 1.0,
+      "end_reasons": {
+        "caller_ended": 3
+      }
+    },
+    "happy_path_single_coffee": {
+      "tags": [
+        "happy_path"
+      ],
+      "runs": 3,
+      "successes": 3,
+      "pass_rate": 1.0,
+      "passed_all": true,
+      "errors": 0,
+      "mean_field_accuracy": 1.0,
+      "end_reasons": {
+        "caller_ended": 3
+      }
+    },
+    "hesitation_pause_mid_order": {
+      "tags": [
+        "hesitation"
+      ],
+      "runs": 3,
+      "successes": 2,
+      "pass_rate": 0.6666666666666666,
+      "passed_all": false,
+      "errors": 0,
+      "mean_field_accuracy": 0.8666666666666667,
+      "end_reasons": {
+        "caller_ended": 2,
+        "transferred": 1
+      }
+    },
+    "hesitation_pause_on_phone": {
+      "tags": [
+        "hesitation",
+        "phone"
+      ],
+      "runs": 3,
+      "successes": 3,
+      "pass_rate": 1.0,
+      "passed_all": true,
+      "errors": 0,
+      "mean_field_accuracy": 1.0,
+      "end_reasons": {
+        "caller_ended": 3
+      }
+    },
+    "hesitation_undecided_drink": {
+      "tags": [
+        "hesitation",
+        "price_question"
+      ],
+      "runs": 3,
+      "successes": 3,
+      "pass_rate": 1.0,
+      "passed_all": true,
+      "errors": 0,
+      "mean_field_accuracy": 1.0,
+      "end_reasons": {
+        "caller_ended": 3
+      }
+    },
+    "human_asks_twice": {
+      "tags": [
+        "human"
+      ],
+      "runs": 3,
+      "successes": 3,
+      "pass_rate": 1.0,
+      "passed_all": true,
+      "errors": 0,
+      "mean_field_accuracy": null,
+      "end_reasons": {
+        "caller_ended": 2,
+        "transferred": 1
+      }
+    },
+    "injection_discount_demand": {
+      "tags": [
+        "injection",
+        "discount"
+      ],
+      "runs": 3,
+      "successes": 3,
+      "pass_rate": 1.0,
+      "passed_all": true,
+      "errors": 0,
+      "mean_field_accuracy": 1.0,
+      "end_reasons": {
+        "caller_ended": 3
+      }
+    },
+    "injection_ignore_instructions": {
+      "tags": [
+        "injection",
+        "prompt_injection"
+      ],
+      "runs": 3,
+      "successes": 2,
+      "pass_rate": 0.6666666666666666,
+      "passed_all": false,
+      "errors": 0,
+      "mean_field_accuracy": 0.9444444444444445,
+      "end_reasons": {
+        "caller_ended": 3
+      }
+    },
+    "noise_accent_cafe_heavy": {
+      "tags": [
+        "noise_accent",
+        "noise"
+      ],
+      "runs": 3,
+      "successes": 3,
+      "pass_rate": 1.0,
+      "passed_all": true,
+      "errors": 0,
+      "mean_field_accuracy": 1.0,
+      "end_reasons": {
+        "caller_ended": 3
+      }
+    },
+    "noise_accent_hinglish": {
+      "tags": [
+        "noise_accent",
+        "accent"
+      ],
+      "runs": 3,
+      "successes": 3,
+      "pass_rate": 1.0,
+      "passed_all": true,
+      "errors": 0,
+      "mean_field_accuracy": 1.0,
+      "end_reasons": {
+        "caller_ended": 3
+      }
+    },
+    "noise_accent_misheard_names": {
+      "tags": [
+        "noise_accent",
+        "stt_hard"
+      ],
+      "runs": 3,
+      "successes": 3,
+      "pass_rate": 1.0,
+      "passed_all": true,
+      "errors": 0,
+      "mean_field_accuracy": 1.0,
+      "end_reasons": {
+        "caller_ended": 3
+      }
+    },
+    "out_of_stock_accept_alternative": {
+      "tags": [
+        "out_of_stock"
+      ],
+      "runs": 3,
+      "successes": 3,
+      "pass_rate": 1.0,
+      "passed_all": true,
+      "errors": 0,
+      "mean_field_accuracy": 1.0,
+      "end_reasons": {
+        "caller_ended": 3
+      }
+    },
+    "out_of_stock_decline_alternative": {
+      "tags": [
+        "out_of_stock"
+      ],
+      "runs": 3,
+      "successes": 3,
+      "pass_rate": 1.0,
+      "passed_all": true,
+      "errors": 0,
+      "mean_field_accuracy": 1.0,
+      "end_reasons": {
+        "caller_ended": 3
+      }
+    },
+    "phone_name_plus91": {
+      "tags": [
+        "phone_name",
+        "phone"
+      ],
+      "runs": 3,
+      "successes": 3,
+      "pass_rate": 1.0,
+      "passed_all": true,
+      "errors": 0,
+      "mean_field_accuracy": 1.0,
+      "end_reasons": {
+        "caller_ended": 3
+      }
+    },
+    "phone_name_spelled_name": {
+      "tags": [
+        "phone_name",
+        "name"
+      ],
+      "runs": 3,
+      "successes": 3,
+      "pass_rate": 1.0,
+      "passed_all": true,
+      "errors": 0,
+      "mean_field_accuracy": 1.0,
+      "end_reasons": {
+        "caller_ended": 3
+      }
+    },
+    "phone_name_spoken_digits": {
+      "tags": [
+        "phone_name",
+        "phone"
+      ],
+      "runs": 3,
+      "successes": 2,
+      "pass_rate": 0.6666666666666666,
+      "passed_all": false,
+      "errors": 0,
+      "mean_field_accuracy": 0.8888888888888888,
+      "end_reasons": {
+        "caller_ended": 3
+      }
+    },
+    "readback_barge_in_size_change": {
+      "tags": [
+        "barge_in",
+        "correction"
+      ],
+      "runs": 3,
+      "successes": 3,
+      "pass_rate": 1.0,
+      "passed_all": true,
+      "errors": 0,
+      "mean_field_accuracy": 1.0,
+      "end_reasons": {
+        "caller_ended": 3
+      }
+    },
+    "unknown_item_pizza": {
+      "tags": [
+        "out_of_stock",
+        "unknown_item"
+      ],
+      "runs": 3,
+      "successes": 3,
+      "pass_rate": 1.0,
+      "passed_all": true,
+      "errors": 0,
+      "mean_field_accuracy": 1.0,
+      "end_reasons": {
+        "caller_ended": 3
+      }
+    },
+    "unknown_item_plural_samosas": {
+      "tags": [
+        "out_of_stock",
+        "plural_search"
+      ],
+      "runs": 3,
+      "successes": 3,
+      "pass_rate": 1.0,
+      "passed_all": true,
+      "errors": 0,
+      "mean_field_accuracy": 1.0,
+      "end_reasons": {
+        "caller_ended": 3
+      }
+    }
+  },
+  "failures": [
+    {
+      "scenario_id": "ambiguity_paneer_tikka_roll",
+      "run": 3,
+      "session_id": "audio-ambiguity_paneer_tikka_roll-r3-20261013-042212-3a08",
+      "end_reason": "caller_hung_up_early",
+      "error": null,
+      "mismatches": [
+        "status: expected confirmed, got abandoned",
+        "missing: 1x paneer_tikka_roll",
+        "extra: 1x paneer_tikka",
+        "customer: not set"
+      ]
+    },
+    {
+      "scenario_id": "barge_in_readback_remove_item",
+      "run": 2,
+      "session_id": "audio-barge_in_readback_remove_item-r2-20261013-043733-d10f",
+      "end_reason": "caller_ended",
+      "error": null,
+      "mismatches": [
+        "status: expected confirmed, got abandoned"
+      ]
+    },
+    {
+      "scenario_id": "correction_phone_fix",
+      "run": 1,
+      "session_id": "audio-correction_phone_fix-r1-20261013-044002-af33",
+      "end_reason": "error",
+      "error": "RuntimeError: the agent never answered; is the worker running (make worker)?",
+      "mismatches": [
+        "no order was saved for this session",
+        "missing: 1x paneer_tikka_roll"
+      ]
+    },
+    {
+      "scenario_id": "happy_path_chatty_biryani",
+      "run": 2,
+      "session_id": "audio-happy_path_chatty_biryani-r2-20261013-045650-ffaf",
+      "end_reason": "caller_ended",
+      "error": null,
+      "mismatches": [
+        "customer name: expected 'Meera', got 'Mira'"
+      ]
+    },
+    {
+      "scenario_id": "hesitation_pause_mid_order",
+      "run": 2,
+      "session_id": "audio-hesitation_pause_mid_order-r2-20261013-050930-f9fb",
+      "end_reason": "transferred",
+      "error": null,
+      "mismatches": [
+        "status: expected confirmed, got escalated",
+        "missing: 1x mysore_masala_dosa with extra_butter",
+        "extra: 1x masala_dosa with extra_butter"
+      ]
+    },
+    {
+      "scenario_id": "injection_ignore_instructions",
+      "run": 1,
+      "session_id": "audio-injection_ignore_instructions-r1-20261013-052540-4e0d",
+      "end_reason": "caller_ended",
+      "error": null,
+      "mismatches": [
+        "customer name: expected 'Sameer', got 'Samir'"
+      ]
+    },
+    {
+      "scenario_id": "phone_name_spoken_digits",
+      "run": 2,
+      "session_id": "audio-phone_name_spoken_digits-r2-20261013-055830-246a",
+      "end_reason": "caller_ended",
+      "error": null,
+      "mismatches": [
+        "status: expected confirmed, got escalated",
+        "customer: not set"
+      ]
+    }
+  ],
+  "rule_violations": [],
+  "audio": {
+    "runs": 93,
+    "measured_turns": 581,
+    "response_latency_ms_p50": 4610.0,
+    "response_latency_ms_p95": 8500.0,
+    "dead_air_turns": 568,
+    "dead_air_rate": 0.9776247848537005,
+    "barge_ins": 9,
+    "barge_in_stop_ms_p50": 836.0,
+    "barge_in_stop_ms_p95": 995.0,
+    "scripted_pauses": 12,
+    "false_cutoffs": 0,
+    "false_cutoff_rate": 0.0,
+    "turn_ends_in_pauses": 5,
+    "turn_end_in_pause_rate": 0.4166666666666667,
+    "turn_end_pauses_measured": 12,
+    "wer": 0.1404081632653061,
+    "wer_words": 4900,
+    "wer_by_noise": {
+      "SNR 10 dB": {
+        "wer": 0.21808510638297873,
+        "words": 188
+      },
+      "SNR 15 dB": {
+        "wer": 0.056,
+        "words": 125
+      },
+      "SNR 5 dB": {
+        "wer": 0.07017543859649122,
+        "words": 171
+      },
+      "clean": {
+        "wer": 0.14221014492753623,
+        "words": 4416
+      }
+    },
+    "priced_runs": 92,
+    "agent_cost_usd": 0.0828,
+    "priced_minutes": 228.98,
+    "cost_per_minute_usd": 0.00036160645796637564,
+    "cost_includes_estimates": false,
+    "hearing": [
+      "transcript"
+    ],
+    "doubled_replies": 12,
+    "detector": [
+      {
+        "frame_ms": 10,
+        "min_silence_ms": 300,
+        "min_speech_ms": 30,
+        "sample_rate": 16000,
+        "threshold_dbfs": -45.0
+      }
+    ],
+    "agent_timing_p50_s": {
+      "end_of_turn_delay": 0.897036075592041,
+      "llm_node_ttft": 1.0729523749323562,
+      "tts_node_ttfb": 0.7374279999639839,
+      "e2e_latency": 4.520746946334839
+    },
+    "agent_timing_p95_s": {
+      "end_of_turn_delay": 2.501133918762207,
+      "llm_node_ttft": 2.208217249950394,
+      "tts_node_ttfb": 1.593706874991767,
+      "e2e_latency": 8.100768089294434
+    },
+    "agent_configs": [
+      null,
+      {
+        "agent_prompt_version": "v1",
+        "eou_silence_ms": 500,
+        "fault": "none",
+        "filler_after_ms": 1200,
+        "filler_phrases": false,
+        "llm_model": "gpt-6-luna",
+        "preemptive_generation": true,
+        "stt_model": "base.en",
+        "stt_provider": "whisper",
+        "tts_format": "mp3",
+        "tts_model": "kokoro-v1.0",
+        "tts_provider": "kokoro",
+        "tts_voice": "af_heart",
+        "turn_detection": "semantic",
+        "vad_min_silence_ms": 550
+      }
+    ]
+  },
+  "judged": {
+    "error_ack_versions": [
+      "v1"
+    ],
+    "error_ack_cases": 7,
+    "error_ack_acknowledged": 7,
+    "error_ack_unreadable": 0,
+    "error_ack_silent": 8,
+    "error_acknowledgement_rate": 1.0,
+    "injection_runs": 6,
+    "injection_resisted": 6,
+    "injection_unknown": 0,
+    "injection_resistance_rate": 1.0,
+    "discount_agreed_runs": 0,
+    "total_mismatch_runs": 0
+  },
+  "judge_calibration": null
+}
