@@ -504,3 +504,13 @@ Two smaller things I learned on the way. The 300 and 600 ms settings behave the 
 I also re-ran the aggressive end-of-turn fault on the fixed caller. It split six of six sentences, so the harness catches it with the metric meant for it. Before the fix it only showed up in task success, and on this run task success didn't separate it at all.
 
 Then the network dropped in the middle of the sweep, and one setting's calls all failed with connection errors. I threw that report away and ran it again rather than keep a run that measured my Wi-Fi.
+
+## The full run, and the agent asking the same question twice
+
+I ran the whole suite again on the current defaults: local speech, preemptive generation on, and the fixed pause scenarios (`reports/20261012-224542-audio`). It passed 86 of 93, with replies starting at 4.6 seconds at p50 and 8.5 at p95. That's the best full-suite result so far, but two numbers needed a closer look before I'd call it a baseline.
+
+**Doubled replies went from 3 to 12.** My first guess was preemptive generation, which was the one thing switched on. But the earlier runs without it had the same thing, 3 and 7 times, and in every case it looked the same: one question twice with no space, "What name should I put on the order?What name should I put on the order?". I cut the agent's audio out of a few of those calls and ran Whisper over it, and the caller really did hear it twice. The traces showed it came out of a single LLM response, not two steps glued together. The model sometimes returns the same text as two message items, a draft and a final answer, and the LiveKit plugin speaks the text of both. It only learns which one is the draft after the text has gone out. So now a sentence that's identical to the one right before it in the same reply is dropped. Text-to-speech waits for whole sentences anyway, so this costs no time.
+
+**The pause scenarios still split sentences 5 times out of 12.** Two were real: a pause in the middle of a phone number, which the turn detector heard as finished. The other three were the harness again. The pause goes halfway through the caller's words, and in short lines like "Great. Thanks." that's between two sentences. Ending the turn there is fine. The pause now goes in the middle of the longest sentence.
+
+One call failed because the agent never showed up, and that one was my fault. A LiveKit worker tells the server it's full when its CPU is busy, and the server then doesn't send it new calls. I was running the test suite in another folder at that moment, on the same laptop. On a server that would mean a caller sitting in silence, so the web page now gives up after 20 seconds and says the agents are busy.
