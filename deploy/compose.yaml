@@ -1,0 +1,96 @@
+# The demo instance: everything on one host. Started by voice-order.service, which first
+# writes the secrets from SSM Parameter Store into /opt/voice-order/.env (root only) and
+# sets REGISTRY, IMAGE_TAG and SITE_HOST.
+name: voice-order
+
+x-app: &app
+  image: ${REGISTRY}/voice-order-app:${IMAGE_TAG}
+  restart: unless-stopped
+  env_file: .env
+  environment:
+    DATABASE_URL: postgresql://voice:${POSTGRES_PASSWORD}@postgres:5432/voice_order
+    LIVEKIT_URL: ws://livekit:7880
+    LIVEKIT_PUBLIC_URL: wss://${SITE_HOST}
+    PHOENIX_COLLECTOR_ENDPOINT: http://phoenix:6006
+    RECORDINGS_DIR: /app/recordings
+    # Callers come through Caddy, which appends their address to X-Forwarded-For.
+    TRUST_PROXY: "true"
+    MAX_CALL_SECONDS: "300"
+    CALLS_PER_IP_PER_HOUR: "5"
+    CALLS_PER_DAY: "40"
+  volumes:
+    - recordings:/app/recordings
+  depends_on:
+    postgres:
+      condition: service_healthy
+    livekit:
+      condition: service_started
+
+services:
+  web:
+    image: ${REGISTRY}/voice-order-web:${IMAGE_TAG}
+    restart: unless-stopped
+    environment:
+      SITE_HOST: ${SITE_HOST}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - api
+
+  api:
+    <<: *app
+
+  worker:
+    <<: *app
+    command: ["python", "-m", "livekit.agents", "start", "src/voice_order/agent/worker.py"]
+    # Drains active calls on shutdown, so a redeploy doesn't cut anyone off mid-order.
+    stop_grace_period: 330s
+
+  livekit:
+    image: livekit/livekit-server:v1.13.9
+    restart: unless-stopped
+    command: ["--config", "/etc/livekit.yaml"]
+    environment:
+      LIVEKIT_KEYS: "${LIVEKIT_API_KEY}: ${LIVEKIT_API_SECRET}"
+    ports:
+      - "7881:7881"     # WebRTC over TCP, when UDP is blocked
+      - "7882:7882/udp" # WebRTC media
+    volumes:
+      - ./livekit.yaml:/etc/livekit.yaml:ro
+
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: voice
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: voice_order
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U voice -d voice_order"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  # Traces, not exposed: reach it with an SSM port forward to 6006.
+  phoenix:
+    image: arizephoenix/phoenix:version-20.19.0
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6006:6006"
+    volumes:
+      - phoenix-data:/mnt/data
+    environment:
+      PHOENIX_WORKING_DIR: /mnt/data
+
+volumes:
+  recordings:
+  caddy-data:
+  caddy-config:
+  postgres-data:
+  phoenix-data:
