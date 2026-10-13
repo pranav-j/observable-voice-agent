@@ -102,15 +102,25 @@ def speakable(text: str) -> str:
 
 def split_for_pause(text: str) -> tuple[str, str]:
     """Where a scripted pause goes: before the last five digits of a phone number, the
-    way people pause between the two halves, or else halfway through the words."""
+    way people pause between the two halves, or else in the middle of the longest sentence.
+
+    The pause tests a caller stopping mid-sentence. Halfway through the words often landed
+    between two sentences ("Great. [pause] Thanks."), where ending the turn is fine.
+    """
     number = re.search(r"\d(?:[ -]?\d){9,}", text)
     if number:
         positions = [i for i in range(number.start(), number.end()) if text[i].isdigit()]
         cut = positions[-5]
         return text[:cut].rstrip(" -"), text[cut:]
-    words = text.split()
-    half = len(words) // 2
-    return " ".join(words[:half]), " ".join(words[half:])
+    sentences = [m for m in re.finditer(r"[^.?!]+[.?!]*", text) if len(m.group().split()) > 1]
+    if not sentences:  # one-word sentences only: no middle to pause in
+        words = text.split()
+        half = len(words) // 2
+        return " ".join(words[:half]), " ".join(words[half:])
+    longest = max(sentences, key=lambda m: len(m.group().split()))
+    spans = list(re.finditer(r"\S+", text[longest.start() : longest.end()]))
+    cut = longest.start() + spans[len(spans) // 2].start()
+    return text[:cut].rstrip(), text[cut:]
 
 
 # Where to cut a pause into a line: near the split's share of the spoken text, at the

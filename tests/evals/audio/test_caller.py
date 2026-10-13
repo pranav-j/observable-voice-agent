@@ -76,6 +76,10 @@ def test_agent_leaving_ends_the_wait() -> None:
         ("+91 90000 26457", "+91 90000", "26457"),
         ("9000-026-457 please", "9000-0", "26-457 please"),
         ("one chicken tikka roll please", "one chicken", "tikka roll please"),
+        # Inside a sentence, never between two.
+        ("Okay, thanks. It's for pickup.", "Okay, thanks. It's", "for pickup."),
+        ("Great, thanks.", "Great,", "thanks."),
+        ("Yes. Thanks.", "Yes.", "Thanks."),  # nowhere better to put it
     ],
 )
 def test_pause_goes_between_the_halves_of_a_phone_number(
