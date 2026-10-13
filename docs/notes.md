@@ -536,3 +536,11 @@ Then the real runs, six scenarios three times each. `gpt-realtime` passed all 18
 `gpt-realtime-mini`, a quarter of the price, passed 6 of 18. It kept reading the order back in its own words and then trying to confirm, and the code kept refusing, because only the tool's read-back counts. So the caller gave up and the order stayed unplaced. That's the guard doing exactly what it's for: the mini model got a lot wrong, and not one wrong order went through.
 
 I'm keeping the cascade as the default. At this size the cost wins. But it's nice to know that if latency mattered most, the switch is one setting and it works.
+
+## Putting it on AWS
+
+The demo now runs on one EC2 instance in Mumbai (`docs/adr/0009-deployment.md`). The account already holds another project's resources, so everything this one creates is named `voice-order-agent-...` and tagged with the project and the repo. Terraform's plan was 13 resources to add and nothing to change or destroy before I let it apply.
+
+Building the image locally first caught three things before they could break the server. The `.python-version` file pins Python 3.12.2 exactly, which the base image doesn't have, so uv refused to install. The Kokoro files that Docker downloads arrive readable only by root, and so did the Whisper cache, while the app runs as an ordinary user. Each one showed up as a crash inside the container, not at build time, so it was worth loading every model in the image before pushing it.
+
+The first call to the live site worked end to end: a token from the API, WebRTC through Caddy and LiveKit, the agent joining, and its greeting arriving as audio and as text. The call was saved on the instance and the worker logged no errors. The site's certificate comes from Let's Encrypt for an sslip.io name, since there's no domain, and that took about a minute to issue on first start.

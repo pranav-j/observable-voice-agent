@@ -2,7 +2,7 @@
 
 A voice agent that takes pickup food orders for a fictional Indian restaurant, Juniper Street Kitchen, over WebRTC (LiveKit), and an eval harness that phones it with simulated callers over real audio and scores every call. The callers interrupt, pause mid-sentence, mumble names, change their minds during the read-back and try to talk the agent into discounts. The order itself only ever changes through typed tool calls, prices are computed in code in integer paise, and the agent can't confirm an order until the caller has heard the full read-back. Every number below comes from a run saved under [`reports/`](reports/).
 
-**Demo video:** not recorded yet.
+**Live demo:** https://43-205-202-96.sslip.io, when it's running. The instance is stopped between demos to save cost, so the link may not answer. **Demo video:** not recorded yet.
 
 ## Latency
 
@@ -128,7 +128,7 @@ Problems found along the way, and what I did about them, are in [docs/notes.md](
 - **Doubled replies.** When a caller pauses mid-sentence, the two halves can become two turns and the agent answers both. It happened in 3 of 93 local calls. The cause is in how LiveKit commits turns, and it isn't fixed.
 - **The LLM judge isn't calibrated.** Judged metrics like error acknowledgement are reported, but the hand labels needed to check the judge haven't been made yet.
 - **Small samples.** Three runs per scenario. A difference of a few runs between reports is noise.
-- **Not deployed yet**, so there's no public demo. The call limits a deployment needs are built ([ADR 0008](docs/adr/0008-demo-limits.md)) but haven't been tried on a live host. No phone line either: WebRTC only, English only.
+- **The demo is one instance** ([ADR 0009](docs/adr/0009-deployment.md)), so it handles about two calls at once and has no redundancy. Its call limits ([ADR 0008](docs/adr/0008-demo-limits.md)) haven't seen real traffic yet. No phone line either: WebRTC only, English only.
 
 ## Setup and run
 
