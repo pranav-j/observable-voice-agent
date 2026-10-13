@@ -10,10 +10,13 @@ rotate=${1:-}
 exists() {
   aws ssm get-parameter --region "$region" --name "/voice-order/$1" >/dev/null 2>&1
 }
-put() {  # name; the value comes on stdin and goes to the CLI as JSON on stdin, never argv
+put() {  # name; the value comes on stdin and reaches the CLI in a private file, never argv
+  local request
+  request=$(mktemp)  # mode 600
   python3 -c 'import json, sys; print(json.dumps({"Name": sys.argv[1], "Value": sys.stdin.read(),
-    "Type": "SecureString", "Overwrite": True}))' "/voice-order/$1" \
-    | aws ssm put-parameter --region "$region" --cli-input-json file:///dev/stdin >/dev/null
+    "Type": "SecureString", "Overwrite": True}))' "/voice-order/$1" > "$request"
+  aws ssm put-parameter --region "$region" --cli-input-json "file://$request" >/dev/null
+  rm -f "$request"
   echo "set /voice-order/$1"
 }
 generated() {  # name, shell command that prints a new value
