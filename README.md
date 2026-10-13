@@ -46,6 +46,7 @@ The two audio runs differ in more than speech: some agent fixes landed between t
 | Agent ignores interruptions | Barge-in stop p50 912 → 16895 ms |
 | Agent drops item modifiers | Order exact match 1.000 → 0.000 |
 | LLM 0.8 s slower to first token | p95 latency +44%, and `make gate` fails |
+| Agent on a weaker model, in a pull request | Task success 0.968 → 0.763, and the CI gate fails the check ([details](docs/harness-validation.md#the-gate-on-pull-requests)) |
 | Turns end on voice activity alone, after 150 ms | Sentences split at a scripted mid-sentence pause 0/9 → 6/6, after two harness fixes |
 
 Building that table found bugs in the harness, not just the agent. The first barge-in metric made the "ignores interruptions" fault look like an improvement. And the pause scenarios made a paused caller sound finished, so even the healthy agent split their sentences. Both are fixed: the barge-in reports were re-scored from their saved audio, and the pause scenarios were run again.
@@ -123,7 +124,6 @@ Problems found along the way, and what I did about them, are in [docs/notes.md](
 - **Results depend on the caller's voice.** With Kokoro voices instead of OpenAI's for the simulated caller, the local pipeline passed 64 of 93 ([`20261012-050510-audio`](reports/20261012-050510-audio/summary.md)), mostly failing on names Kokoro mispronounced. How Whisper does on real people saying Indian names is untested.
 - **Doubled replies.** When a caller pauses mid-sentence, the two halves can become two turns and the agent answers both. It happened in 3 of 93 local calls. The cause is in how LiveKit commits turns, and it isn't fixed.
 - **The LLM judge isn't calibrated.** Judged metrics like error acknowledgement are reported, but the hand labels needed to check the judge haven't been made yet.
-- **The CI gate hasn't run on a pull request.** It fails a seeded regression locally. Running it in CI needs an API key secret on the repository.
 - **Small samples.** Three runs per scenario. A difference of a few runs between reports is noise.
 - **Not deployed yet**, so there's no public demo. The call limits a deployment needs are built ([ADR 0008](docs/adr/0008-demo-limits.md)) but haven't been tried on a live host. No phone line either: WebRTC only, English only.
 

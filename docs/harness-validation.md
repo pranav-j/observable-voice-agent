@@ -48,4 +48,20 @@ On the fixed caller, the default split 0 of 9 sentences (`20261012-145506-audio`
 
 ## The gate on a seeded regression
 
-`make gate REPORT=reports/20261011-234245-audio`, the `slow_llm` run, fails against the hosted audio baseline and exits with code 1. p95 latency is 14433 ms against a limit of 11826, and task success is 0.750 against a floor of 0.814. Showing the same failure on a pull request in CI needs the `OPENAI_API_KEY` repository secret, which isn't set yet.
+`make gate REPORT=reports/20261011-234245-audio`, the `slow_llm` run, fails against the hosted audio baseline and exits with code 1. p95 latency is 14433 ms against a limit of 11826, and task success is 0.750 against a floor of 0.814.
+
+## The gate on pull requests
+
+Each pull request runs the text suite in CI, and the gate compares it with the text baseline (`20261011-163933-text`, task success 0.968). Three deliberate regressions were opened as pull requests. Each passed every unit test, because none of them changes code the unit tests can see. Their reports are under `reports/ci-pr*`, each with a `source.txt` linking the pull request and the CI run.
+
+| Pull request | Change | Task success | Exact match | Gate |
+|---|---|---|---|---|
+| #1 | Prompt: skip the menu search when the caller names an item clearly | 0.957 | 0.967 | passed |
+| #2 | Prompt: paraphrase the read-back instead of reading the tool's text | 0.978 | 0.978 | passed |
+| #3 | Agent model `gpt-5-nano` instead of `gpt-6-luna`, at half the input price | 0.763 | 0.922 | failed |
+
+- **#1** cost less than expected, and stayed inside the margins. It also used about a tenth fewer agent input tokens than the two full text runs before it (3.33 million against 3.66 and 3.76 million), so it's a latency lever worth measuring in audio.
+- **#2** had no visible effect. `get_readback`'s own result tells the model to say the read-back word for word, and the model followed the tool over the prompt.
+- **#3** failed on task success, exact match and error acknowledgement, each past its margin.
+
+The first two say something about the design as much as the gate: rules restated in the tools and enforced in code survive prompt edits that would loosen them. A weaker model is the kind of change they can't absorb.
