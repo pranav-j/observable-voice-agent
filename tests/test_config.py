@@ -26,7 +26,7 @@ def clean_env(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_defaults_without_env_file() -> None:
     s = Settings(_env_file=None)
-    assert s.llm_model == s.caller_llm_model == "gpt-6-luna"
+    assert (s.llm_model, s.caller_llm_model) == ("gpt-5-nano", "gpt-6-luna")
     assert s.database_url.startswith("postgresql://")
     assert not s.has_openai_key
 

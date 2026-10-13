@@ -141,7 +141,7 @@ def build_session(settings: Settings, vad: Any, stt: Any, tts: Any) -> AgentSess
         llm=lk_openai.responses.LLM(
             model=settings.llm_model,
             api_key=key,
-            reasoning=Reasoning(effort="none"),
+            reasoning=Reasoning(effort="minimal"),  # gpt-5-nano has no "none"
             # Resend the whole conversation each step instead of chaining on the last
             # response. When chaining, the plugin resends tool calls the server already
             # has, so each call shows up twice with one output, and the model sometimes

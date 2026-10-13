@@ -82,7 +82,7 @@ class OpenAIClient:
         model: str,
         api_key: str,
         *,
-        reasoning_effort: ReasoningEffort = "none",
+        reasoning_effort: ReasoningEffort = "minimal",
         timeout_s: float = 30.0,
     ) -> None:
         self.model = model

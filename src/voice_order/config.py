@@ -19,7 +19,7 @@ class Settings(BaseSettings):
 
     # SecretStr prints as '**********'; use .get_secret_value() where the key is actually sent.
     openai_api_key: SecretStr = SecretStr("")
-    llm_model: str = "gpt-6-luna"
+    llm_model: str = "gpt-5-nano"  # half the input price of gpt-6-luna
     caller_llm_model: str = "gpt-6-luna"
 
     # LiveKit (local dev server defaults)
