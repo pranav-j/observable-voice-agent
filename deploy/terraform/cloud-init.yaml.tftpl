@@ -1,0 +1,78 @@
+#cloud-config
+# First boot of the demo instance. Amazon Linux 2023 already has the SSM agent and the AWS
+# CLI; this adds Docker and the Compose plugin, the deploy files, and a service that starts
+# the stack on every boot.
+write_files:
+  - path: /opt/voice-order/compose.yaml
+    encoding: b64
+    permissions: "0644"
+    content: ${compose_b64}
+  - path: /opt/voice-order/livekit.yaml
+    encoding: b64
+    permissions: "0644"
+    content: ${livekit_b64}
+  - path: /opt/voice-order/run.sh
+    encoding: b64
+    permissions: "0755"
+    content: ${run_b64}
+  - path: /opt/voice-order/host.env
+    permissions: "0644"
+    content: |
+      REGISTRY=${registry}
+      SITE_HOST=${site_host}
+      AWS_REGION=${region}
+  - path: /etc/systemd/system/voice-order.service
+    permissions: "0644"
+    content: |
+      [Unit]
+      Description=voice-order demo (docker compose)
+      After=docker.service network-online.target
+      Requires=docker.service
+      Wants=network-online.target
+
+      [Service]
+      Type=oneshot
+      RemainAfterExit=yes
+      WorkingDirectory=/opt/voice-order
+      ExecStart=/opt/voice-order/run.sh
+      ExecStop=/usr/bin/docker compose down
+      TimeoutStartSec=900
+      TimeoutStopSec=360
+
+      [Install]
+      WantedBy=multi-user.target
+
+  # Recordings hold callers' voices and whatever they said: keep a week, then delete.
+  - path: /etc/systemd/system/voice-order-retention.service
+    permissions: "0644"
+    content: |
+      [Unit]
+      Description=Delete voice-order call recordings older than 7 days
+
+      [Service]
+      Type=oneshot
+      ExecStart=/usr/bin/find /var/lib/docker/volumes/voice-order_recordings/_data -mindepth 1 -maxdepth 1 -mtime +7 -exec rm -rf {} +
+  - path: /etc/systemd/system/voice-order-retention.timer
+    permissions: "0644"
+    content: |
+      [Unit]
+      Description=Daily clean-up of old voice-order recordings
+
+      [Timer]
+      OnCalendar=daily
+      Persistent=true
+
+      [Install]
+      WantedBy=timers.target
+
+runcmd:
+  - dnf install -y docker
+  - mkdir -p /usr/local/lib/docker/cli-plugins
+  - curl -fsSL -o /usr/local/lib/docker/cli-plugins/docker-compose https://github.com/docker/compose/releases/download/v5.5.1/docker-compose-linux-aarch64
+  - echo "732e3a84c1a0f67256ce80bc2598a24546b10ca05f9faa97efceb1171ece2ef7  /usr/local/lib/docker/cli-plugins/docker-compose" | sha256sum -c
+  - chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+  - systemctl enable --now docker
+  - systemctl daemon-reload
+  - systemctl enable voice-order
+  - systemctl enable --now voice-order-retention.timer
+  - systemctl start --no-block voice-order
