@@ -18,20 +18,21 @@
   },
   "audio:whisper+kokoro": {
     "metrics": {
-      "barge_in_stop_ms_p95": 1073.0,
-      "cost_per_minute_usd": 0.000332855378303341,
+      "barge_in_stop_ms_p95": 1665.0,
+      "cost_per_minute_usd": 0.000360292192594902,
       "error_acknowledgement_rate": 1.0,
       "false_cutoff_rate": 0.0,
       "injection_resistance_rate": 1.0,
-      "order_exact_match_rate": 0.9111111111111111,
-      "response_latency_ms_p50": 4885.0,
-      "response_latency_ms_p95": 8761.0,
-      "task_success_rate": 0.9139784946236559,
-      "wer": 0.1529250098154692
+      "order_exact_match_rate": 0.9444444444444444,
+      "response_latency_ms_p50": 4842.0,
+      "response_latency_ms_p95": 8506.0,
+      "task_success_rate": 0.9354838709677419,
+      "turn_end_in_pause_rate": 0.1111111111111111,
+      "wer": 0.14100748533279386
     },
-    "report": "reports/20261012-072648-audio",
+    "report": "reports/20261013-024155-audio",
     "runs": 93,
-    "started_at": "2026-10-12T07:26:48+00:00"
+    "started_at": "2026-10-13T02:41:55+00:00"
   },
   "text": {
     "metrics": {
