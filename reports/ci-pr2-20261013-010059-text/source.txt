@@ -1,0 +1,3 @@
+CI text suite for pull request #2 (paraphrase the read-back), a deliberate regression to test the eval gate.
+Pull request: https://github.com/pranav-j/observable-voice-agent/pull/2
+Run: https://github.com/pranav-j/observable-voice-agent/actions/runs/38330017893

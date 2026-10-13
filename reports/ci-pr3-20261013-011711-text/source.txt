@@ -1,0 +1,3 @@
+CI text suite for pull request #3 (agent on gpt-5-nano), a deliberate regression to test the eval gate.
+Pull request: https://github.com/pranav-j/observable-voice-agent/pull/3
+Run: https://github.com/pranav-j/observable-voice-agent/actions/runs/38331342133
