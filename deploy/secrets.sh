@@ -17,7 +17,13 @@ put() {  # name; the value comes on stdin and reaches the CLI in a private file,
     "Type": "SecureString", "Overwrite": True}))' "/voice-order-agent/$1" > "$request"
   aws ssm put-parameter --region "$region" --cli-input-json "file://$request" >/dev/null
   rm -f "$request"
+  tag "$1"
   echo "set /voice-order-agent/$1"
+}
+tag() {  # so the parameter shows up as this project's, like the Terraform resources
+  aws ssm add-tags-to-resource --region "$region" --resource-type Parameter \
+    --resource-id "/voice-order-agent/$1" \
+    --tags Key=project,Value=voice-order-agent Key=repo,Value=observable-voice-agent >/dev/null
 }
 generated() {  # name, shell command that prints a new value
   if [ "$rotate" = "--rotate" ] || ! exists "$1"; then
@@ -38,5 +44,6 @@ generated postgres_password 'openssl rand -hex 24'
 if ! exists image_tag; then
   aws ssm put-parameter --region "$region" --name /voice-order-agent/image_tag --type String \
     --value none >/dev/null
+  tag image_tag
   echo "set /voice-order-agent/image_tag to none (no release yet)"
 fi
