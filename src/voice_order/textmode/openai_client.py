@@ -82,7 +82,7 @@ class OpenAIClient:
         model: str,
         api_key: str,
         *,
-        reasoning_effort: ReasoningEffort = "minimal",
+        reasoning_effort: ReasoningEffort = "none",
         timeout_s: float = 30.0,
     ) -> None:
         self.model = model
@@ -92,7 +92,10 @@ class OpenAIClient:
 
     @classmethod
     def from_settings(cls, settings: Settings, model: str | None = None) -> "OpenAIClient":
-        return cls(model or settings.llm_model, settings.openai_api_key.get_secret_value())
+        chosen = model or settings.llm_model
+        # gpt-5-nano has no "none"; the caller and the judge stay on models that do.
+        effort: ReasoningEffort = "minimal" if chosen == "gpt-5-nano" else "none"
+        return cls(chosen, settings.openai_api_key.get_secret_value(), reasoning_effort=effort)
 
     async def complete(
         self, instructions: str, messages: Sequence[Message], tools: Sequence[ToolSpec]
