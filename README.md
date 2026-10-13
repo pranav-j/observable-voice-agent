@@ -115,6 +115,7 @@ The simulated caller joins the LiveKit room as an ordinary participant, so its a
 - [0006 Eval gate](docs/adr/0006-eval-gate.md): baselines and margins that fail a change.
 - [0007 Local speech](docs/adr/0007-local-speech.md): Whisper and Kokoro by default, hosted speech one setting away.
 - [0008 Demo limits](docs/adr/0008-demo-limits.md): call length, calls per IP per hour, calls per day.
+- [0009 Deployment](docs/adr/0009-deployment.md): one instance for the demo, and what production would look like.
 
 Problems found along the way, and what I did about them, are in [docs/notes.md](docs/notes.md).
 
@@ -172,3 +173,16 @@ python -m evals.waterfall docs/img/latency-waterfall.svg reports/<run> ...
 ```
 
 An audio run prints its estimated cost and asks before starting. Run `make help` for all targets.
+
+### Deploying the demo
+
+One EC2 instance in Mumbai runs everything in Docker Compose, behind HTTPS. The images are tagged with the commit they were built from ([ADR 0009](docs/adr/0009-deployment.md)). You need an AWS account and the AWS CLI logged in.
+
+```sh
+make deploy-secrets                 # OpenAI key from .env, plus generated LiveKit and DB secrets, into SSM
+make deploy-infra                   # Terraform: registry, instance, network, permissions
+make deploy-images                  # build at this commit, push to ECR; prints the tag
+make deploy-release TAG=<tag>       # roll the instance to that tag and wait until it answers
+make demo-stop / make demo-start    # stop paying for the instance between demos
+make deploy-destroy                 # remove all of it
+```
