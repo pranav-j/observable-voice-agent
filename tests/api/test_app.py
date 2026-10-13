@@ -142,3 +142,19 @@ def test_browsers_get_the_public_livekit_url_when_set(
     settings = SETTINGS.model_copy(update={"livekit_public_url": "wss://demo.example"})
     with TestClient(create_app(settings=settings, store=store, menu=menu)) as c:
         assert c.post("/token").json()["url"] == "wss://demo.example"
+
+
+def test_the_agent_can_be_sent_again_once_per_call(store: InMemoryOrderStore, menu: Menu) -> None:
+    sent: list[str] = []
+
+    async def fake_dispatch(room: str) -> None:
+        sent.append(room)
+
+    with TestClient(
+        create_app(settings=SETTINGS, store=store, menu=menu, dispatch=fake_dispatch)
+    ) as c:
+        room = c.post("/token").json()["room"]
+        assert c.post(f"/dispatch/{room}").json() == {"sent": True}
+        assert c.post(f"/dispatch/{room}").json() == {"sent": False}
+        assert c.post("/dispatch/call-not-issued-here").status_code == 404
+    assert sent == [room]

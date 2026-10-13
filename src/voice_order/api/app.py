@@ -6,7 +6,7 @@ Run with `uvicorn voice_order.api.app:app` (or `make dev`).
 import json
 import re
 import secrets
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from pathlib import Path
@@ -55,6 +55,21 @@ def join_token(settings: Settings, room: str, identity: str) -> str:
     )
 
 
+async def redispatch(settings: Settings, room: str) -> None:
+    """Ask LiveKit to send the agent into `room` again.
+
+    A worker that's busy, or still finishing its last call, declines a job, and LiveKit
+    doesn't retry it, so the caller would wait in silence. Asking again a few seconds later
+    usually finds the worker free.
+    """
+    url = re.sub(r"^ws", "http", settings.livekit_url)
+    key, secret = settings.livekit_api_key, settings.livekit_api_secret.get_secret_value()
+    async with api.LiveKitAPI(url, key, secret) as lk:
+        await lk.agent_dispatch.create_dispatch(
+            api.CreateAgentDispatchRequest(agent_name=settings.agent_name, room=room)
+        )
+
+
 def client_ip(request: Request, trust_proxy: bool) -> str:
     """The caller's address. Behind our proxy, that's the last X-Forwarded-For entry: the
     one the proxy added. Earlier entries come from the client and can be made up."""
@@ -68,11 +83,20 @@ def create_app(
     settings: Settings | None = None,
     store: OrderStore | None = None,
     menu: Menu | None = None,
+    dispatch: Callable[[str], Awaitable[None]] | None = None,
 ) -> FastAPI:
     """Build the app. Tests pass an in-memory store; the default connects to Postgres."""
     settings = settings or get_settings()
     menu = menu or load_menu()
     limiter = CallLimiter(settings.calls_per_ip_per_hour, settings.calls_per_day)
+    live = settings  # bound for the default dispatcher below
+
+    async def send_agent(room: str) -> None:
+        await redispatch(live, room)
+
+    send = dispatch or send_agent
+    issued: set[str] = set()  # rooms this API gave a token for
+    redispatched: set[str] = set()
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
@@ -99,12 +123,25 @@ def create_app(
                 headers={"Retry-After": str(refusal.retry_after_seconds)},
             )
         room, identity = new_call_ids()
+        issued.add(room)
         return TokenResponse(
             url=settings.livekit_public_url or settings.livekit_url,
             token=join_token(settings, room, identity),
             room=room,
             identity=identity,
         )
+
+    @app.post("/dispatch/{room}")
+    async def dispatch_again(room: str) -> dict[str, bool]:
+        """Send the agent again when it hasn't joined. Once per call, and only for rooms
+        this API started, so it can't be used to open rooms or to send agents in a loop."""
+        if room not in issued:
+            raise HTTPException(status_code=404, detail="no such call")
+        if room in redispatched:
+            return {"sent": False}
+        redispatched.add(room)
+        await send(room)
+        return {"sent": True}
 
     @app.get("/menu")
     def get_menu() -> dict[str, Any]:
