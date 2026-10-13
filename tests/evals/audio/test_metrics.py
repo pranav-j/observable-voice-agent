@@ -215,3 +215,9 @@ def test_turn_ends_in_pauses_needs_both_clocks() -> None:
     assert turn_ends_in_pauses(timeline, []) is None
     silent = Timeline(caller=timeline.caller, agent_audio=agent_audio())
     assert turn_ends_in_pauses(silent, [{"role": "assistant", "started_speaking_at": 1.0}]) is None
+    # A realtime model logs caller turns without the stop time or end-of-turn delay.
+    untimed: list[dict[str, Any]] = [
+        {"role": "assistant", "started_speaking_at": 1.0},
+        {"role": "user", "text": "hi"},
+    ]
+    assert turn_ends_in_pauses(timeline, untimed) is None

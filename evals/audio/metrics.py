@@ -152,6 +152,8 @@ def turn_ends_in_pauses(timeline: Timeline, turn_records: list[dict[str, Any]]) 
         and isinstance(r.get("stopped_speaking_at"), float)
         and isinstance(r.get("end_of_turn_delay"), float)
     ]
+    if not turns:  # no turn timings logged, as with a realtime model: not measured
+        return None
     slack = PAUSE_STOP_SLACK_SECONDS
     return sum(
         any(start - slack <= stop < end and commit < u.end for stop, commit in turns)
