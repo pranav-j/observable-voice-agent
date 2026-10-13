@@ -18,6 +18,8 @@ audio:
   response_latency_ms_p95: {max_increase: 0.15}
   barge_in_stop_ms_p95: {max_increase: 0.25}
   false_cutoff_rate: {max_increase_abs: 0.15}
+  # Sentences split at a scripted mid-sentence pause. Nine pauses in a full run, so one is 0.11.
+  turn_end_in_pause_rate: {max_increase_abs: 0.25}
   wer: {max_increase_abs: 0.05}
   cost_per_minute_usd: {max_increase: 0.20}
   error_acknowledgement_rate: {max_drop: 0.10}

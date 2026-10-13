@@ -33,6 +33,7 @@ METRICS: dict[str, tuple[str, str]] = {
     "response_latency_ms_p95": ("audio", "response_latency_ms_p95"),
     "barge_in_stop_ms_p95": ("audio", "barge_in_stop_ms_p95"),
     "false_cutoff_rate": ("audio", "false_cutoff_rate"),
+    "turn_end_in_pause_rate": ("audio", "turn_end_in_pause_rate"),
     "wer": ("audio", "wer"),
     "cost_per_minute_usd": ("audio", "cost_per_minute_usd"),
     "error_acknowledgement_rate": ("judged", "error_acknowledgement_rate"),
