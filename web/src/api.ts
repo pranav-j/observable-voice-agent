@@ -41,6 +41,11 @@ export async function fetchToken(): Promise<TokenResponse> {
   return (await response.json()) as TokenResponse
 }
 
+/** Ask the backend to send the agent again, when it hasn't joined. Once per call. */
+export async function redispatch(room: string): Promise<void> {
+  await fetch(`${API}/dispatch/${encodeURIComponent(room)}`, { method: 'POST' }).catch(() => undefined)
+}
+
 export async function fetchCall(sessionId: string): Promise<CallSummary | null> {
   const response = await fetch(`${API}/calls/${encodeURIComponent(sessionId)}`)
   if (response.status === 404) return null
