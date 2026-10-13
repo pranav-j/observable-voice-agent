@@ -1,0 +1,16 @@
+# Only what the images need goes into the build context.
+.git
+.venv
+**/__pycache__
+**/node_modules
+web/dist
+models
+recordings
+reports
+docs
+tests
+evals
+.env
+.env.*
+deploy/terraform
+*.wav

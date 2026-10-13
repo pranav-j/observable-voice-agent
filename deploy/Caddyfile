@@ -1,0 +1,26 @@
+# SITE_HOST is the public name, e.g. 203-0-113-7.sslip.io. Caddy gets its certificate
+# from Let's Encrypt on first start, which is why port 80 has to be open too.
+{$SITE_HOST} {
+	encode zstd gzip
+
+	# The backend: join tokens, the menu, end-of-call summaries.
+	handle_path /api/* {
+		reverse_proxy api:8000
+	}
+
+	# LiveKit's signalling websocket. Media goes straight to LiveKit's own ports.
+	handle /rtc* {
+		reverse_proxy livekit:7880
+	}
+
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+
+	log {
+		output stdout
+		format json
+	}
+}

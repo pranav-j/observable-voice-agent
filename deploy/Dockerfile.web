@@ -1,0 +1,16 @@
+# syntax=docker/dockerfile:1.10
+# The web app, built once and served by Caddy, which also terminates HTTPS and routes the
+# API and LiveKit's signalling on the same host.
+
+FROM node:24.19.0-bookworm-slim@sha256:a9f5f7c91a432850b2a8a7797adf5eadb6c733ceed61167806cee7ea7fbc29df AS build
+WORKDIR /web
+COPY web/package.json web/package-lock.json ./
+RUN npm ci
+COPY web ./
+# Same origin as the page: Caddy sends /api to the backend.
+ENV VITE_API_URL=/api
+RUN npm run build
+
+FROM caddy:2.11.7-alpine@sha256:d8542f48d34a9cf4e4c11a478865229840e87e4c96ea3f439101f31a5d35f75f
+COPY deploy/Caddyfile /etc/caddy/Caddyfile
+COPY --from=build /web/dist /srv
