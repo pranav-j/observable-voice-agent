@@ -514,3 +514,13 @@ I ran the whole suite again on the current defaults: local speech, preemptive ge
 **The pause scenarios still split sentences 5 times out of 12.** Two were real: a pause in the middle of a phone number, which the turn detector heard as finished. The other three were the harness again. The pause goes halfway through the caller's words, and in short lines like "Great. Thanks." that's between two sentences. Ending the turn there is fine. The pause now goes in the middle of the longest sentence.
 
 One call failed because the agent never showed up, and that one was my fault. A LiveKit worker tells the server it's full when its CPU is busy, and the server then doesn't send it new calls. I was running the test suite in another folder at that moment, on the same laptop. On a server that would mean a caller sitting in silence, so the web page now gives up after 20 seconds and says the agents are busy.
+
+## Trying to get the gate to fail on a pull request
+
+With the API key added as a repository secret, every pull request now runs the text suite and the gate. I wanted to see it stop a bad change, so I opened three that passed every unit test.
+
+The first was the latency idea from the experiments: tell the agent to add items it recognizes without searching the menu first. I expected guessed item ids and no "which one did you mean?". It passed 89 of 93 against a baseline of 90, inside the margins, and used about a tenth fewer tokens. So the gate let it through, and honestly it was right to. It might even be worth trying in audio.
+
+The second made the read-back "sound more natural": paraphrase it instead of reciting the tool's text. That should have broken every confirmation, since the code only accepts a read-back that was said in full. It passed 91 of 93. The model never paraphrased, because the tool's own result says "say the read-back to the caller word for word", and it listened to the tool over the prompt. I was a bit annoyed for the demo and quite pleased for the design.
+
+The third swapped the agent's model for gpt-5-nano, which is half the input price. My first push of it crashed every conversation: I'd set the reasoning setting nano needs on the client the simulated caller shares, and the caller's model rejects it. That's a failure, but not one the gate should get credit for, so I fixed it and pushed again. Then it failed properly: task success fell from 0.968 to 0.763, exact match to 0.922, and error acknowledgement to 0.667. The check went red with the unit tests green next to it, which is the whole point of having the gate.
