@@ -54,7 +54,7 @@ Building that table found bugs in the harness, not just the agent. The first bar
 ## Experiments
 
 - **[E1, latency](docs/experiments/E1-latency.md):** one lever at a time. Raw PCM from text-to-speech, local speech and preemptive generation were kept. Filler phrases ("One moment.") were rejected: they started the audio sooner but halved task success, because the caller answered the filler. A shorter end-of-speech silence was rejected because it cut callers off.
-- **E2, cascade against speech-to-speech:** not run. It was cut when the API budget ran out, so there's no finding to report.
+- **[E2, cascade against speech-to-speech](docs/experiments/E2-speech-to-speech.md):** OpenAI's `gpt-realtime`, with the same tools, passed 18 of 18 calls and answered 0.9 s sooner at the median (3614 against 4538 ms), though its slowest turns were no faster. It costs about 180 times as much per minute: $0.072 against $0.0004. The cheaper `gpt-realtime-mini` passed only 6 of 18. It kept trying to confirm orders without the tool's read-back, and the code refused every time, so it left orders unplaced but never placed a wrong one. The cascade stays the default; `PIPELINE=realtime` switches.
 - **[E3, turn detection](docs/experiments/E3-turn-detection.md):** on silence alone, every setting up to 1000 ms ended the turn at all 9 scripted mid-sentence pauses, splitting the caller's sentence. LiveKit's turn detector, which listens to intonation, split none, for 0.95 s at the median against 0.90 s. Its cost is a long tail: when unsure it waits 2.5 s. Getting there exposed a harness bug: the simulated caller synthesized each half of a paused line separately, so the first half sounded finished and the detector rightly ended the turn.
 - **[E4, speech-to-text on noisy calls](docs/experiments/E4-stt-noise.md):** local Whisper heard more words wrong than the hosted recognizer (17.9% against 16.0% on the noisy scenarios), but got the same or more orders exactly right (9 of 9 against 8 of 9). The read-back and the caller's corrections absorb most recognition errors. Names are the exception.
 
@@ -65,7 +65,9 @@ Agent cost per minute of call, from provider usage and the prices in [`config/ra
 - **Hosted speech:** $0.024 per minute ($6.851 over 283.9 minutes). Mostly speech recognition. Part of it is estimated from recording length, where the provider's usage report was missing.
 - **Local speech:** $0.0003 per minute ($0.083 over 248.5 minutes). That's only the LLM. Whisper and Kokoro run on the CPU of the machine running the worker, and that machine isn't priced in.
 
-Neither figure includes the simulated caller's LLM and voice.
+- **Speech-to-speech** (`gpt-realtime`, [E2](docs/experiments/E2-speech-to-speech.md)): $0.072 per minute ($2.139 over 29.6 minutes), part of it an estimate for the side transcription.
+
+None of these include the simulated caller's LLM and voice.
 
 ## Architecture
 

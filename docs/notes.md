@@ -524,3 +524,15 @@ The first was the latency idea from the experiments: tell the agent to add items
 The second made the read-back "sound more natural": paraphrase it instead of reciting the tool's text. That should have broken every confirmation, since the code only accepts a read-back that was said in full. It passed 91 of 93. The model never paraphrased, because the tool's own result says "say the read-back to the caller word for word", and it listened to the tool over the prompt. I was a bit annoyed for the demo and quite pleased for the design.
 
 The third swapped the agent's model for gpt-5-nano, which is half the input price. My first push of it crashed every conversation: I'd set the reasoning setting nano needs on the client the simulated caller shares, and the caller's model rejects it. That's a failure, but not one the gate should get credit for, so I fixed it and pushed again. Then it failed properly: task success fell from 0.968 to 0.763, exact match to 0.922, and error acknowledgement to 0.667. The check went red with the unit tests green next to it, which is the whole point of having the gate.
+
+## Speech-to-speech, finally
+
+With the credit topped up I could run the comparison I'd had to skip: OpenAI's realtime model in place of the whole cascade, with the same instructions and the same tools (`docs/experiments/E2-speech-to-speech.md`). It was one setting to add, `PIPELINE=realtime`, and two bugs to find.
+
+The first pilot failed both calls at the very end. The caller said "yes, that's correct" to the read-back, and confirm_order refused because the caller "hadn't replied yet". The guard counts a reply when the caller's transcript arrives, but a realtime model acts on the audio directly, and the transcript of the yes turned up after it had already tried to confirm. So in realtime mode the caller has replied once they stop speaking. Counting late transcripts could even credit a reply to a newer read-back, so those don't count there at all.
+
+Then the real runs, six scenarios three times each. `gpt-realtime` passed all 18 and answered about 0.9 seconds sooner at the median. That's the first time a quarter of the turns came in under two seconds. Its slowest turns were no faster, though, and it costs about 180 times as much per minute as the cascade with local speech.
+
+`gpt-realtime-mini`, a quarter of the price, passed 6 of 18. It kept reading the order back in its own words and then trying to confirm, and the code kept refusing, because only the tool's read-back counts. So the caller gave up and the order stayed unplaced. That's the guard doing exactly what it's for: the mini model got a lot wrong, and not one wrong order went through.
+
+I'm keeping the cascade as the default. At this size the cost wins. But it's nice to know that if latency mattered most, the switch is one setting and it works.
