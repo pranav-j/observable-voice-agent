@@ -13,11 +13,11 @@ Response latency is measured on the caller's side: from the end of the caller's 
 | Speech | Report | p50 | p95 |
 |---|---|---|---|
 | Hosted (OpenAI recognition and voice) | [`20261011-163931-audio`](reports/20261011-163931-audio/summary.md) | 6756 ms | 10284 ms |
-| Local (Whisper `base.en` and Kokoro), the default | [`20261012-072648-audio`](reports/20261012-072648-audio/summary.md) | 4885 ms | 8761 ms |
+| Local (Whisper `base.en` and Kokoro), the default | [`20261013-024155-audio`](reports/20261013-024155-audio/summary.md) | 4842 ms | 8506 ms |
 
-That's still slow. Over 2 seconds counts as dead air, and 99.2% of turns in the local run had it. The chart shows why: most of the time is the LLM, because a turn with tool calls needs two or three LLM steps and each one takes about a second to its first token.
+That's still slow. Over 2 seconds counts as dead air, and 98.4% of turns in the local run had it. The chart shows why: most of the time is the LLM, because a turn with tool calls needs two or three LLM steps and each one takes about a second to its first token.
 
-Preemptive generation, which is on by default now, was measured after those runs. On six scenarios it took local speech from 5106 / 8483 ms to 4761 / 7157 ms at p50 / p95 ([E1](docs/experiments/E1-latency.md)). A full-suite run with it on hasn't been done yet.
+The two runs differ in more than speech. The local one has preemptive generation on, which on its own took six scenarios from 5106 / 8483 ms to 4761 / 7157 ms at p50 / p95 ([E1](docs/experiments/E1-latency.md)), and a day of agent fixes went in between them.
 
 ## Eval results
 
@@ -25,19 +25,19 @@ Preemptive generation, which is on by default now, was measured after those runs
 
 | Metric | Text | Audio, hosted speech | Audio, local speech |
 |---|---|---|---|
-| Report | [`20261012-031501-text`](reports/20261012-031501-text/summary.md) | [`20261011-163931-audio`](reports/20261011-163931-audio/summary.md) | [`20261012-072648-audio`](reports/20261012-072648-audio/summary.md) |
-| Task success | 92/93 (98.9%) | 85/93 (91.4%) | 85/93 (91.4%) |
+| Report | [`20261012-031501-text`](reports/20261012-031501-text/summary.md) | [`20261011-163931-audio`](reports/20261011-163931-audio/summary.md) | [`20261013-024155-audio`](reports/20261013-024155-audio/summary.md) |
+| Task success | 92/93 (98.9%) | 85/93 (91.4%) | 87/93 (93.5%) |
 | Scenarios passing every run | 30/31 | 24/31 | 25/31 |
-| Order exact match | 98.9% | 91.1% | 91.1% |
+| Order exact match | 98.9% | 91.1% | 94.4% |
 | Injection resistance | 6/6 | 6/6 | 6/6 |
-| Response latency p50 / p95 | n/a | 6756 / 10284 ms | 4885 / 8761 ms |
-| Barge-in: agent stops talking, p50 / p95 | n/a | 912 / 1151 ms | 813 / 1073 ms |
+| Response latency p50 / p95 | n/a | 6756 / 10284 ms | 4842 / 8506 ms |
+| Barge-in: agent stops talking, p50 / p95 | n/a | 912 / 1151 ms | 777 / 1665 ms |
 | False cut-offs in scripted pauses | n/a | 0/9 | 0/9 |
-| Word error rate | n/a | 11.9% | 15.3% |
-| Replies with a sentence said twice | n/a | 7 | 3 |
-| Agent cost per minute | n/a | $0.024 | $0.0003 |
+| Word error rate | n/a | 11.9% | 14.1% |
+| Replies with a sentence said twice | n/a | 7 | 0 |
+| Agent cost per minute | n/a | $0.024 | $0.0004 |
 
-The two audio runs differ in more than speech: some agent fixes landed between them. In the local run, 4 of the 8 failures involved the customer's name: heard wrong ("Nick Hill" for Nikhil) or saved along with a spelling hint ("Mira with two Es").
+The two audio runs differ in more than speech: a day of agent and harness fixes landed between them. Of the local run's 6 failures, two were escalations after a correction went wrong, one was the masala dosa heard instead of Mysore masala dosa, and one was a call the agent never joined. Since that run, the agent is sent again when it doesn't join.
 
 **Does the harness catch a broken agent?** The worker can be broken on purpose with `FAULT=...`. Each fault was run against the scenarios it should break ([details](docs/harness-validation.md)):
 
@@ -122,13 +122,13 @@ Problems found along the way, and what I did about them, are in [docs/notes.md](
 ## Known limitations
 
 - **Replies are slow.** Almost every turn has over 2 seconds of dead air. The fix is fewer LLM steps per turn or a faster LLM, and neither has been tried.
-- **Names.** Misheard names are the most common failure. A fix for one case, where a spelling description like "with two Os" was saved as part of the name, landed after the last full run and hasn't been measured on the full suite.
+- **Names.** Misheard names were the most common failure in earlier runs. None of the final run's failures involved a name, but with three runs per scenario that may be luck.
 - **Only simulated callers.** The harness has a mode for scoring real recorded calls, but no real calls have been recorded and annotated yet. The simulated caller reads the agent's words from the transcript stream instead of transcribing its audio ([ADR 0005](docs/adr/0005-audio-eval-measurement.md)), so it hears the agent more clearly than a person would.
 - **Results depend on the caller's voice.** With Kokoro voices instead of OpenAI's for the simulated caller, the local pipeline passed 64 of 93 ([`20261012-050510-audio`](reports/20261012-050510-audio/summary.md)), mostly failing on names Kokoro mispronounced. How Whisper does on real people saying Indian names is untested.
-- **Doubled replies.** When a caller pauses mid-sentence, the two halves can become two turns and the agent answers both. It happened in 3 of 93 local calls. The cause is in how LiveKit commits turns, and it isn't fixed.
+- **The agent can be slow to join.** A worker still finishing its previous call can decline the next one, and LiveKit doesn't ask again. The web page and the harness now ask once more after 10 seconds. That fix came after the final run and hasn't been measured on a full suite.
 - **The LLM judge isn't calibrated.** Judged metrics like error acknowledgement are reported, but the hand labels needed to check the judge haven't been made yet.
 - **Small samples.** Three runs per scenario. A difference of a few runs between reports is noise.
-- **The demo is one instance** ([ADR 0009](docs/adr/0009-deployment.md)), so it handles about two calls at once and has no redundancy. Its call limits ([ADR 0008](docs/adr/0008-demo-limits.md)) haven't seen real traffic yet. No phone line either: WebRTC only, English only.
+- **The demo is one instance** ([ADR 0009](docs/adr/0009-deployment.md)), sized for about two calls at once but not load-tested, and with no redundancy. Its call limits ([ADR 0008](docs/adr/0008-demo-limits.md)) haven't seen real traffic yet. No phone line either: WebRTC only, English only.
 
 ## Setup and run
 

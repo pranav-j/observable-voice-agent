@@ -544,3 +544,11 @@ The demo now runs on one EC2 instance in Mumbai (`docs/adr/0009-deployment.md`).
 Building the image locally first caught three things before they could break the server. The `.python-version` file pins Python 3.12.2 exactly, which the base image doesn't have, so uv refused to install. The Kokoro files that Docker downloads arrive readable only by root, and so did the Whisper cache, while the app runs as an ordinary user. Each one showed up as a crash inside the container, not at build time, so it was worth loading every model in the image before pushing it.
 
 The first call to the live site worked end to end: a token from the API, WebRTC through Caddy and LiveKit, the agent joining, and its greeting arriving as audio and as text. The call was saved on the instance and the worker logged no errors. The site's certificate comes from Let's Encrypt for an sslip.io name, since there's no domain, and that took about a minute to issue on first start.
+
+## The final run, and the call nobody answered
+
+The last full run, with every fix from today in, passed 87 of 93 (`reports/20261013-024155-audio`). Replies started at 4.8 seconds at p50 and 8.5 at p95, and not one reply repeated a sentence. A sentence got split at a mid-sentence pause once in nine. It's the new local baseline, and the gate now checks the split count as well.
+
+One call failed because the agent never joined, and this time I hadn't been running anything else. LiveKit's log showed the reason. The previous call's job had ended half a second earlier, LiveKit offered the new job to the worker, the worker said no, and LiveKit just dropped it. Nothing retries. On a 4-core server, a worker that's busy or still saving the last call will turn calls down more often than on this laptop.
+
+So now, if no agent has joined after 10 seconds, the web page asks the API to send it again, once. The API only does that for rooms it gave a token for, because asking LiveKit to dispatch into a room creates the room if it doesn't exist. The eval harness does the same thing and the report counts how often it had to, so a run can't quietly hide the problem.

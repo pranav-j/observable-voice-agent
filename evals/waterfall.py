@@ -79,7 +79,8 @@ def main(argv: list[str] | None = None) -> int:
     rows = []
     for report in reports:
         summary = json.loads((report / "summary.json").read_text())
-        configs = summary["audio"].get("agent_configs") or [{}]
+        # A call that errored before the worker joined has no config: skip those.
+        configs = [c for c in summary["audio"].get("agent_configs") or [] if c] or [{}]
         speech = "local speech" if configs[0].get("stt_provider") == "whisper" else "hosted speech"
         rows.append((f"{speech} ({report.name[:8]})", summary))
     out.parent.mkdir(parents=True, exist_ok=True)

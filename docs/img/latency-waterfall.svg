@@ -11,15 +11,15 @@
 <text x="557.2" y="81" fill="#fff" text-anchor="middle">1.10s</text>
 <line x1="730.5" y1="62" x2="730.5" y2="92" stroke="#222"/>
 <text x="734.5" y="104" fill="#222">caller hears it: 6.76s</text>
-<text x="12" y="134" fill="#222">local speech (20261012)</text>
-<rect x="190.0" y="120" width="70.3" height="22" fill="#8e9aaf"/>
-<text x="225.1" y="135" fill="#fff" text-anchor="middle">0.88s</text>
-<rect x="260.3" y="120" width="257.0" height="22" fill="#4c78a8"/>
-<text x="388.8" y="135" fill="#fff" text-anchor="middle">3.21s</text>
-<rect x="517.3" y="120" width="55.5" height="22" fill="#f58518"/>
-<text x="545.0" y="135" fill="#fff" text-anchor="middle">0.69s</text>
-<line x1="580.8" y1="116" x2="580.8" y2="146" stroke="#222"/>
-<text x="584.8" y="158" fill="#222">caller hears it: 4.88s</text>
+<text x="12" y="134" fill="#222">local speech (20261013)</text>
+<rect x="190.0" y="120" width="71.0" height="22" fill="#8e9aaf"/>
+<text x="225.5" y="135" fill="#fff" text-anchor="middle">0.89s</text>
+<rect x="261.0" y="120" width="257.0" height="22" fill="#4c78a8"/>
+<text x="389.6" y="135" fill="#fff" text-anchor="middle">3.21s</text>
+<rect x="518.1" y="120" width="57.5" height="22" fill="#f58518"/>
+<text x="546.8" y="135" fill="#fff" text-anchor="middle">0.72s</text>
+<line x1="577.4" y1="116" x2="577.4" y2="146" stroke="#222"/>
+<text x="581.4" y="158" fill="#222">caller hears it: 4.84s</text>
 <rect x="190" y="182" width="12" height="12" fill="#8e9aaf"/>
 <text x="206" y="192" fill="#222">end of turn</text>
 <rect x="310" y="182" width="12" height="12" fill="#4c78a8"/>
