@@ -24,6 +24,9 @@ class Settings(BaseSettings):
 
     # LiveKit (local dev server defaults)
     livekit_url: str = "ws://localhost:7880"
+    # What browsers connect to, when it differs from what the worker uses (behind HTTPS on a
+    # server, wss://<host>). Empty: the same as livekit_url.
+    livekit_public_url: str = ""
     livekit_api_key: str = "devkey"
     livekit_api_secret: SecretStr = SecretStr("secret")
     agent_name: str = "order-agent"  # explicit dispatch: tokens ask for this agent by name

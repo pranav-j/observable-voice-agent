@@ -134,3 +134,11 @@ def test_behind_a_proxy_the_limit_uses_the_address_the_proxy_saw(
         # A made-up first entry doesn't help: the proxy's own entry is the last one.
         assert call("198.51.100.1, 203.0.113.7") == 429
         assert call("203.0.113.8") == 200
+
+
+def test_browsers_get_the_public_livekit_url_when_set(
+    store: InMemoryOrderStore, menu: Menu
+) -> None:
+    settings = SETTINGS.model_copy(update={"livekit_public_url": "wss://demo.example"})
+    with TestClient(create_app(settings=settings, store=store, menu=menu)) as c:
+        assert c.post("/token").json()["url"] == "wss://demo.example"

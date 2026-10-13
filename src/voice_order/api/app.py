@@ -100,7 +100,7 @@ def create_app(
             )
         room, identity = new_call_ids()
         return TokenResponse(
-            url=settings.livekit_url,
+            url=settings.livekit_public_url or settings.livekit_url,
             token=join_token(settings, room, identity),
             room=room,
             identity=identity,
