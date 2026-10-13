@@ -48,3 +48,10 @@ def test_scenario_filter_rebuilds_both_summaries(
     assert "| runs | 1.000 | 1.000 |" in printed  # main applies the filter to both reports
     assert load_summary(a, "barge_in_*")["overall"]["runs"] == 1
     assert load_summary(a, None)["overall"]["runs"] == 2
+
+
+def test_a_stage_timing_in_only_one_report_is_shown_not_a_crash() -> None:
+    with_stages = {"overall": {}, "audio": {"agent_timing_p50_s": {"end_of_turn_delay": 0.9}}}
+    without: dict[str, Any] = {"overall": {}, "audio": {"agent_timing_p50_s": {}}}
+    table = compare(with_stages, without)
+    assert "| agent_end_of_turn_delay_p50_s | 0.900 | n/a |" in table

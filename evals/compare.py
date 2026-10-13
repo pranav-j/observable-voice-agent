@@ -53,10 +53,14 @@ def _delta(before: float | None, after: float | None) -> str:
 def compare(before: dict[str, Any], after: dict[str, Any]) -> str:
     b, a = _metrics(before), _metrics(after)
     lines = ["| Metric | Before | After | Change |", "|---|---|---|---|"]
-    for name in b:
-        if b[name] is None and a[name] is None:
+    for name in b | a:  # a stage timing can be in one report only (a realtime model has none)
+        before_value, after_value = b.get(name), a.get(name)
+        if before_value is None and after_value is None:
             continue
-        lines.append(f"| {name} | {_fmt(b[name])} | {_fmt(a[name])} | {_delta(b[name], a[name])} |")
+        lines.append(
+            f"| {name} | {_fmt(before_value)} | {_fmt(after_value)} "
+            f"| {_delta(before_value, after_value)} |"
+        )
     configs = [(s.get("audio") or {}).get("agent_configs") for s in (before, after)]
     if configs[0] != configs[1]:
         lines += ["", f"Agent config before: {configs[0]}", f"Agent config after: {configs[1]}"]
