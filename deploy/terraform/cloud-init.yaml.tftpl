@@ -3,29 +3,29 @@
 # CLI; this adds Docker and the Compose plugin, the deploy files, and a service that starts
 # the stack on every boot.
 write_files:
-  - path: /opt/voice-order/compose.yaml
+  - path: /opt/voice-order-agent/compose.yaml
     encoding: b64
     permissions: "0644"
     content: ${compose_b64}
-  - path: /opt/voice-order/livekit.yaml
+  - path: /opt/voice-order-agent/livekit.yaml
     encoding: b64
     permissions: "0644"
     content: ${livekit_b64}
-  - path: /opt/voice-order/run.sh
+  - path: /opt/voice-order-agent/run.sh
     encoding: b64
     permissions: "0755"
     content: ${run_b64}
-  - path: /opt/voice-order/host.env
+  - path: /opt/voice-order-agent/host.env
     permissions: "0644"
     content: |
       REGISTRY=${registry}
       SITE_HOST=${site_host}
       AWS_REGION=${region}
-  - path: /etc/systemd/system/voice-order.service
+  - path: /etc/systemd/system/voice-order-agent.service
     permissions: "0644"
     content: |
       [Unit]
-      Description=voice-order demo (docker compose)
+      Description=voice-order-agent demo (docker compose)
       After=docker.service network-online.target
       Requires=docker.service
       Wants=network-online.target
@@ -33,8 +33,8 @@ write_files:
       [Service]
       Type=oneshot
       RemainAfterExit=yes
-      WorkingDirectory=/opt/voice-order
-      ExecStart=/opt/voice-order/run.sh
+      WorkingDirectory=/opt/voice-order-agent
+      ExecStart=/opt/voice-order-agent/run.sh
       ExecStop=/usr/bin/docker compose down
       TimeoutStartSec=900
       TimeoutStopSec=360
@@ -43,20 +43,20 @@ write_files:
       WantedBy=multi-user.target
 
   # Recordings hold callers' voices and whatever they said: keep a week, then delete.
-  - path: /etc/systemd/system/voice-order-retention.service
+  - path: /etc/systemd/system/voice-order-agent-retention.service
     permissions: "0644"
     content: |
       [Unit]
-      Description=Delete voice-order call recordings older than 7 days
+      Description=Delete voice-order-agent call recordings older than 7 days
 
       [Service]
       Type=oneshot
-      ExecStart=/usr/bin/find /var/lib/docker/volumes/voice-order_recordings/_data -mindepth 1 -maxdepth 1 -mtime +7 -exec rm -rf {} +
-  - path: /etc/systemd/system/voice-order-retention.timer
+      ExecStart=/usr/bin/find /var/lib/docker/volumes/voice-order-agent_recordings/_data -mindepth 1 -maxdepth 1 -mtime +7 -exec rm -rf {} +
+  - path: /etc/systemd/system/voice-order-agent-retention.timer
     permissions: "0644"
     content: |
       [Unit]
-      Description=Daily clean-up of old voice-order recordings
+      Description=Daily clean-up of old voice-order-agent recordings
 
       [Timer]
       OnCalendar=daily
@@ -73,6 +73,6 @@ runcmd:
   - chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
   - systemctl enable --now docker
   - systemctl daemon-reload
-  - systemctl enable voice-order
-  - systemctl enable --now voice-order-retention.timer
-  - systemctl start --no-block voice-order
+  - systemctl enable voice-order-agent
+  - systemctl enable --now voice-order-agent-retention.timer
+  - systemctl start --no-block voice-order-agent

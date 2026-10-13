@@ -16,8 +16,8 @@ aws ecr get-login-password --region "$region" \
   | docker login --username AWS --password-stdin "$registry" >/dev/null
 
 for image in app web; do
-  ref="$registry/voice-order-$image:$tag"
-  if aws ecr describe-images --region "$region" --repository-name "voice-order-$image" \
+  ref="$registry/voice-order-agent/$image:$tag"
+  if aws ecr describe-images --region "$region" --repository-name "voice-order-agent/$image" \
       --image-ids imageTag="$tag" >/dev/null 2>&1; then
     echo "$ref already pushed"
     continue

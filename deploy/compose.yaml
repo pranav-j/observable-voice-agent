@@ -1,10 +1,10 @@
-# The demo instance: everything on one host. Started by voice-order.service, which first
-# writes the secrets from SSM Parameter Store into /opt/voice-order/.env (root only) and
+# The demo instance: everything on one host. Started by voice-order-agent.service, which first
+# writes the secrets from SSM Parameter Store into /opt/voice-order-agent/.env (root only) and
 # sets REGISTRY, IMAGE_TAG and SITE_HOST.
-name: voice-order
+name: voice-order-agent
 
 x-app: &app
-  image: ${REGISTRY}/voice-order-app:${IMAGE_TAG}
+  image: ${REGISTRY}/voice-order-agent/app:${IMAGE_TAG}
   restart: unless-stopped
   env_file: .env
   environment:
@@ -28,7 +28,7 @@ x-app: &app
 
 services:
   web:
-    image: ${REGISTRY}/voice-order-web:${IMAGE_TAG}
+    image: ${REGISTRY}/voice-order-agent/web:${IMAGE_TAG}
     restart: unless-stopped
     environment:
       SITE_HOST: ${SITE_HOST}
