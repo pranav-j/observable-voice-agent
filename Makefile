@@ -21,7 +21,7 @@ NVM_USE := if [ "$$(node --version 2>/dev/null)" != "v$$(cat .nvmrc)" ]; then \
 	if [ -s "$$NVM_DIR/nvm.sh" ]; then . "$$NVM_DIR/nvm.sh" && nvm use >/dev/null || exit 1; fi; \
 	fi;
 
-.PHONY: help setup up down dev worker voice-smoke chat test test-integration lint fmt eval annotate judge judge-sample judge-calibrate gate baseline compare models
+.PHONY: help setup up down dev worker voice-smoke chat test test-integration lint fmt eval annotate judge judge-sample judge-calibrate gate baseline compare models deploy-infra deploy-secrets deploy-images deploy-release demo-stop demo-start deploy-destroy
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*## "} /^[a-zA-Z_-]+:.*## / {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -126,3 +126,30 @@ models: $(VENV)/bin/python ## Download the local speech models (Kokoro and Whisp
 annotate: $(VENV)/bin/python ## make annotate SESSION=<id>: start the expected order for a real call
 	@test -n "$(SESSION)" || { echo "Usage: make annotate SESSION=<session id from recordings/>"; exit 2; }
 	$(UV) run --locked python -m evals.annotate '$(SESSION)' $(ARGS)
+
+# --- the demo on AWS (docs/adr/0009-deployment.md) ---------------------------------------
+TF := terraform -chdir=deploy/terraform
+
+deploy-infra: ## Create or update the AWS demo: registry, instance, network, permissions
+	$(TF) init -input=false
+	$(TF) apply
+
+deploy-secrets: ## Put the demo's secrets in SSM Parameter Store (OpenAI key from .env)
+	deploy/secrets.sh
+
+deploy-images: ## Build the arm64 images at this commit and push them to ECR
+	deploy/images.sh
+
+deploy-release: ## make deploy-release TAG=<commit>: roll the demo to that image tag
+	@test -n "$(TAG)" || { echo "Usage: make deploy-release TAG=<tag printed by make deploy-images>"; exit 2; }
+	deploy/release.sh '$(TAG)'
+
+demo-stop: ## Stop the demo instance (keeps its disk and address; stops the hourly charge)
+	aws ec2 stop-instances --instance-ids "$$($(TF) output -raw instance_id)" --output text
+
+demo-start: ## Start the demo instance again; the stack comes up on boot
+	aws ec2 start-instances --instance-ids "$$($(TF) output -raw instance_id)" --output text
+	@echo "Up in a few minutes at $$($(TF) output -raw url)"
+
+deploy-destroy: ## Delete everything the demo created in AWS, images included
+	$(TF) destroy

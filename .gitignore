@@ -34,3 +34,9 @@ reports/**/raw/
 
 # Local speech models (downloaded with make models)
 models/
+
+# Terraform: providers, local state (it holds resource ids, not secrets) and variable files
+deploy/terraform/.terraform/
+deploy/terraform/*.tfstate
+deploy/terraform/*.tfstate.*
+deploy/terraform/*.tfvars
