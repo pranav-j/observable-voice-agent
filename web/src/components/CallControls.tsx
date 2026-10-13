@@ -14,6 +14,9 @@ export function CallControls() {
         <span className={`dot ${status}`} aria-hidden /> <strong>{LABELS[status]}</strong>
         {room && <code className="muted"> {room}</code>}
         {error && <p className="error">{error}</p>}
+        <p className="muted">
+          Calls are recorded to test the agent and deleted after 7 days. Use a made-up name and phone number.
+        </p>
       </div>
       {live ? (
         <button className="danger" onClick={() => void endCall()}>

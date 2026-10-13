@@ -8,6 +8,25 @@ import type { TurnRecord } from './stats'
 
 let room: Room | null = null
 const decoder = new TextDecoder()
+// LiveKit sends the agent only when a worker has room for another call. If none does, the
+// caller would wait in silence, so give up and say so.
+const AGENT_JOIN_TIMEOUT_MS = 20_000
+const BUSY = 'All our agents are busy right now. Please try again in a minute.'
+
+function waitForAgent(r: Room, timeoutMs: number): Promise<void> {
+  if (r.remoteParticipants.size > 0) return Promise.resolve()
+  return new Promise((resolve, reject) => {
+    const joined = () => {
+      clearTimeout(timer)
+      resolve()
+    }
+    const timer = setTimeout(() => {
+      r.off(RoomEvent.ParticipantConnected, joined)
+      reject(new Error(BUSY))
+    }, timeoutMs)
+    r.once(RoomEvent.ParticipantConnected, joined)
+  })
+}
 
 export async function startCall(): Promise<void> {
   const store = useCallStore.getState()
@@ -28,13 +47,21 @@ export async function startCall(): Promise<void> {
       if (topic === 'order') useCallStore.getState().setOrder(data as OrderView)
       if (topic === 'turn') useCallStore.getState().addTurn(data as TurnRecord)
     })
-    room.on(RoomEvent.Disconnected, () => void finish(name))
-    await room.connect(url, token)
-    await room.localParticipant.setMicrophoneEnabled(true)
+    const onDisconnected = () => void finish(name)
+    room.on(RoomEvent.Disconnected, onDisconnected)
+    try {
+      await room.connect(url, token)
+      await room.localParticipant.setMicrophoneEnabled(true)
+      await waitForAgent(room, AGENT_JOIN_TIMEOUT_MS)
+    } catch (err) {
+      room.off(RoomEvent.Disconnected, onDisconnected) // keep the error, not "call ended"
+      throw err
+    }
     useCallStore.getState().setStatus('in_call')
   } catch (err) {
     useCallStore.getState().fail(err instanceof Error ? err.message : String(err))
     await room?.disconnect()
+    room = null
   }
 }
 
