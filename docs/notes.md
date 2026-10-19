@@ -555,7 +555,7 @@ So now, if no agent has joined after 10 seconds, the web page asks the API to se
 
 ## The first real calls
 
-I made six calls to the agent myself, on the local setup, and annotated what I actually wanted (`reports/20261019-051629-recorded`). Three came out completely right. Two got the order right and my name wrong: Pranav became "Pramal", and Prem became "Brem". The sixth I couldn't finish at all. I asked for an Affogato a few times, Whisper heard "I forget" every time, and eventually the agent handed me to a person.
+I made six calls to the agent myself, on the local setup, and annotated what I actually wanted (`reports/20261019-051629-recorded`). Three came out completely right. Two got the order right and my name wrong: Pranav became "Pramal", and Prem became "Brem". The sixth I couldn't finish at all. Whisper turned my coffee order into "I forget" every time, and eventually the agent handed me to a person.
 
 None of that surprised me after the simulated runs: the small Whisper model struggles with Indian names and with menu words that aren't ordinary English. A bigger recognition model is the obvious fix, and the offline numbers already say it would help. I'm leaving it as a known limitation for now rather than chasing it.
 
