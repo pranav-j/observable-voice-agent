@@ -574,3 +574,11 @@ I wouldn't read too much into a perfect score. Twenty cases came from eval runs 
 The phone number fix was small once I saw what was going on. The voice gets the agent's text, and "98765 23456" is a pair of five-digit numbers to it. So just before the text reaches the voice, any run of five or more digits is spaced out: "9 8 7 6 5, 2 3 4 5 6". Prices never have five digits in a row (they're written "1,160 rupees"), and the transcript and the read-back check still see the number as written, so nothing else changes. Numbers can arrive split across streamed chunks, so trailing digits are held until the next chunk shows whether the number goes on.
 
 Checking it took a little thought, because Whisper turns spoken digits back into a number whichever way they were said. So I synthesized the read-back both ways and transcribed each (`reports/20261019-readback-digits`). The old reading came back as "98,765, 23,456" and took 7.1 seconds. The new one came back as "98765-23456" in 5.0 seconds. A real call on the new code came back the second way.
+
+## A dashboard, and the README finally explaining the observability
+
+For a project called observable-voice-agent, the README said almost nothing about how to observe it. Phoenix only turned up in the architecture diagram. Now there's a section on how the pieces fit: a trace per call in Phoenix, a recording per call on disk, the live latency panel on the page, the eval reports across runs, and how to get from a bad call to its cause.
+
+The missing piece was a view across calls. Phoenix shows one call at a time and the eval reports only cover test runs, so `make dashboard` now builds one page from the recordings: calls per day by how they ended, reply latency, cost per minute, tool errors, and the latest calls, each linked to its trace. It reads only files on disk and has nothing personal in it, just counts and timings. My first version took a minute and a half because it paged through every span in Phoenix to find the trace links. Asking Phoenix for just the root span of each call brought it down to about a second.
+
+The trace I put in the README is one of my own calls. The agent read the order back and tried to confirm it in the same breath, and the tool said no: "you asked the caller a question in this reply". It's a nice picture of the guard working, and I'd never have seen it without the trace.
