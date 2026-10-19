@@ -21,7 +21,7 @@ NVM_USE := if [ "$$(node --version 2>/dev/null)" != "v$$(cat .nvmrc)" ]; then \
 	if [ -s "$$NVM_DIR/nvm.sh" ]; then . "$$NVM_DIR/nvm.sh" && nvm use >/dev/null || exit 1; fi; \
 	fi;
 
-.PHONY: help setup up down dev worker voice-smoke chat test test-integration lint fmt eval annotate judge judge-sample judge-calibrate gate baseline compare models deploy-infra deploy-secrets deploy-images deploy-release deploy-smoke demo-limits demo-stop demo-start deploy-destroy
+.PHONY: help setup up down dev worker voice-smoke chat test test-integration lint fmt eval annotate judge judge-sample judge-calibrate gate baseline compare models dashboard deploy-infra deploy-secrets deploy-images deploy-release deploy-smoke demo-limits demo-phoenix demo-stop demo-start deploy-destroy
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*## "} /^[a-zA-Z_-]+:.*## / {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -127,6 +127,10 @@ annotate: $(VENV)/bin/python ## make annotate SESSION=<id>: start the expected o
 	@test -n "$(SESSION)" || { echo "Usage: make annotate SESSION=<session id from recordings/>"; exit 2; }
 	$(UV) run --locked python -m evals.annotate '$(SESSION)' $(ARGS)
 
+dashboard: $(VENV)/bin/python ## Build dashboard/index.html: every recorded call, per day, linked to Phoenix
+	$(UV) run --locked python -m voice_order.telemetry.dashboard $(ARGS)
+	@echo "Open dashboard/index.html in a browser."
+
 # --- the demo on AWS (docs/adr/0009-deployment.md) ---------------------------------------
 TF := terraform -chdir=deploy/terraform
 
@@ -153,6 +157,11 @@ demo-limits: ## make demo-limits PER_IP=<n> PER_DAY=<n> [TAG=<tag>]: change the 
 	aws ssm put-parameter --name /voice-order-agent/calls_per_day --type String --overwrite --value '$(PER_DAY)' >/dev/null
 	for p in calls_per_ip_per_hour calls_per_day; do aws ssm add-tags-to-resource --resource-type Parameter --resource-id /voice-order-agent/$$p --tags Key=project,Value=voice-order-agent Key=repo,Value=observable-voice-agent; done
 	deploy/release.sh "$(or $(TAG),$$(aws ssm get-parameter --name /voice-order-agent/image_tag --query Parameter.Value --output text))"
+
+demo-phoenix: ## Open the demo's Phoenix at http://localhost:6007 (needs the AWS Session Manager plugin)
+	aws ssm start-session --target "$$($(TF) output -raw instance_id)" \
+	  --document-name AWS-StartPortForwardingSession \
+	  --parameters '{"portNumber":["6006"],"localPortNumber":["6007"]}'
 
 demo-stop: ## Stop the demo instance (keeps its disk and address; stops the hourly charge)
 	aws ec2 stop-instances --instance-ids "$$($(TF) output -raw instance_id)" --output text

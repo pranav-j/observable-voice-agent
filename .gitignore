@@ -23,6 +23,8 @@ web/dist/
 
 # runtime output
 recordings/
+# make dashboard: built from recordings, so it stays local
+dashboard/
 reports/**/raw/
 *.wav
 
