@@ -109,6 +109,36 @@ flowchart LR
 
 The simulated caller joins the LiveKit room as an ordinary participant, so its audio takes the same path as a person's. Timing comes from the audio the caller actually received. The final order is read from the database and compared with the scenario's expected order.
 
+## Observability
+
+Every call can be followed from the dashboard down to a single tool call, and listened to.
+
+**Traces.** Each call is one OpenTelemetry trace in [Phoenix](https://github.com/Arize-ai/phoenix). LiveKit Agents creates the spans: the caller's turn, end-of-turn detection, every LLM step, every tool call with its arguments and result, and text-to-speech. Every span is tagged with the session id, providers and models (`src/voice_order/telemetry/tracing.py`). Below is one of the real calls: the agent read the order back and tried to confirm it in the same reply, and the tool refused, because the caller hadn't answered yet.
+
+<img src="docs/img/phoenix-trace.png" alt="A real call's trace in Phoenix: confirm_order returned WAITING_FOR_CALLER" width="420">
+
+Locally, Phoenix is at http://localhost:6006 after `make up`. On the AWS demo it isn't public: `make demo-phoenix` opens it at http://localhost:6007 through a Session Manager port forward, which needs the AWS Session Manager plugin.
+
+**Recordings.** The worker saves each call in `recordings/<session_id>/`:
+- the audio, in stereo (caller left, agent right)
+- the transcript
+- every tool call with its result
+- per-turn stage timings
+- cost by model
+- the worker's settings
+
+When a trace shows a slow or wrong turn, its audio is one folder away. Recordings stay on the machine that made them (`recordings/` isn't committed), and on the demo they're deleted after 7 days.
+
+**Live, during a call.** The web page's latency panel shows p50 and p95 so far, and breaks each reply into transcription, end of turn, tool and extra LLM rounds, LLM first token, and first audio. After the call it shows a summary of length, turns and cost. The demo video shows it.
+
+**The dashboard.** `make dashboard` builds `dashboard/index.html` from the recordings. It shows calls per day by how they ended (order placed, handed to a person, not placed), the agent's reply latency at p50 and p95, cost per minute, tool errors per call, and the latest calls, each linked to its trace in Phoenix. Real calls from the web page and simulated eval calls are kept apart. The page holds counts and timings only, no transcripts, names or phone numbers, and it's built locally rather than committed.
+
+<img src="docs/img/dashboard.png" alt="The calls dashboard on this machine" width="720">
+
+**Across runs.** The eval reports and the gate cover quality over a whole suite and against a baseline: see [Eval results](#eval-results) and [docs/harness-validation.md](docs/harness-validation.md).
+
+**From a bad call to its cause:** find the call in the dashboard, open its trace, find the span that went wrong (a refused tool call, a slow LLM step, a long end-of-turn wait), then listen to that turn in `recordings/<session_id>/audio.ogg`.
+
 ## Design decisions
 
 - [0001 Stack and toolchain](docs/adr/0001-stack.md): LiveKit and LiveKit Agents, Python with uv, React.
@@ -154,7 +184,7 @@ make test
 make lint
 ```
 
-To talk to the agent, run `make dev` (backend, agent worker and web app together) and open http://localhost:5173. `make chat` is a text-only version in the terminal. Each call is saved under `recordings/<session_id>/`, and its traces are in Phoenix. To use hosted speech instead of local models, set `STT_PROVIDER=openai` and `TTS_PROVIDER=openai` in `.env`.
+To talk to the agent, run `make dev` (backend, agent worker and web app together) and open http://localhost:5173. `make chat` is a text-only version in the terminal. Each call is saved under `recordings/<session_id>/`, and its traces are in Phoenix. `make dashboard` builds a page of all recorded calls (see [Observability](#observability)). To use hosted speech instead of local models, set `STT_PROVIDER=openai` and `TTS_PROVIDER=openai` in `.env`.
 
 `make setup` creates `.venv` with `python -m venv` using the pyenv-selected interpreter, then uses uv to install the locked dependencies into it. uv is configured never to download or choose its own Python. To work in the shell, run `source .venv/bin/activate`.
 
