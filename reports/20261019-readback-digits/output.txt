@@ -1,0 +1,2 @@
+as written: 7.1s, Kokoro said: 'Your number is 98765 23456. Is that right?', Whisper heard: 'Your number is 98,765, 23,456. Is that right?'
+digits spaced: 5.0s, Kokoro said: 'Your number is 9 8 7 6 5, 2 3 4 5 6. Is that right?', Whisper heard: 'Your number is 98765-23456. Is that right?'

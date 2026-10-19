@@ -568,3 +568,9 @@ Two smaller things. The numbers I gave sound like real phone numbers, so annotat
 The judge that grades whether the agent owned up to a failed action had been running unchecked, so every report said "not calibrated yet". I went through the 25 sample cases and marked each one: did the reply tell the caller something went wrong, or ask for what it needed, without pretending it worked? The judge agreed with me on all 25.
 
 I wouldn't read too much into a perfect score. Twenty cases came from eval runs with simulated callers, and most of them are the same thing, a phone number that didn't validate followed by the agent asking for it again. The other five were made up on purpose, with the agent claiming an item was added when the tool had refused, and those are easy. It does settle that the judge isn't wildly off. Testing whether it's right on the hard cases would need more varied ones.
+
+## Saying the number so it can be checked
+
+The phone number fix was small once I saw what was going on. The voice gets the agent's text, and "98765 23456" is a pair of five-digit numbers to it. So just before the text reaches the voice, any run of five or more digits is spaced out: "9 8 7 6 5, 2 3 4 5 6". Prices never have five digits in a row (they're written "1,160 rupees"), and the transcript and the read-back check still see the number as written, so nothing else changes. Numbers can arrive split across streamed chunks, so trailing digits are held until the next chunk shows whether the number goes on.
+
+Checking it took a little thought, because Whisper turns spoken digits back into a number whichever way they were said. So I synthesized the read-back both ways and transcribed each (`reports/20261019-readback-digits`). The old reading came back as "98,765, 23,456" and took 7.1 seconds. The new one came back as "98765-23456" in 5.0 seconds. A real call on the new code came back the second way.
