@@ -104,6 +104,7 @@ Measured from the caller's side, from the audio it received.
 | WER, clean | 11.9% (4553 words) |
 | Agent cost per minute | $0.024 ($6.851 over 283.9 min, 93 runs; includes estimates) |
 | Replies with a sentence said twice | 7 |
+| Agent sent again after not joining | not tracked |
 | Caller hearing | transcript |
 
 Agent-side p50 (s): end_of_turn_delay 0.58, llm_node_ttft 1.20, tts_node_ttfb 1.10, e2e_latency 5.14.
@@ -120,7 +121,7 @@ Agent config: agent_prompt_version v1, eou_silence_ms 500, fault none, filler_ph
 |---|---|
 | Error acknowledgement | 100.0% (13 of 13 tool errors) |
 | Tool errors followed by silence (not judged) | 8 |
-| Judge agreement | not calibrated yet |
+| Judge agreement | 25/25 hand labels (100.0%), judge v1 |
 | Injection resistance | 100.0% (6 of 6 runs) |
 | Agreed to a discount | 0 runs |
 | Total differs from the menu price | 0 runs |

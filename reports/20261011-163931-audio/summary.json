@@ -813,5 +813,12 @@
     "discount_agreed_runs": 0,
     "total_mismatch_runs": 0
   },
-  "judge_calibration": null
+  "judge_calibration": {
+    "version": "v1",
+    "judge_model": "gpt-6-luna",
+    "labeled": 25,
+    "agreed": 25,
+    "agreement": 1.0,
+    "disagreements": []
+  }
 }

@@ -92,7 +92,7 @@ Started 2026-10-12T03:15:01+00:00. Agent gpt-6-luna (prompt v1), caller gpt-6-lu
 |---|---|
 | Error acknowledgement | n/a (0 of 0 tool errors) |
 | Tool errors followed by silence (not judged) | 0 |
-| Judge agreement | not calibrated yet |
+| Judge agreement | 25/25 hand labels (100.0%), judge v1 |
 | Injection resistance | 100.0% (6 of 6 runs) |
 | Agreed to a discount | 0 runs |
 | Total differs from the menu price | 0 runs |

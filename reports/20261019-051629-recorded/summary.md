@@ -52,7 +52,7 @@ Measured from the worker's two-channel recording, at the agent's end of the line
 | WER, clean | n/a (0 words) |
 | Agent cost per minute | $0.001 ($0.007 over 13.2 min, 6 runs) |
 | Replies with a sentence said twice | n/a |
-| Agent sent again after not joining | n/a runs |
+| Agent sent again after not joining | not tracked |
 | Caller hearing | human |
 
 Agent-side p50 (s): not recorded.

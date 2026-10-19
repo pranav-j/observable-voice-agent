@@ -429,7 +429,9 @@ def _audio_markdown(a: dict[str, Any] | None, mode: str) -> list[str]:
         ),
         f"| Agent cost per minute | {cost} |",
         f"| Replies with a sentence said twice | {_num(a.get('doubled_replies'), 0)} |",
-        f"| Agent sent again after not joining | {_num(a.get('redispatched'), 0)} runs |",
+        "| Agent sent again after not joining | "
+        + ("not tracked" if a.get("redispatched") is None else f"{a['redispatched']} runs")
+        + " |",
         f"| Caller hearing | {', '.join(a['hearing'])} |",
         "",
         *(
