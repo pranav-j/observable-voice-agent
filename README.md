@@ -4,9 +4,9 @@ A voice agent that takes pickup food orders for a fictional Indian restaurant, J
 
 **Live demo:** https://43-205-202-96.sslip.io, when it's running. The instance is stopped between demos to save cost, so the link may not answer.
 
-[![A call to the live demo: the transcript, the order and the latency panel](docs/img/demo.png)](docs/media/demo.mp4)
+https://github.com/user-attachments/assets/cafc0c17-0733-45f8-8dc6-b1b98bc224b6
 
-**[Demo video](docs/media/demo.mp4)** (4.5 minutes, unedited): a call to the live demo. The caller browses the menu, orders a masala dosa and a cold coffee, hears the phone number read back digit by digit, then swaps the coffee for a tea at the read-back and gets a new one. The pauses before each reply are real.
+**Demo video** (4.5 minutes, unedited, [download](docs/media/demo.mp4)): a call to the live demo. The caller browses the menu, orders a masala dosa and a cold coffee, hears the phone number read back digit by digit, then swaps the coffee for a tea at the read-back and gets a new one. The pauses before each reply are real.
 
 ## Latency
 
