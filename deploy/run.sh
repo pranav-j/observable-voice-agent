@@ -11,6 +11,10 @@ param() {
     --with-decryption --query Parameter.Value --output text
 }
 
+optional() {  # a parameter that may not exist: its value, or the default given
+  param "$1" 2>/dev/null || echo "$2"
+}
+
 tag=$(param image_tag)
 if [ "$tag" = "none" ]; then
   echo "No release yet (/voice-order-agent/image_tag is 'none'); nothing to start."
@@ -23,6 +27,9 @@ umask 077
   echo "LIVEKIT_API_KEY=$(param livekit_api_key)"
   echo "LIVEKIT_API_SECRET=$(param livekit_api_secret)"
   echo "POSTGRES_PASSWORD=$(param postgres_password)"
+  # Call limits (docs/adr/0008-demo-limits.md), raised for a testing session if needed.
+  echo "CALLS_PER_IP_PER_HOUR=$(optional calls_per_ip_per_hour 5)"
+  echo "CALLS_PER_DAY=$(optional calls_per_day 40)"
   echo "IMAGE_TAG=$tag"
   echo "REGISTRY=$REGISTRY"
   echo "SITE_HOST=$SITE_HOST"

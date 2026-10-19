@@ -16,8 +16,7 @@ x-app: &app
     # Callers come through Caddy, which appends their address to X-Forwarded-For.
     TRUST_PROXY: "true"
     MAX_CALL_SECONDS: "300"
-    CALLS_PER_IP_PER_HOUR: "5"
-    CALLS_PER_DAY: "40"
+    # CALLS_PER_IP_PER_HOUR and CALLS_PER_DAY come from .env, set by run.sh from SSM.
   volumes:
     - recordings:/app/recordings
   depends_on:

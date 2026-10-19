@@ -21,7 +21,7 @@ NVM_USE := if [ "$$(node --version 2>/dev/null)" != "v$$(cat .nvmrc)" ]; then \
 	if [ -s "$$NVM_DIR/nvm.sh" ]; then . "$$NVM_DIR/nvm.sh" && nvm use >/dev/null || exit 1; fi; \
 	fi;
 
-.PHONY: help setup up down dev worker voice-smoke chat test test-integration lint fmt eval annotate judge judge-sample judge-calibrate gate baseline compare models deploy-infra deploy-secrets deploy-images deploy-release demo-stop demo-start deploy-destroy
+.PHONY: help setup up down dev worker voice-smoke chat test test-integration lint fmt eval annotate judge judge-sample judge-calibrate gate baseline compare models deploy-infra deploy-secrets deploy-images deploy-release deploy-smoke demo-limits demo-stop demo-start deploy-destroy
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*## "} /^[a-zA-Z_-]+:.*## / {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -143,6 +143,16 @@ deploy-images: ## Build the arm64 images at this commit and push them to ECR
 deploy-release: ## make deploy-release TAG=<commit>: roll the demo to that image tag
 	@test -n "$(TAG)" || { echo "Usage: make deploy-release TAG=<tag printed by make deploy-images>"; exit 2; }
 	deploy/release.sh '$(TAG)'
+
+deploy-smoke: $(VENV)/bin/python ## Place a silent test call to the live demo and check the agent answers
+	.venv/bin/python deploy/smoke_call.py "$$($(TF) output -raw site_host)"
+
+demo-limits: ## make demo-limits PER_IP=<n> PER_DAY=<n> [TAG=<tag>]: change the call limits and restart
+	@test -n "$(PER_IP)" -a -n "$(PER_DAY)" || { echo "Usage: make demo-limits PER_IP=5 PER_DAY=40"; exit 2; }
+	aws ssm put-parameter --name /voice-order-agent/calls_per_ip_per_hour --type String --overwrite --value '$(PER_IP)' >/dev/null
+	aws ssm put-parameter --name /voice-order-agent/calls_per_day --type String --overwrite --value '$(PER_DAY)' >/dev/null
+	for p in calls_per_ip_per_hour calls_per_day; do aws ssm add-tags-to-resource --resource-type Parameter --resource-id /voice-order-agent/$$p --tags Key=project,Value=voice-order-agent Key=repo,Value=observable-voice-agent; done
+	deploy/release.sh "$(or $(TAG),$$(aws ssm get-parameter --name /voice-order-agent/image_tag --query Parameter.Value --output text))"
 
 demo-stop: ## Stop the demo instance (keeps its disk and address; stops the hourly charge)
 	aws ec2 stop-instances --instance-ids "$$($(TF) output -raw instance_id)" --output text
