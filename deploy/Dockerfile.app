@@ -21,11 +21,7 @@ WORKDIR /app
 COPY pyproject.toml uv.lock README.md ./
 RUN uv sync --locked --no-dev --no-install-project
 
-COPY src ./src
-COPY config ./config
-COPY data ./data
-RUN uv sync --locked --no-dev
-
+# The models next: they change far less often than the code, so they stay cached.
 # Kokoro, the agent's voice. Docker checks each file against its checksum.
 ADD --chmod=644 --checksum=sha256:7d5df8ecf7d4b1878015a32686053fd0eebe2bc377234608764cc0ef3636a6c5 \
     https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/kokoro-v1.0.onnx \
@@ -41,12 +37,21 @@ ENV HF_HOME=/app/models/hf \
     MODELS_DIR=/app/models \
     WHISPER_MODEL=${WHISPER_MODEL} \
     PATH=/app/.venv/bin:$PATH
+# Readable by the app user in the same step: a separate chmod would copy the files again.
+# ADD --chmod applies 644 to the folders it creates too, so those need opening up as well;
+# changing a folder's mode copies no file data.
 RUN HF_HUB_OFFLINE=0 python -c "from faster_whisper import WhisperModel; \
-WhisperModel('${WHISPER_MODEL}', device='cpu', compute_type='int8')"
+WhisperModel('${WHISPER_MODEL}', device='cpu', compute_type='int8')" \
+    && chmod a+rx /app/models /app/models/kokoro \
+    && chmod -R a+rX /app/models/hf
 
-# The models were fetched as root; the app only needs to read them.
+# Then the code.
+COPY src ./src
+COPY config ./config
+COPY data ./data
+RUN uv sync --locked --no-dev
+
 RUN useradd --system --uid 10001 --home /app app \
-    && chmod -R a+rX /app/models \
     && mkdir -p /app/recordings && chown app /app/recordings
 USER app
 
