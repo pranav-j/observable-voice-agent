@@ -1,0 +1,11 @@
+# What the caller wanted, confirmed by the caller afterwards. Phone numbers are left out:
+# the ones given may be real. Where the caller couldn't say what they'd said, the name isn't scored.
+session_id: call-20261019-045450-a67643
+description: Coffee and a snack. Whisper heard the coffee, most likely "Affogato",
+  as "I forget" every time, and the agent handed the call to a person. Only the outcome
+  is scored.
+tags:
+- human
+expect:
+  status: confirmed
+  order: null

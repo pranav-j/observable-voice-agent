@@ -1,0 +1,17 @@
+# What the caller wanted, confirmed by the caller afterwards. Phone numbers are left out:
+# the ones given may be real. Where the caller couldn't say what they'd said, the name isn't scored.
+session_id: call-20261019-050203-aa9994
+description: Asked for chicken fried rice (not on the menu), then butter chicken and
+  a naan. The name isn't scored.
+tags:
+- human
+expect:
+  status: confirmed
+  order:
+    items:
+    - item: butter_chicken
+      quantity: 1
+      modifiers: []
+    - item: butter_naan
+      quantity: 1
+      modifiers: []

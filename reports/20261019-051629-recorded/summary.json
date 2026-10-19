@@ -1,0 +1,241 @@
+{
+  "mode": "recorded",
+  "started_at": "2026-10-19T05:16:29+00:00",
+  "concurrency": null,
+  "agent_models": [
+    "gpt-6-luna"
+  ],
+  "caller_models": [
+    "human"
+  ],
+  "agent_prompt_versions": [
+    "v1"
+  ],
+  "caller_prompt_versions": [
+    "human"
+  ],
+  "overall": {
+    "runs": 6,
+    "scenarios": 6,
+    "task_successes": 3,
+    "task_success_rate": 0.5,
+    "scenarios_passing_all_runs": 3,
+    "scenarios_passing_all_runs_rate": 0.5,
+    "order_exact_match_runs": 5,
+    "order_exact_match_rate": 0.6,
+    "mean_field_accuracy": 0.9377777777777778,
+    "escalations": 1,
+    "expected_escalations": 0,
+    "escalation_agreement_rate": 0.8333333333333334,
+    "errors": 0,
+    "caller_hung_up_early": 0,
+    "tool_limit_hits": 0,
+    "confirmed_before_reply_runs": 0,
+    "skipped_audio_behaviors": 0,
+    "turns_p50": 9.0,
+    "turns_p95": 17.0,
+    "duration_s_p50": 136.55572199821472,
+    "duration_s_p95": 163.03492879867554,
+    "agent_tokens": {
+      "input": 414689,
+      "output": 2911
+    },
+    "caller_tokens": {
+      "input": 0,
+      "output": 0
+    }
+  },
+  "by_tag": {
+    "human": {
+      "runs": 6,
+      "successes": 3,
+      "pass_rate": 0.5
+    }
+  },
+  "scenarios": {
+    "call-20261019-044913-275965": {
+      "tags": [
+        "human"
+      ],
+      "runs": 1,
+      "successes": 0,
+      "pass_rate": 0.0,
+      "passed_all": false,
+      "errors": 0,
+      "mean_field_accuracy": 0.8888888888888888,
+      "end_reasons": {
+        "recorded_call": 1
+      }
+    },
+    "call-20261019-045151-742e97": {
+      "tags": [
+        "human"
+      ],
+      "runs": 1,
+      "successes": 1,
+      "pass_rate": 1.0,
+      "passed_all": true,
+      "errors": 0,
+      "mean_field_accuracy": 1.0,
+      "end_reasons": {
+        "recorded_call": 1
+      }
+    },
+    "call-20261019-045450-a67643": {
+      "tags": [
+        "human"
+      ],
+      "runs": 1,
+      "successes": 0,
+      "pass_rate": 0.0,
+      "passed_all": false,
+      "errors": 0,
+      "mean_field_accuracy": null,
+      "end_reasons": {
+        "transferred": 1
+      }
+    },
+    "call-20261019-045707-b836b1": {
+      "tags": [
+        "human"
+      ],
+      "runs": 1,
+      "successes": 0,
+      "pass_rate": 0.0,
+      "passed_all": false,
+      "errors": 0,
+      "mean_field_accuracy": 0.8,
+      "end_reasons": {
+        "recorded_call": 1
+      }
+    },
+    "call-20261019-045936-008faf": {
+      "tags": [
+        "human"
+      ],
+      "runs": 1,
+      "successes": 1,
+      "pass_rate": 1.0,
+      "passed_all": true,
+      "errors": 0,
+      "mean_field_accuracy": 1.0,
+      "end_reasons": {
+        "recorded_call": 1
+      }
+    },
+    "call-20261019-050203-aa9994": {
+      "tags": [
+        "human"
+      ],
+      "runs": 1,
+      "successes": 1,
+      "pass_rate": 1.0,
+      "passed_all": true,
+      "errors": 0,
+      "mean_field_accuracy": 1.0,
+      "end_reasons": {
+        "recorded_call": 1
+      }
+    }
+  },
+  "failures": [
+    {
+      "scenario_id": "call-20261019-044913-275965",
+      "run": 1,
+      "session_id": "call-20261019-044913-275965",
+      "end_reason": "recorded_call",
+      "error": null,
+      "mismatches": [
+        "customer name: expected 'Pranav', got 'Pramal'"
+      ]
+    },
+    {
+      "scenario_id": "call-20261019-045450-a67643",
+      "run": 1,
+      "session_id": "call-20261019-045450-a67643",
+      "end_reason": "transferred",
+      "error": null,
+      "mismatches": [
+        "status: expected confirmed, got escalated"
+      ]
+    },
+    {
+      "scenario_id": "call-20261019-045707-b836b1",
+      "run": 1,
+      "session_id": "call-20261019-045707-b836b1",
+      "end_reason": "recorded_call",
+      "error": null,
+      "mismatches": [
+        "customer name: expected 'Prem', got 'Brem'"
+      ]
+    }
+  ],
+  "rule_violations": [],
+  "audio": {
+    "runs": 6,
+    "measured_turns": 48,
+    "response_latency_ms_p50": 3500.0,
+    "response_latency_ms_p95": 6600.0,
+    "dead_air_turns": 34,
+    "dead_air_rate": 0.7083333333333334,
+    "barge_ins": 38,
+    "barge_in_stop_ms_p50": 2190.0,
+    "barge_in_stop_ms_p95": 13380.0,
+    "scripted_pauses": 0,
+    "false_cutoffs": 0,
+    "false_cutoff_rate": null,
+    "turn_ends_in_pauses": null,
+    "turn_end_in_pause_rate": null,
+    "turn_end_pauses_measured": 0,
+    "wer": null,
+    "wer_words": 0,
+    "wer_by_noise": {
+      "clean": {
+        "wer": null,
+        "words": 0
+      }
+    },
+    "priced_runs": 6,
+    "agent_cost_usd": 0.0071,
+    "priced_minutes": 13.25,
+    "cost_per_minute_usd": 0.000538511119662175,
+    "cost_includes_estimates": false,
+    "hearing": [
+      "human"
+    ],
+    "doubled_replies": null,
+    "redispatched": null,
+    "detector": [
+      {
+        "frame_ms": 10,
+        "min_silence_ms": 300,
+        "min_speech_ms": 30,
+        "sample_rate": 16000,
+        "threshold_dbfs": -45.0
+      }
+    ],
+    "agent_timing_p50_s": {},
+    "agent_timing_p95_s": {},
+    "agent_configs": [
+      {
+        "agent_prompt_version": "v1",
+        "eou_silence_ms": 500,
+        "fault": "none",
+        "filler_after_ms": 1200,
+        "filler_phrases": false,
+        "llm_model": "gpt-6-luna",
+        "pipeline": "cascade",
+        "preemptive_generation": true,
+        "stt_model": "base.en",
+        "stt_provider": "whisper",
+        "tts_format": "mp3",
+        "tts_model": "kokoro-v1.0",
+        "tts_provider": "kokoro",
+        "tts_voice": "af_heart",
+        "turn_detection": "semantic",
+        "vad_min_silence_ms": 550
+      }
+    ]
+  },
+  "judged": null
+}

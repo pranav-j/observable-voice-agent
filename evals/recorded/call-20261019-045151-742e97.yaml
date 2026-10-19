@@ -1,0 +1,15 @@
+# What the caller wanted, confirmed by the caller afterwards. Phone numbers are left out:
+# the ones given may be real. Where the caller couldn't say what they'd said, the name isn't scored.
+session_id: call-20261019-045151-742e97
+description: A full chicken biryani after asking for "something heavy". The agent
+  misheard the name, and the right one wasn't recorded, so it isn't scored.
+tags:
+- human
+expect:
+  status: confirmed
+  order:
+    items:
+    - item: chicken_biryani
+      size: full
+      quantity: 1
+      modifiers: []

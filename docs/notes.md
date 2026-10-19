@@ -552,3 +552,13 @@ The last full run, with every fix from today in, passed 87 of 93 (`reports/20261
 One call failed because the agent never joined, and this time I hadn't been running anything else. LiveKit's log showed the reason. The previous call's job had ended half a second earlier, LiveKit offered the new job to the worker, the worker said no, and LiveKit just dropped it. Nothing retries. On a 4-core server, a worker that's busy or still saving the last call will turn calls down more often than on this laptop.
 
 So now, if no agent has joined after 10 seconds, the web page asks the API to send it again, once. The API only does that for rooms it gave a token for, because asking LiveKit to dispatch into a room creates the room if it doesn't exist. The eval harness does the same thing and the report counts how often it had to, so a run can't quietly hide the problem.
+
+## The first real calls
+
+I made six calls to the agent myself, on the local setup, and annotated what I actually wanted (`reports/20261019-051629-recorded`). Three came out completely right. Two got the order right and my name wrong: Pranav became "Pramal", and Prem became "Brem". The sixth I couldn't finish at all. I asked for an Affogato a few times, Whisper heard "I forget" every time, and eventually the agent handed me to a person.
+
+None of that surprised me after the simulated runs: the small Whisper model struggles with Indian names and with menu words that aren't ordinary English. A bigger recognition model is the obvious fix, and the offline numbers already say it would help. I'm leaving it as a known limitation for now rather than chasing it.
+
+What did surprise me was the phone number. The agent read it back every time, and every time it sounded like one huge number: "twenty-two thousand three hundred ninety-five, sixty-nine thousand four hundred twenty-one". I couldn't have checked it if I'd tried. The evals never caught it because the simulated caller reads the agent's words as text, and "22395 69421" looks perfect as text. It took one real person listening to find it.
+
+Two smaller things. The numbers I gave sound like real phone numbers, so annotations can now leave the phone out and score just the name, and none of them is in git. And localhost first told me "all our agents are busy" three times in a row. That was old servers from a week earlier still holding the ports, with no agent worker running behind them.

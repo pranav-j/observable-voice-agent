@@ -1,0 +1,16 @@
+# What the caller wanted, confirmed by the caller afterwards. Phone numbers are left out:
+# the ones given may be real. Where the caller couldn't say what they'd said, the name isn't scored.
+session_id: call-20261019-045707-b836b1
+description: A large fresh lime soda. The agent heard the name Prem as "Brem".
+tags:
+- human
+expect:
+  status: confirmed
+  order:
+    items:
+    - item: fresh_lime_soda
+      size: large
+      quantity: 1
+      modifiers: []
+    customer:
+      name: Prem

@@ -1,0 +1,15 @@
+# What the caller wanted, confirmed by the caller afterwards. Phone numbers are left out:
+# the ones given may be real. Where the caller couldn't say what they'd said, the name isn't scored.
+session_id: call-20261019-045936-008faf
+description: Browsed rolls, then a chicken tikka roll.
+tags:
+- human
+expect:
+  status: confirmed
+  order:
+    items:
+    - item: chicken_tikka_roll
+      quantity: 1
+      modifiers: []
+    customer:
+      name: Anita
