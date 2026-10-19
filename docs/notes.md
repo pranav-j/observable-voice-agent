@@ -562,3 +562,9 @@ None of that surprised me after the simulated runs: the small Whisper model stru
 What did surprise me was the phone number. The agent read it back every time, and every time it sounded like one huge number: "twenty-two thousand three hundred ninety-five, sixty-nine thousand four hundred twenty-one". I couldn't have checked it if I'd tried. The evals never caught it because the simulated caller reads the agent's words as text, and "22395 69421" looks perfect as text. It took one real person listening to find it.
 
 Two smaller things. The numbers I gave sound like real phone numbers, so annotations can now leave the phone out and score just the name, and none of them is in git. And localhost first told me "all our agents are busy" three times in a row. That was old servers from a week earlier still holding the ports, with no agent worker running behind them.
+
+## Checking the judge
+
+The judge that grades whether the agent owned up to a failed action had been running unchecked, so every report said "not calibrated yet". I went through the 25 sample cases and marked each one: did the reply tell the caller something went wrong, or ask for what it needed, without pretending it worked? The judge agreed with me on all 25.
+
+I wouldn't read too much into a perfect score. Twenty cases came from real runs and most of them are the same thing, a phone number that didn't validate followed by the agent asking for it again. The other five were made up on purpose, with the agent claiming an item was added when the tool had refused, and those are easy. It does settle that the judge isn't wildly off. Testing whether it's right on the hard cases would need more varied ones.
