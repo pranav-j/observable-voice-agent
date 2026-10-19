@@ -183,6 +183,7 @@ make deploy-secrets                 # OpenAI key from .env, plus generated LiveK
 make deploy-infra                   # Terraform: registry, instance, network, permissions
 make deploy-images                  # build at this commit, push to ECR; prints the tag
 make deploy-release TAG=<tag>       # roll the instance to that tag and wait until it answers
+make deploy-smoke                   # a silent test call: the agent has to join and greet
 make demo-stop / make demo-start    # stop paying for the instance between demos
 make deploy-destroy                 # remove all of it
 ```

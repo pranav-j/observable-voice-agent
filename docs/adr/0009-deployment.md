@@ -36,9 +36,10 @@ At real scale these would be deployed separately. At demo scale, separating them
 - **Releases:**
   - `make deploy-images` builds and pushes the commit.
   - `make deploy-release TAG=...` records the tag in SSM, pushes the deploy files, restarts the stack, and waits until the site answers.
+  - `make deploy-smoke` then places a silent call through the live site and checks the agent joins and greets, which covers signalling, the media path, dispatch and the worker.
   - The worker gets five and a half minutes to finish calls in progress before it's stopped.
 - **Cost guards:**
-  - The call limits from `docs/adr/0008-demo-limits.md`: 5 calls per address per hour, 40 a day, 5 minutes each.
+  - The call limits from `docs/adr/0008-demo-limits.md`: by default 5 calls per address per hour, 40 a day, 5 minutes each. The first two live in SSM, so `make demo-limits` can raise them for a testing session without a rebuild.
   - An optional budget alarm.
   - `make demo-stop` between demos.
 - **Calls nobody answers:** a worker that's out of CPU tells LiveKit it's full, and LiveKit then doesn't send it the call. This happened once in the local eval runs, when the test suite was running on the same machine. The page now gives up after 20 seconds with a "busy" message, rather than leaving the caller in silence.
