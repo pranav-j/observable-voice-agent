@@ -33,6 +33,7 @@ from voice_order.agent.faults import SLOW_LLM_DELAY_S, delay_first
 from voice_order.agent.filler import fillers, with_filler
 from voice_order.agent.local_speech import KokoroTTS, WhisperSTT
 from voice_order.agent.repeats import without_repeats
+from voice_order.agent.spoken_digits import spoken_digits
 from voice_order.agent.tools import StepText, livekit_tools
 from voice_order.config import Settings, get_settings
 from voice_order.menu.loader import load_menu
@@ -99,6 +100,13 @@ class OrderAgent(Agent):
         async for chunk in chunks:
             self.step.add(chunk)
             yield chunk
+
+    async def tts_node(
+        self, text: AsyncIterable[str], model_settings: ModelSettings
+    ) -> AsyncIterable[rtc.AudioFrame]:
+        # Phone numbers are spoken digit by digit; the transcript keeps the written form.
+        async for frame in Agent.default.tts_node(self, spoken_digits(text), model_settings):
+            yield frame
 
 
 def _is_tool_call(chunk: object) -> bool:
