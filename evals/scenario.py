@@ -42,6 +42,14 @@ class Customer(_Strict):
     phone: FakePhone
 
 
+class ExpectedCustomer(_Strict):
+    """Who the order should be for. The phone can be left out, for a real call where the
+    caller gave a number that shouldn't be written down; then only the name is scored."""
+
+    name: str
+    phone: FakePhone | None = None
+
+
 class Trigger(_Strict):
     # "phone": the caller's utterance that gives the phone number (pauses only).
     phase: Literal["readback", "any_agent_speech", "phone"] | None = None
@@ -83,7 +91,7 @@ class ExpectedItem(_Strict):
 
 class ExpectedOrder(_Strict):
     items: list[ExpectedItem]
-    customer: Customer | None = None
+    customer: ExpectedCustomer | None = None
 
 
 class Expectation(_Strict):

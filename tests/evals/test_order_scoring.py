@@ -191,3 +191,16 @@ def test_no_saved_order() -> None:
     assert not s.task_success
     assert s.exact_match is False
     assert s.mismatches[0] == "no order was saved for this session"
+
+
+def test_a_name_only_customer_scores_the_name_alone() -> None:
+    # A real call where the caller's number was left out of the annotation.
+    anil = {"name": "Anil", "phone": "9000000005"}
+    anil_any_number = order(("masala_dosa", None, [], 2), customer=anil)
+    s = score_order(anil_any_number, expect(TWO_DOSA, customer={"name": "Anil"}))
+    assert (s.exact_match, s.field_accuracy) == (True, 1.0)
+    anita = {"name": "Anita", "phone": "9000000005"}
+    wrong_name = order(("masala_dosa", None, [], 2), customer=anita)
+    s = score_order(wrong_name, expect(TWO_DOSA, customer={"name": "Anil"}))
+    assert s.mismatches == ("customer name: expected 'Anil', got 'Anita'",)
+    assert s.field_accuracy == pytest.approx(4 / 5)

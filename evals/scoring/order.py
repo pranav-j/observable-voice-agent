@@ -119,7 +119,8 @@ def _customer_mismatches(order: Order | None, expected: ExpectedOrder) -> list[s
         problems.append(
             f"customer name: expected {expected.customer.name!r}, got {order.customer.name!r}"
         )
-    if phone_digits(order.customer.phone) != phone_digits(expected.customer.phone):
+    phone = expected.customer.phone
+    if phone is not None and phone_digits(order.customer.phone) != phone_digits(phone):
         problems.append(
             f"customer phone: expected {expected.customer.phone}, got {order.customer.phone}"
         )
@@ -132,10 +133,12 @@ def _field_accuracy(
     total = FIELDS_PER_LINE * len(want)
     correct = _best_matching(tuple(want), tuple(got))
     if expected.customer is not None:
-        total += FIELDS_PER_CUSTOMER
+        phone = expected.customer.phone
+        total += FIELDS_PER_CUSTOMER if phone is not None else 1  # no phone: the name only
         if order is not None and order.customer is not None:
             correct += normalize_name(order.customer.name) == normalize_name(expected.customer.name)
-            correct += phone_digits(order.customer.phone) == phone_digits(expected.customer.phone)
+            if phone is not None:
+                correct += phone_digits(order.customer.phone) == phone_digits(phone)
     return correct / total if total else 1.0
 
 

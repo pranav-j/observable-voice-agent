@@ -143,3 +143,14 @@ def test_annotate_draft_starts_from_the_final_order(menu: Menu) -> None:
 def test_annotate_draft_without_an_order() -> None:
     annotation = Annotation.model_validate(yaml.safe_load(draft(SESSION, None)))
     assert annotation.expect.order is None
+
+
+def test_annotate_draft_leaves_out_a_real_looking_phone(menu: Menu) -> None:
+    order = state.add_line(state.new_order(SESSION), menu, "cold_coffee", 1, "large", [])
+    real_looking = state.set_customer(order, "Priya", "7923167819")
+    annotation = Annotation.model_validate(yaml.safe_load(draft(SESSION, real_looking)))
+    assert annotation.expect.order is not None
+    customer = annotation.expect.order.customer
+    assert customer is not None
+    assert (customer.name, customer.phone) == ("Priya", None)
+    assert "7923167819" not in draft(SESSION, real_looking)

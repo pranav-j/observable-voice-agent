@@ -8,6 +8,7 @@ they actually wanted, which is the point: the agent's version is only a starting
 import argparse
 import asyncio
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -22,8 +23,10 @@ from voice_order.store.postgres import PostgresOrderStore
 HEADER = """\
 # What the caller WANTED, not what the agent took down. This started as a copy of the
 # agent's final order (status: {status}). Fix anything it got wrong, then save.
-# Phone numbers must stay obviously fake: 98765 and five more digits.
+# Phone numbers must stay obviously fake: 98765 and five more digits. Any other number
+# is left out, and then only the name is scored.
 """
+FAKE_PHONE = re.compile(r"^(98765|90000)\d{5}$")
 
 
 def draft(session_id: str, order: Order | None) -> str:
@@ -40,10 +43,10 @@ def draft(session_id: str, order: Order | None) -> str:
         ]
         expect["order"] = {"items": items}
         if order.customer is not None:
-            expect["order"]["customer"] = {
-                "name": order.customer.name,
-                "phone": order.customer.phone,
-            }
+            customer = {"name": order.customer.name}
+            if FAKE_PHONE.fullmatch(order.customer.phone):  # a real-looking one stays out of git
+                customer["phone"] = order.customer.phone
+            expect["order"]["customer"] = customer
     body = {"session_id": session_id, "description": "", "tags": ["human"], "expect": expect}
     header = HEADER.format(status=order.status if order else "no order saved")
     return header + yaml.safe_dump(body, sort_keys=False, allow_unicode=True)
