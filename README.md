@@ -2,7 +2,11 @@
 
 A voice agent that takes pickup food orders for a fictional Indian restaurant, Juniper Street Kitchen, over WebRTC (LiveKit), and an eval harness that phones it with simulated callers over real audio and scores every call. The callers interrupt, pause mid-sentence, mumble names, change their minds during the read-back and try to talk the agent into discounts. The order itself only ever changes through typed tool calls, prices are computed in code in integer paise, and the agent can't confirm an order until the caller has heard the full read-back. Every number below comes from a run saved under [`reports/`](reports/).
 
-**Live demo:** https://43-205-202-96.sslip.io, when it's running. The instance is stopped between demos to save cost, so the link may not answer. **Demo video:** not recorded yet.
+**Live demo:** https://43-205-202-96.sslip.io, when it's running. The instance is stopped between demos to save cost, so the link may not answer.
+
+[![A call to the live demo: the transcript, the order and the latency panel](docs/img/demo.png)](docs/media/demo.mp4)
+
+**[Demo video](docs/media/demo.mp4)** (4.5 minutes, unedited): a call to the live demo. The caller browses the menu, orders a masala dosa and a cold coffee, hears the phone number read back digit by digit, then swaps the coffee for a tea at the read-back and gets a new one. The pauses before each reply are real.
 
 ## Latency
 

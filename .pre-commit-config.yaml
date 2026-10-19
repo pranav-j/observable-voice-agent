@@ -17,6 +17,7 @@ repos:
       - id: check-merge-conflict
       - id: check-added-large-files
         args: [--maxkb=500]
+        exclude: ^docs/media/  # the demo video, compressed to a few MB
       - id: detect-private-key
 
   # Python tools run from .venv so hooks use exactly the versions pinned in uv.lock.
